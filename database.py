@@ -99,6 +99,8 @@ class UserDB:
             user_doc['earned_game_time'] = 0  # Earned minutes
             user_doc['used_game_time'] = 0  # Used minutes
             user_doc['parent_messages'] = []  # Messages from parent
+            user_doc['streak_count'] = 0  # Streak count
+            user_doc['streak_bonus_minutes'] = 0  # Bonus minutes per day from streak
         
         try:
             result = users.insert_one(user_doc)
@@ -309,7 +311,9 @@ class UserDB:
                     'daily_screen_time_limit': child.get('daily_screen_time_limit', 60),
                     'weekly_screen_time_limit': child.get('weekly_screen_time_limit', 420),
                     'timer_running': child.get('timer_running', False),
-                    'timer_started_at': child.get('timer_started_at')
+                    'timer_started_at': child.get('timer_started_at'),
+                    'streak_count': child.get('streak_count', 0),
+                    'streak_bonus_minutes': child.get('streak_bonus_minutes', 0)
                 })
         
         return children
@@ -468,5 +472,45 @@ class UserDB:
             return result.modified_count > 0
         except Exception as e:
             print(f"Error marking message as read: {e}")
+            return False
+
+    @staticmethod
+    def update_child_streak(child_id, streak_count):
+        """Update child's streak count"""
+        database = get_db()
+        if database is None:
+            return False
+        
+        from bson import ObjectId
+        users = database['users']
+        
+        try:
+            result = users.update_one(
+                {'_id': ObjectId(child_id)},
+                {'$set': {'streak_count': max(0, int(streak_count))}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"Error updating streak count: {e}")
+            return False
+
+    @staticmethod
+    def update_streak_bonus(child_id, bonus_minutes_per_day):
+        """Update child's streak bonus (minutes per day)"""
+        database = get_db()
+        if database is None:
+            return False
+        
+        from bson import ObjectId
+        users = database['users']
+        
+        try:
+            result = users.update_one(
+                {'_id': ObjectId(child_id)},
+                {'$set': {'streak_bonus_minutes': max(0, int(bonus_minutes_per_day))}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"Error updating streak bonus: {e}")
             return False
 

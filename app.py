@@ -599,6 +599,49 @@ def api_gametime_balance():
     }), 200
 
 
+@app.route('/api/update-child-streak/<child_id>', methods=['POST'])
+def api_update_child_streak(child_id):
+    """API endpoint to update child's streak count and bonus"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    streak_count = data.get('streak_count')
+    streak_bonus = data.get('streak_bonus_minutes', 0)
+    
+    if streak_count is None:
+        return jsonify({'error': 'Missing streak_count'}), 400
+    
+    try:
+        streak_count = int(streak_count)
+        streak_bonus = int(streak_bonus)
+        
+        if streak_count < 0 or streak_bonus < 0:
+            return jsonify({'error': 'Streak count and bonus must be non-negative'}), 400
+        
+        # Update streak count
+        success1 = UserDB.update_child_streak(child_id, streak_count)
+        # Update streak bonus
+        success2 = UserDB.update_streak_bonus(child_id, streak_bonus)
+        
+        if success1 and success2:
+            # Create notification message
+            parent = UserDB.get_user_by_id(session['user_id'])
+            parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
+            now = datetime.utcnow()
+            msg = f"Streak updated to {streak_count} day(s) with {streak_bonus} min/day bonus by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+            
+            return jsonify({'success': True}), 200
+        else:
+            return jsonify({'error': 'Failed to update streak'}), 500
+    except ValueError:
+        return jsonify({'error': 'Invalid streak count or bonus value'}), 400
+    except Exception as e:
+        logger.exception(f"Error updating streak: {str(e)}")
+        return jsonify({'error': 'Server error'}), 500
+
+
 @app.route('/logout')
 def logout():
     """Logout user"""
@@ -647,33 +690,75 @@ def api_upload():
         return jsonify({'error': 'Failed to save file'}), 500
 
 
+@app.route('/api/activities', methods=['GET'])
+def api_get_manual_activities():
+    """API endpoint to get manual activities for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    activities_collection = db['activities']
+    activities = list(activities_collection.find(
+        {'user_id': session['user_id'], 'source': 'manual'}
+    ).sort('created_at', -1).limit(20))
+    
+    # Convert ObjectId to string
+    for activity in activities:
+        activity['id'] = str(activity['_id'])
+        del activity['_id']
+    
+    return jsonify({'activities': activities}), 200
+
+
 @app.route('/upload-activity', methods=['GET', 'POST'])
 def upload_activity():
     """Show or handle manual activity upload form"""
     if 'user_id' not in session:
-        return redirect('/login')
+        return redirect('/login') if request.method == 'GET' else jsonify({'error': 'Unauthorized'}), 401
     
     if request.method == 'GET':
         return render_template('upload_activity.html')
     
     # POST request - handle activity upload
-    activity_title = request.form.get('activity_title')
-    activity_date = request.form.get('date')
-    activity_type = request.form.get('activity_type')
-    distance = request.form.get('distance')
-    time_hours = request.form.get('time_hours', 0)
-    time_minutes = request.form.get('time_minutes', 0)
-    intensity = request.form.get('intensity')
+    # Support both JSON and form data
+    if request.is_json:
+        data = request.get_json()
+        activity_title = data.get('activity_title')
+        activity_date = data.get('date')
+        activity_type = data.get('activity_type')
+        distance = data.get('distance')
+        time_hours = data.get('time_hours', 0)
+        time_minutes = data.get('time_minutes', 0)
+        intensity = data.get('intensity')
+        is_json_request = True
+    else:
+        activity_title = request.form.get('activity_title')
+        activity_date = request.form.get('date')
+        activity_type = request.form.get('activity_type')
+        distance = request.form.get('distance')
+        time_hours = request.form.get('time_hours', 0)
+        time_minutes = request.form.get('time_minutes', 0)
+        intensity = request.form.get('intensity')
+        is_json_request = False
     
     if not all([activity_title, activity_date, activity_type, distance, intensity]):
-        return render_template('upload_activity.html', error='All fields are required')
+        error = 'All fields are required'
+        if is_json_request:
+            return jsonify({'error': error}), 400
+        return render_template('upload_activity.html', error=error)
     
     try:
         distance = float(distance)
         time_minutes_total = int(time_hours) * 60 + int(time_minutes)
         
         if distance <= 0 or time_minutes_total <= 0:
-            return render_template('upload_activity.html', error='Distance and time must be greater than 0')
+            error = 'Distance and time must be greater than 0'
+            if is_json_request:
+                return jsonify({'error': error}), 400
+            return render_template('upload_activity.html', error=error)
         
         # Calculate earned game time based on intensity and distance
         intensity_multipliers = {
@@ -690,7 +775,10 @@ def upload_activity():
         # Store activity in database
         db = get_db()
         if db is None:
-            return render_template('upload_activity.html', error='Database connection failed')
+            error = 'Database connection failed'
+            if is_json_request:
+                return jsonify({'error': error}), 500
+            return render_template('upload_activity.html', error=error)
         
         from datetime import datetime as dt
         activities_collection = db['activities']
@@ -713,14 +801,28 @@ def upload_activity():
         # Add earned game time to user
         UserDB.add_earned_game_time(session['user_id'], earned_minutes)
         
-        return render_template('upload_activity.html', 
-                              success=f'Activity logged successfully! Earned {earned_minutes} minutes of game time.')
+        success_msg = f'Activity logged successfully! Earned {earned_minutes} minutes of game time.'
+        
+        if is_json_request:
+            return jsonify({
+                'success': True,
+                'message': success_msg,
+                'earned_minutes': earned_minutes,
+                'activity_id': str(result.inserted_id)
+            }), 201
+        return render_template('upload_activity.html', success=success_msg)
     
     except ValueError:
-        return render_template('upload_activity.html', error='Invalid distance or time value')
+        error = 'Invalid distance or time value'
+        if is_json_request:
+            return jsonify({'error': error}), 400
+        return render_template('upload_activity.html', error=error)
     except Exception as e:
         logger.exception('Error uploading activity')
-        return render_template('upload_activity.html', error=f'Error saving activity: {str(e)}')
+        error = f'Error saving activity: {str(e)}'
+        if is_json_request:
+            return jsonify({'error': error}), 500
+        return render_template('upload_activity.html', error=error)
 
 
 # Helper function to get db instance

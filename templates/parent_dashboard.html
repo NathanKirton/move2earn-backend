@@ -501,6 +501,16 @@
                                 <textarea class="bonus-message" placeholder="Optional: Add a message (e.g., 'Great job this week!')" style="width: 100%; padding: 8px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 4px; color: #fff; font-size: 12px; font-family: inherit; resize: vertical; min-height: 60px; margin-top: 8px;" maxlength="200"></textarea>
                             </div>
                         </div>
+                        
+                        <!-- Manage Streak -->
+                        <div class="bonus-section">
+                            <div class="bonus-label">🔥 Manage Streak</div>
+                            <div class="bonus-input-group">
+                                <input type="number" class="streak-count" placeholder="Streak Days" value="{{ child.streak_count }}" min="0" max="999">
+                                <input type="number" class="streak-bonus" placeholder="Bonus Min/Day" value="{{ child.streak_bonus_minutes }}" min="0" max="240">
+                            </div>
+                            <button class="bonus-btn update-streak" style="grid-column: 1 / -1; margin-top: 8px;">Update Streak</button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -697,6 +707,57 @@
                     }
                 } catch (err) {
                     console.error('Error adding bonus time:', err);
+                    alert('Error: ' + err.message);
+                    this.disabled = false;
+                    this.textContent = originalText;
+                    this.style.background = originalBg;
+                }
+            });
+        });
+
+        // Update Streak Button
+        document.querySelectorAll('.update-streak').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const streakCount = parseInt(card.querySelector('.streak-count').value) || 0;
+                const streakBonus = parseInt(card.querySelector('.streak-bonus').value) || 0;
+                const originalText = this.textContent;
+                const originalBg = this.style.background;
+                
+                try {
+                    this.disabled = true;
+                    this.textContent = '⏳ Updating...';
+                    
+                    const response = await fetch(`/api/update-child-streak/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            streak_count: streakCount,
+                            streak_bonus_minutes: streakBonus
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.style.background = 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%)';
+                        this.textContent = '✓ Updated!';
+                        
+                        setTimeout(() => {
+                            this.style.background = originalBg;
+                            this.textContent = originalText;
+                            this.disabled = false;
+                        }, 1500);
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update streak'));
+                        this.disabled = false;
+                        this.textContent = originalText;
+                        this.style.background = originalBg;
+                    }
+                } catch (err) {
+                    console.error('Error updating streak:', err);
                     alert('Error: ' + err.message);
                     this.disabled = false;
                     this.textContent = originalText;

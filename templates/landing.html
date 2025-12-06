@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Move2Earn - Earn Gaming Minutes with your activity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 0;
+            margin-bottom: 60px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #555;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #fff;
+        }
+        
+        .btn-primary {
+            background: #00d4ff;
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            background: #00b8d9;
+        }
+        
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-bottom: 100px;
+        }
+        
+        .hero-content h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .hero-content h1 span {
+            color: #00d4ff;
+        }
+        
+        .hero-content p {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .hero-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .placeholder-box {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(100, 0, 255, 0.1) 100%);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        
+        .features {
+            margin-bottom: 100px;
+        }
+        
+        .features-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .features-title h2 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .feature-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff8c00 0%, #ff6b6b 100%);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .feature-card h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .feature-card p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .healthy-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 60px;
+            border-radius: 12px;
+            margin-bottom: 100px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .healthy-image {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .healthy-image .placeholder-box {
+            width: 80%;
+        }
+        
+        .healthy-content h2 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+        
+        .healthy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .healthy-item {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .healthy-item-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .healthy-item-content h4 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .healthy-item-content p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .cta-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(100, 0, 255, 0.1) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+        }
+        
+        .cta-section h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+        
+        .cta-section .btn {
+            padding: 15px 40px;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .hero, .healthy-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-content h1 {
+                font-size: 32px;
+            }
+            
+            .features-title h2 {
+                font-size: 24px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span>🏃</span>
+                <span>Move2Earn</span>
+            </div>
+            <div class="header-buttons">
+                <a href="/login" class="btn btn-secondary">Login</a>
+                <a href="/register" class="btn btn-primary">Get Started</a>
+            </div>
+        </header>
+        
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Earn Your Game<br>Time Through<br><span>Movement</span></h1>
+                <p>Transform physical activity into gaming rewards. Move more, play more. It's that simple.</p>
+                <a href="/register" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Get Started</a>
+            </div>
+            <div class="hero-image">
+                <div class="placeholder-box">📱</div>
+            </div>
+        </section>
+        
+        <section class="features">
+            <div class="features-title">
+                <h2>How It Works</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📍</div>
+                    <h3>Move and Track</h3>
+                    <p>Connect your fitness tracker or phone's step counter. Your activity is automatically tracked via Strava.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <h3>Complete Challenges</h3>
+                    <p>Join daily and weekly challenges. Earn bonus points and unlock exclusive badges.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Earn Game Time</h3>
+                    <p>Convert your activity into gaming minutes. The more you move, the more you play.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="healthy-section">
+            <div class="healthy-image">
+                <div class="placeholder-box">🎮</div>
+            </div>
+            <div class="healthy-content">
+                <h2>Healthy Screen Time Management</h2>
+                <div class="healthy-list">
+                    <div class="healthy-item">
+                        <div class="healthy-item-icon">📊</div>
+                        <div class="healthy-item-content">
+                            <h4>Track Progress</h4>
+                            <p>Monitor your child's activity and earned game time in real-time.</p>
+                        </div>
+                    </div>
+                    <div class="healthy-item">
+                        <div class="healthy-item-icon">🎯</div>
+                        <div class="healthy-item-content">
+                            <h4>Set Limits</h4>
+                            <p>Control daily and weekly screen time limits with flexible parental controls.</p>
+                        </div>
+                    </div>
+                    <div class="healthy-item">
+                        <div class="healthy-item-icon">❤️</div>
+                        <div class="healthy-item-content">
+                            <h4>Encourage Healthy Habits</h4>
+                            <p>Foster a balanced lifestyle with positive reinforcement and rewards.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="cta-section">
+            <h2>Ready To Start?</h2>
+            <a href="/register" class="btn btn-primary">Get Started</a>
+        </section>
+    </div>
+</body>
+</html>

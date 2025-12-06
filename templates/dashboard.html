@@ -456,6 +456,7 @@
     <!-- Recent Activities Section -->
     <div class="activities-header">
         ☰ Recent Activity
+        <button onclick="openUploadModal()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; margin-left: auto;">+ Manual Upload</button>
     </div>
     <div id="activities-list">
         <div class="no-data">
@@ -489,6 +490,58 @@
     </div>
 </div>
 
+<!-- Manual Activity Upload Modal -->
+<div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(100, 100, 150, 0.3);">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
+            <h2 id="modal-title" style="color: #fff; margin: 0;">📝 Log Activity</h2>
+            <button class="close-btn" onclick="closeUploadModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
+        </div>
+        <div id="uploadMessage" class="upload-message" style="background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
+        <form id="uploadForm" style="display: grid; gap: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="grid-column: 1 / -1;">
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Title</label>
+                    <input type="text" name="activity_title" placeholder="e.g., Morning Run" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Date</label>
+                    <input type="date" name="date" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Type</label>
+                    <select name="activity_type" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
+                        <option value="">Select type</option>
+                        <option value="Run">Run</option>
+                        <option value="Ride">Cycling</option>
+                        <option value="Swim">Swimming</option>
+                        <option value="Walk">Walking</option>
+                        <option value="Hiking">Hiking</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Distance (km)</label>
+                    <input type="number" name="distance" placeholder="0.00" step="0.1" min="0" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Duration (HH:MM:SS)</label>
+                    <input type="text" name="duration" placeholder="00:30:00" pattern="^\d{1,2}:\d{2}:\d{2}$" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Intensity</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px;">
+                        <button type="button" class="intensity-btn" data-intensity="Easy" style="padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; color: #00d4ff; font-weight: 600; cursor: pointer; transition: all 0.3s;">Easy</button>
+                        <button type="button" class="intensity-btn" data-intensity="Medium" style="padding: 10px; background: rgba(255, 200, 0, 0.2); border: 1px solid rgba(255, 200, 0, 0.4); border-radius: 4px; color: #ffcc00; font-weight: 600; cursor: pointer; transition: all 0.3s;">Medium</button>
+                        <button type="button" class="intensity-btn" data-intensity="Hard" style="padding: 10px; background: rgba(255, 100, 100, 0.2); border: 1px solid rgba(255, 100, 100, 0.4); border-radius: 4px; color: #ff6464; font-weight: 600; cursor: pointer; transition: all 0.3s;">Hard</button>
+                    </div>
+                    <input type="hidden" name="intensity" required>
+                </div>
+            </div>
+            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Log Activity</button>
+        </form>
+    </div>
+</div>
+
 <style>
 .modal.active {
     display: flex !important;
@@ -509,6 +562,21 @@
 .modal-stat-value {
     color: #333;
     font-weight: 600;
+}
+
+.upload-message {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>
 {% endblock %}
@@ -576,34 +644,83 @@ function getActivityIcon(type) {
 
 async function loadActivities() {
     try {
-        const response = await fetch('/api/activities');
-        if (!response.ok) throw new Error('Failed to load activities');
-        
-        const activities = await response.json();
         const list = document.getElementById('activities-list');
         
-        if (activities.length === 0) {
-            list.innerHTML = '<div class="no-data">No activities found. Connect Strava and go for a run!</div>';
+        // Fetch both Strava and manual activities
+        let stravasActivities = [];
+        let manualActivities = [];
+        
+        try {
+            const stravasResponse = await fetch('/api/activities');
+            if (stravasResponse.ok) {
+                stravasActivities = await stravasResponse.json();
+            }
+        } catch (err) {
+            console.error('Error loading Strava activities:', err);
+        }
+        
+        try {
+            const manualResponse = await fetch('/api/activities');
+            if (manualResponse.ok) {
+                const manualData = await manualResponse.json();
+                if (manualData.activities) {
+                    manualActivities = manualData.activities;
+                }
+            }
+        } catch (err) {
+            console.error('Error loading manual activities:', err);
+        }
+        
+        // Combine and sort activities (manual activities have different field names)
+        const allActivities = [
+            ...stravasActivities.map(a => ({
+                ...a,
+                source: 'strava',
+                time_minutes: a.moving_time / 60,
+                activity_date: a.start_date
+            })),
+            ...manualActivities.map(a => ({
+                id: a.id,
+                name: a.title,
+                type: a.type,
+                distance: a.distance,
+                moving_time: a.time_minutes * 60,
+                time_minutes: a.time_minutes,
+                start_date: a.date + 'T12:00:00Z',
+                activity_date: a.date,
+                intensity: a.intensity,
+                earned_minutes: a.earned_minutes,
+                source: 'manual'
+            }))
+        ];
+        
+        if (allActivities.length === 0) {
+            list.innerHTML = '<div class="no-data">No activities found. Connect Strava or log an activity manually!</div>';
             return;
         }
         
         // Calculate streak
-        calculateStreak(activities);
+        calculateStreak(allActivities);
         
-        list.innerHTML = activities.map(activity => {
+        list.innerHTML = allActivities.map(activity => {
+            const isStravasActivity = activity.source === 'strava';
             const paceDisplay = !activity.average_heartrate && activity.distance > 0 
                 ? `${Math.floor((activity.moving_time / activity.distance) / 60)}:${String(Math.round((activity.moving_time / activity.distance) % 60)).padStart(2, '0')} min/km`
                 : '';
             
+            const intensityBadge = isStravasActivity 
+                ? getIntensityBadge(activity.average_heartrate, activity.max_heartrate)
+                : `<span class="intensity-badge intensity-${activity.intensity.toLowerCase()}">${activity.intensity}</span>`;
+            
             return `
-                <div class="activity-item" onclick="openActivityModal(${activity.id})">
+                <div class="activity-item" ${isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : ''} style="${isStravasActivity ? 'cursor: pointer;' : 'cursor: default;'}">
                     <div class="activity-icon">${getActivityIcon(activity.type)}</div>
                     <div class="activity-details">
                         <div class="activity-title">
                             ${activity.name}
-                            ${getIntensityBadge(activity.average_heartrate, activity.max_heartrate)}
+                            ${intensityBadge}
                         </div>
-                        <div class="activity-time">${formatDate(activity.start_date)}</div>
+                        <div class="activity-time">${formatDate(activity.activity_date)}</div>
                         <div class="activity-stats">
                             <div class="stat-box">
                                 <span class="stat-label">Duration</span>
@@ -629,7 +746,7 @@ async function loadActivities() {
                     </div>
                     <div class="activity-earned">
                         <div class="earned-label">Time Earned</div>
-                        <div class="earned-value">--</div>
+                        <div class="earned-value">${activity.earned_minutes ? activity.earned_minutes + ' min' : '--'}</div>
                     </div>
                 </div>
             `;
@@ -848,10 +965,128 @@ function closeModal() {
     document.getElementById('activity-modal').classList.remove('active');
 }
 
+function openUploadModal() {
+    document.getElementById('upload-modal').style.display = 'flex';
+    document.getElementById('uploadForm').reset();
+    document.getElementById('uploadMessage').style.display = 'none';
+    // Reset intensity buttons
+    document.querySelectorAll('.intensity-btn').forEach(btn => {
+        btn.style.background = btn.dataset.intensity === 'Easy' 
+            ? 'rgba(0, 212, 255, 0.2)' 
+            : btn.dataset.intensity === 'Medium'
+            ? 'rgba(255, 200, 0, 0.2)'
+            : 'rgba(255, 100, 100, 0.2)';
+    });
+}
+
+function closeUploadModal() {
+    document.getElementById('upload-modal').style.display = 'none';
+}
+
+// Intensity button selection
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.intensity-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Remove active state from all buttons
+            document.querySelectorAll('.intensity-btn').forEach(b => {
+                b.style.opacity = '0.7';
+                b.style.boxShadow = 'none';
+            });
+            // Set active state on clicked button
+            this.style.opacity = '1';
+            this.style.boxShadow = '0 0 12px ' + (
+                this.dataset.intensity === 'Easy' ? 'rgba(0, 212, 255, 0.5)' :
+                this.dataset.intensity === 'Medium' ? 'rgba(255, 200, 0, 0.5)' :
+                'rgba(255, 100, 100, 0.5)'
+            );
+            // Set the hidden input value
+            document.querySelector('input[name="intensity"]').value = this.dataset.intensity;
+        });
+    });
+
+    // Handle upload form submission
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const title = this.querySelector('[name="activity_title"]').value;
+            const date = this.querySelector('[name="date"]').value;
+            const type = this.querySelector('[name="activity_type"]').value;
+            const distance = parseFloat(this.querySelector('[name="distance"]').value);
+            const duration = this.querySelector('[name="duration"]').value;
+            const intensity = this.querySelector('[name="intensity"]').value;
+            
+            if (!intensity) {
+                alert('Please select an intensity level');
+                return;
+            }
+            
+            // Parse HH:MM:SS to minutes
+            const parts = duration.split(':');
+            const hours = parseInt(parts[0]);
+            const minutes = parseInt(parts[1]);
+            const seconds = parseInt(parts[2] || 0);
+            const totalMinutes = hours * 60 + minutes + (seconds > 0 ? 1 : 0);
+            
+            try {
+                const response = await fetch('/upload-activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        activity_title: title,
+                        date: date,
+                        activity_type: type,
+                        distance: distance,
+                        time_hours: hours,
+                        time_minutes: minutes,
+                        intensity: intensity
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const msg = document.getElementById('uploadMessage');
+                    msg.style.display = 'block';
+                    msg.style.background = 'rgba(0, 255, 136, 0.1)';
+                    msg.style.borderColor = 'rgba(0, 255, 136, 0.3)';
+                    msg.style.color = '#00ff88';
+                    msg.textContent = `✓ ${data.message}`;
+                    
+                    setTimeout(() => {
+                        closeUploadModal();
+                        loadActivities();
+                    }, 1500);
+                } else {
+                    const msg = document.getElementById('uploadMessage');
+                    msg.style.display = 'block';
+                    msg.style.background = 'rgba(255, 107, 107, 0.1)';
+                    msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+                    msg.style.color = '#ff6b6b';
+                    msg.textContent = '✗ ' + (data.error || 'Failed to upload activity');
+                }
+            } catch (err) {
+                const msg = document.getElementById('uploadMessage');
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(255, 107, 107, 0.1)';
+                msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+                msg.style.color = '#ff6b6b';
+                msg.textContent = '✗ Error: ' + err.message;
+            }
+        });
+    }
+});
+
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('activity-modal');
     if (event.target === modal) {
         closeModal();
+    }
+    const uploadModal = document.getElementById('upload-modal');
+    if (event.target === uploadModal) {
+        closeUploadModal();
     }
 });
 
