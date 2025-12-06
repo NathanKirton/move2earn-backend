@@ -321,7 +321,7 @@
         color: #ff6464;
     }
     
-    .message-item {
+    .notification-item {
         background: rgba(100, 150, 200, 0.2);
         border-left: 3px solid #00d4ff;
         border-radius: 6px;
@@ -331,24 +331,24 @@
         color: #fff;
     }
     
-    .message-header {
+    .notification-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 6px;
     }
     
-    .message-from {
+    .notification-from {
         font-weight: 600;
         color: #00d4ff;
     }
     
-    .message-time {
+    .notification-time {
         font-size: 11px;
         color: #999;
     }
     
-    .message-bonus {
+    .notification-bonus {
         display: inline-block;
         background: rgba(0, 255, 136, 0.2);
         color: #00ff88;
@@ -357,6 +357,41 @@
         font-size: 11px;
         font-weight: 600;
         margin-top: 6px;
+    }
+    
+    .notifications-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .notifications-header:hover {
+        opacity: 0.9;
+    }
+    
+    .notifications-toggle {
+        display: inline-block;
+        width: 20px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .notifications-toggle.collapsed {
+        transform: rotate(-90deg);
+    }
+    
+    .notifications-content {
+        max-height: 1000px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+        opacity: 1;
+    }
+    
+    .notifications-content.collapsed {
+        max-height: 0;
+        opacity: 0;
     }
     
     .message-text {
@@ -394,8 +429,13 @@
     
     <!-- Notifications Card -->
     <div class="notifications-card">
-        <h3>📬 Messages from Parent</h3>
-        <div id="messagesContainer"></div>
+        <div class="notifications-header" id="notificationsToggle">
+            <h3>🔔 Notifications</h3>
+            <span class="notifications-toggle">▼</span>
+        </div>
+        <div class="notifications-content" id="notificationsContent">
+            <div id="messagesContainer"></div>
+        </div>
     </div>
     
     <!-- Streak Card -->
@@ -682,7 +722,7 @@ async function loadParentMessages() {
         const messages = data.messages || [];
         
         if (messages.length === 0) {
-            container.innerHTML = '<div class="no-messages">No messages yet. Keep up the good work! 🎉</div>';
+            container.innerHTML = '<div class="no-messages">No notifications yet. Keep up the good work! 🎉</div>';
             return;
         }
         
@@ -690,14 +730,24 @@ async function loadParentMessages() {
             const date = new Date(msg.created_at);
             const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
+            // Display message text; if empty, show bonus_minutes info or a generic notification
+            let displayText = msg.message;
+            if (!displayText || displayText.trim() === '') {
+                if (msg.bonus_minutes > 0) {
+                    displayText = `Received ${msg.bonus_minutes} minutes of game time`;
+                } else {
+                    displayText = 'Parent sent a notification';
+                }
+            }
+            
             return `
-                <div class="message-item">
-                    <div class="message-header">
-                        <span class="message-from">💬 ${msg.from_parent}</span>
-                        <span class="message-time">${timeStr}</span>
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <span class="notification-from">💬 ${msg.from_parent}</span>
+                        <span class="notification-time">${timeStr}</span>
                     </div>
-                    <div class="message-text">"${msg.message}"</div>
-                    ${msg.bonus_minutes > 0 ? `<div class="message-bonus">+${msg.bonus_minutes} min game time</div>` : ''}
+                    <div class="notification-text">${displayText}</div>
+                    ${msg.bonus_minutes > 0 ? `<div class="notification-bonus">+${msg.bonus_minutes} min game time</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -705,14 +755,29 @@ async function loadParentMessages() {
         container.innerHTML = messagesHTML;
     } catch (err) {
         console.error('Error loading parent messages:', err);
-        container.innerHTML = '<div class="no-messages">Unable to load messages</div>';
+        container.innerHTML = '<div class="no-messages">Unable to load notifications</div>';
     }
+}
+
+// Toggle notifications collapse/expand
+function setupNotificationsToggle() {
+    const toggle = document.getElementById('notificationsToggle');
+    const content = document.getElementById('notificationsContent');
+    
+    if (!toggle || !content) return;
+    
+    toggle.addEventListener('click', function() {
+        const toggleIcon = this.querySelector('.notifications-toggle');
+        content.classList.toggle('collapsed');
+        toggleIcon.classList.toggle('collapsed');
+    });
 }
 
 // Load data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadGameTime();
     loadParentMessages();
+    setupNotificationsToggle();
 });
 
 async function openActivityModal(activityId) {
