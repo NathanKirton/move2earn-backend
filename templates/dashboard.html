@@ -1,0 +1,797 @@
+{% extends "base.html" %}
+
+{% block title %}Move2Earn Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 50%, #3e0d5e 100%) !important;
+    }
+    
+    .container {
+        max-width: 1000px;
+    }
+    
+    header {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .content {
+        background: transparent !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .greeting-section {
+        background: rgba(100, 30, 150, 0.4);
+        border: 1px solid rgba(200, 100, 255, 0.3);
+        border-radius: 12px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+        margin-bottom: 20px;
+    }
+    
+    .greeting-section h2 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #fff;
+    }
+    
+    .greeting-section p {
+        color: #ccc;
+        font-size: 14px;
+    }
+    
+    .gametime-card {
+        background: linear-gradient(135deg, #00d4ff 0%, #00b8d9 100%);
+        border-radius: 12px;
+        padding: 25px;
+        color: #000;
+        margin-bottom: 20px;
+    }
+    
+    .gametime-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .gametime-value {
+        font-size: 42px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .gametime-limit {
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.7);
+        margin-bottom: 12px;
+    }
+    
+    .gametime-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .gametime-progress {
+        height: 100%;
+        background: #000;
+        width: 66%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .notifications-card {
+        background: rgba(80, 60, 120, 0.3);
+        border: 1px solid rgba(150, 100, 200, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        margin-bottom: 20px;
+    }
+    
+    .notifications-card h3 {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .notification-item {
+        font-size: 12px;
+        color: #ccc;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+    
+    .see-more {
+        color: #00d4ff;
+        font-weight: 600;
+        margin-top: 8px;
+        cursor: pointer;
+    }
+    
+    .streak-card {
+        background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+        border-radius: 12px;
+        padding: 25px;
+        color: #fff;
+        margin-bottom: 20px;
+    }
+    
+    .streak-icon {
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+    
+    .streak-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+    }
+    
+    .streak-count {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+    
+    .streak-sub {
+        font-size: 12px;
+        opacity: 0.85;
+    }
+    
+    .streak-days {
+        display: flex;
+        gap: 8px;
+        margin-top: 15px;
+        justify-content: space-between;
+    }
+    
+    .day-box {
+        flex: 1;
+        height: 35px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+    
+    .day-box.active {
+        background: rgba(255, 255, 255, 0.4);
+    }
+    
+    .activities-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #fff;
+    }
+    
+    .activity-item {
+        background: linear-gradient(135deg, rgba(100, 200, 50, 0.8) 0%, rgba(80, 180, 30, 0.8) 100%);
+        border-radius: 12px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 60px 1fr auto;
+        gap: 15px;
+        align-items: start;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .activity-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .activity-icon {
+        font-size: 32px;
+        text-align: center;
+        line-height: 1;
+    }
+    
+    .activity-details {
+        color: #fff;
+    }
+    
+    .activity-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .activity-time {
+        font-size: 12px;
+        opacity: 0.8;
+    }
+    
+    .activity-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+    
+    .stat-box {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+    }
+    
+    .stat-label {
+        opacity: 0.8;
+        font-size: 10px;
+        text-transform: uppercase;
+        display: block;
+    }
+    
+    .stat-value {
+        font-weight: 700;
+        margin-top: 2px;
+        font-size: 13px;
+    }
+    
+    .activity-earned {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .earned-label {
+        font-size: 11px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .earned-value {
+        font-size: 24px;
+        font-weight: 700;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 40px 20px;
+        color: #aaa;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+    }
+    
+    .intensity-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-left: 8px;
+    }
+    
+    .intensity-easy {
+        background: rgba(0, 212, 255, 0.3);
+        color: #00d4ff;
+    }
+    
+    .intensity-medium {
+        background: rgba(255, 200, 0, 0.3);
+        color: #ffcc00;
+    }
+    
+    .intensity-hard {
+        background: rgba(255, 100, 100, 0.3);
+        color: #ff6464;
+    }
+    
+    .message-item {
+        background: rgba(100, 150, 200, 0.2);
+        border-left: 3px solid #00d4ff;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #fff;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    
+    .message-from {
+        font-weight: 600;
+        color: #00d4ff;
+    }
+    
+    .message-time {
+        font-size: 11px;
+        color: #999;
+    }
+    
+    .message-bonus {
+        display: inline-block;
+        background: rgba(0, 255, 136, 0.2);
+        color: #00ff88;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 6px;
+    }
+    
+    .message-text {
+        color: #ddd;
+        line-height: 1.4;
+    }
+    
+    .no-messages {
+        text-align: center;
+        padding: 20px 10px;
+        color: #999;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if strava_connected %}
+<div class="dashboard-container">
+    <!-- Greeting Section -->
+    <div class="greeting-section">
+        <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
+        <p>Keep moving to unlock more game time!</p>
+    </div>
+    
+    <!-- Game Time Card -->
+    <div class="gametime-card" id="gametimeCard">
+        <div class="gametime-header">⏱️ Game Time Available</div>
+        <div class="gametime-value" id="gametimeValue">--</div>
+        <div class="gametime-limit" id="gametimeLimit">of 180 min limit</div>
+        <div class="gametime-bar">
+            <div class="gametime-progress" id="gametimeProgress"></div>
+        </div>
+    </div>
+    
+    <!-- Notifications Card -->
+    <div class="notifications-card">
+        <h3>📬 Messages from Parent</h3>
+        <div id="messagesContainer"></div>
+    </div>
+    
+    <!-- Streak Card -->
+    <div class="streak-card">
+        <div class="streak-icon">🔥</div>
+        <div class="streak-label">Streak</div>
+        <div class="streak-count" id="streak-count">0</div>
+        <div class="streak-sub">Days in a row!</div>
+        <div class="streak-days" id="streak-days">
+            <div class="day-box">+15 Minutes</div>
+            <div class="day-box active">+15 Minutes</div>
+            <div class="day-box active">+15 Minutes</div>
+            <div class="day-box active">+15 Minutes</div>
+            <div class="day-box active">+15 Minutes</div>
+        </div>
+    </div>
+    
+    <!-- Recent Activities Section -->
+    <div class="activities-header">
+        ☰ Recent Activity
+    </div>
+    <div id="activities-list">
+        <div class="no-data">
+            <div class="spinner"></div>
+            <p>Loading activities...</p>
+        </div>
+    </div>
+</div>
+{% else %}
+<div style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+    <div style="font-size: 48px; margin-bottom: 20px;">🔌</div>
+    <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
+    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
+    <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
+</div>
+{% endif %}
+
+<!-- Activity Detail Modal -->
+<div class="modal" id="activity-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: white; border-radius: 8px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <h2 id="modal-title" style="color: #333;">Activity Details</h2>
+            <button class="close-btn" onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
+        </div>
+        <div class="modal-body" id="modal-body" style="display: grid; gap: 15px;">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading details...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal.active {
+    display: flex !important;
+}
+
+.modal-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-stat-label {
+    font-weight: 600;
+    color: #666;
+}
+
+.modal-stat-value {
+    color: #333;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+function calculateIntensity(avgHR, maxHR) {
+    if (!avgHR) return 'easy';
+    
+    // Using HR zones: Easy <60%, Medium 60-75%, Hard >75% of max HR
+    const hrPercent = (avgHR / (maxHR || 180)) * 100;
+    
+    if (hrPercent < 60) return 'easy';
+    if (hrPercent < 75) return 'medium';
+    return 'hard';
+}
+
+function getIntensityBadge(avgHR, maxHR) {
+    const intensity = calculateIntensity(avgHR, maxHR);
+    const labels = {
+        'easy': 'Easy',
+        'medium': 'Medium',
+        'hard': 'Hard'
+    };
+    const classes = {
+        'easy': 'intensity-easy',
+        'medium': 'intensity-medium',
+        'hard': 'intensity-hard'
+    };
+    
+    return `<span class="intensity-badge ${classes[intensity]}">${labels[intensity]}</span>`;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'Run': '🏃',
+        'TrailRun': '🏃',
+        'Ride': '🚴',
+        'MountainBikeRide': '🚴',
+        'Swim': '🏊',
+        'Walk': '🚶',
+        'Hiking': '⛰️',
+        'Workout': '💪'
+    };
+    return icons[type] || '⚡';
+}
+
+async function loadActivities() {
+    try {
+        const response = await fetch('/api/activities');
+        if (!response.ok) throw new Error('Failed to load activities');
+        
+        const activities = await response.json();
+        const list = document.getElementById('activities-list');
+        
+        if (activities.length === 0) {
+            list.innerHTML = '<div class="no-data">No activities found. Connect Strava and go for a run!</div>';
+            return;
+        }
+        
+        // Calculate streak
+        calculateStreak(activities);
+        
+        list.innerHTML = activities.map(activity => {
+            const paceDisplay = !activity.average_heartrate && activity.distance > 0 
+                ? `${Math.floor((activity.moving_time / activity.distance) / 60)}:${String(Math.round((activity.moving_time / activity.distance) % 60)).padStart(2, '0')} min/km`
+                : '';
+            
+            return `
+                <div class="activity-item" onclick="openActivityModal(${activity.id})">
+                    <div class="activity-icon">${getActivityIcon(activity.type)}</div>
+                    <div class="activity-details">
+                        <div class="activity-title">
+                            ${activity.name}
+                            ${getIntensityBadge(activity.average_heartrate, activity.max_heartrate)}
+                        </div>
+                        <div class="activity-time">${formatDate(activity.start_date)}</div>
+                        <div class="activity-stats">
+                            <div class="stat-box">
+                                <span class="stat-label">Duration</span>
+                                <span class="stat-value">${formatTime(activity.moving_time)}</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Distance</span>
+                                <span class="stat-value">${activity.distance} km</span>
+                            </div>
+                            ${activity.average_heartrate ? `
+                            <div class="stat-box">
+                                <span class="stat-label">Avg HR</span>
+                                <span class="stat-value">${Math.round(activity.average_heartrate)} bpm</span>
+                            </div>
+                            ` : ''}
+                            ${paceDisplay ? `
+                            <div class="stat-box">
+                                <span class="stat-label">Pace</span>
+                                <span class="stat-value">${paceDisplay}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="activity-earned">
+                        <div class="earned-label">Time Earned</div>
+                        <div class="earned-value">--</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('activities-list').innerHTML = '<div class="error">Failed to load activities</div>';
+    }
+}
+
+function calculateStreak(activities) {
+    if (activities.length === 0) {
+        document.getElementById('streak-count').textContent = '0';
+        return;
+    }
+    
+    // Get unique dates from activities
+    const dates = new Set();
+    activities.forEach(activity => {
+        const date = new Date(activity.start_date);
+        dates.add(date.toLocaleDateString('en-CA'));
+    });
+    
+    const sortedDates = Array.from(dates).sort().reverse();
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    for (const dateStr of sortedDates) {
+        const activityDate = new Date(dateStr);
+        const diffDays = Math.floor((currentDate - activityDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === streak) {
+            streak++;
+        } else {
+            break;
+        }
+    }
+    
+    document.getElementById('streak-count').textContent = streak;
+}
+
+async function loadGameTime() {
+    const gametimeValue = document.getElementById('gametimeValue');
+    const gametimeLimit = document.getElementById('gametimeLimit');
+    const gametimeProgress = document.getElementById('gametimeProgress');
+    
+    if (!gametimeValue) return;
+    
+    try {
+        // Fetch from Strava or database
+        const response = await fetch('/api/gametime-balance');
+        if (!response.ok) {
+            // If endpoint doesn't exist, try to get from page data
+            return;
+        }
+        
+        const data = await response.json();
+        const earned = data.earned || 0;
+        const used = data.used || 0;
+        const balance = Math.max(0, earned - used);
+        const limit = data.limit || 180;
+
+        // Calculate minutes left (countdown): how many minutes of screen time remain
+        const minutesLeft = Math.max(0, limit - used);
+
+        // Update display: show minutes left (counting down)
+        gametimeValue.textContent = minutesLeft;
+        gametimeLimit.textContent = `of ${limit} min limit`;
+
+        // Calculate progress bar width based on remaining time (fill represents time LEFT)
+        const remainingPercentage = limit > 0 ? Math.max(0, Math.min(100, (minutesLeft / limit) * 100)) : 0;
+        gametimeProgress.style.width = remainingPercentage + '%';
+        
+    } catch (err) {
+        console.error('Error loading game time:', err);
+    }
+}
+
+async function loadParentMessages() {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+    
+    try {
+        const response = await fetch('/api/get-parent-messages');
+        const data = await response.json();
+        
+        if (!response.ok) {
+            console.error('Failed to load messages:', data.error);
+            return;
+        }
+        
+        const messages = data.messages || [];
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div class="no-messages">No messages yet. Keep up the good work! 🎉</div>';
+            return;
+        }
+        
+        const messagesHTML = messages.map(msg => {
+            const date = new Date(msg.created_at);
+            const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+                <div class="message-item">
+                    <div class="message-header">
+                        <span class="message-from">💬 ${msg.from_parent}</span>
+                        <span class="message-time">${timeStr}</span>
+                    </div>
+                    <div class="message-text">"${msg.message}"</div>
+                    ${msg.bonus_minutes > 0 ? `<div class="message-bonus">+${msg.bonus_minutes} min game time</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = messagesHTML;
+    } catch (err) {
+        console.error('Error loading parent messages:', err);
+        container.innerHTML = '<div class="no-messages">Unable to load messages</div>';
+    }
+}
+
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadGameTime();
+    loadParentMessages();
+});
+
+async function openActivityModal(activityId) {
+    const modal = document.getElementById('activity-modal');
+    const modalBody = document.getElementById('modal-body');
+    modal.classList.add('active');
+    
+    try {
+        const response = await fetch(`/api/activity/${activityId}`);
+        if (!response.ok) throw new Error('Failed to load activity details');
+        
+        const activity = await response.json();
+        document.getElementById('modal-title').textContent = activity.name;
+        
+        modalBody.innerHTML = `
+            <div class="modal-stat">
+                <span class="modal-stat-label">Type</span>
+                <span class="modal-stat-value">${activity.type}</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Date</span>
+                <span class="modal-stat-value">${formatDate(activity.start_date)}</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Distance</span>
+                <span class="modal-stat-value">${activity.distance} km</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Duration</span>
+                <span class="modal-stat-value">${formatTime(activity.moving_time)}</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Elapsed Time</span>
+                <span class="modal-stat-value">${formatTime(activity.elapsed_time)}</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Average Speed</span>
+                <span class="modal-stat-value">${activity.average_speed} km/h</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Max Speed</span>
+                <span class="modal-stat-value">${activity.max_speed} km/h</span>
+            </div>
+            <div class="modal-stat">
+                <span class="modal-stat-label">Total Elevation</span>
+                <span class="modal-stat-value">${activity.total_elevation_gain} m</span>
+            </div>
+            ${activity.average_heartrate ? `
+            <div class="modal-stat">
+                <span class="modal-stat-label">Average Heart Rate</span>
+                <span class="modal-stat-value">${Math.round(activity.average_heartrate)} bpm</span>
+            </div>
+            ` : ''}
+            ${activity.max_heartrate ? `
+            <div class="modal-stat">
+                <span class="modal-stat-label">Max Heart Rate</span>
+                <span class="modal-stat-value">${Math.round(activity.max_heartrate)} bpm</span>
+            </div>
+            ` : ''}
+        `;
+    } catch (error) {
+        console.error('Error:', error);
+        modalBody.innerHTML = '<div class="error">Failed to load activity details.</div>';
+    }
+}
+
+function closeModal() {
+    document.getElementById('activity-modal').classList.remove('active');
+}
+
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('activity-modal');
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', loadActivities);
+{% endblock %}

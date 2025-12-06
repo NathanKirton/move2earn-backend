@@ -445,8 +445,8 @@ def api_add_earned_time(child_id):
     if minutes < 0:
         return jsonify({'error': 'Invalid minutes value'}), 400
     
-    # Add the bonus time
-    success = UserDB.add_earned_game_time(child_id, minutes)
+    # Add the bonus time and increase the daily limit so it adds to time-left as requested
+    success = UserDB.add_earned_game_time_and_increase_limit(child_id, minutes)
     
     # Add the message if provided
     if success and message:

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard - Move2Earn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .header-left h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header-left p {
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        
+        .btn-logout {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-logout:hover {
+            background: #ee5a52;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .card {
+            background: rgba(50, 50, 80, 0.4);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .add-child-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(100, 100, 150, 0.2);
+            border-radius: 8px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input {
+            padding: 10px 12px;
+            background: rgba(100, 100, 120, 0.4);
+            border: 1px solid rgba(150, 150, 180, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input::placeholder {
+            color: #777;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(100, 100, 120, 0.6);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+        
+        .add-child-submit {
+            grid-column: 1 / -1;
+            padding: 12px;
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .add-child-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+        
+        .children-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .child-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(100, 0, 255, 0.1) 100%);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .child-card:hover {
+            border-color: rgba(0, 212, 255, 0.6);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+        
+        .child-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+        
+        .child-email {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 20px;
+        }
+        
+        .game-time-section {
+            margin-bottom: 20px;
+        }
+        
+        .game-time-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .game-time-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .time-box {
+            background: rgba(100, 100, 150, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .time-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+        
+        .time-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .balance-bar {
+            height: 8px;
+            background: rgba(100, 100, 150, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .balance-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
+            width: 75%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .balance-text {
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .limits-section {
+            margin-bottom: 20px;
+        }
+        
+        .limits-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .limit-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .limit-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .limit-input-group label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+        
+        .limit-input-group input {
+            padding: 8px;
+            background: rgba(100, 100, 120, 0.4);
+            border: 1px solid rgba(150, 150, 180, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+        
+        .limit-input-group input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(100, 100, 120, 0.6);
+        }
+        
+        .bonus-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(100, 100, 150, 0.3);
+        }
+        
+        .bonus-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .bonus-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .bonus-input-group input {
+            padding: 8px;
+            background: rgba(100, 100, 120, 0.4);
+            border: 1px solid rgba(150, 150, 180, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+        
+        .bonus-input-group input:focus {
+            outline: none;
+            border-color: #00ff88;
+            background: rgba(100, 100, 120, 0.6);
+        }
+        
+        .bonus-btn {
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            grid-column: 1 / -1;
+        }
+        
+        .bonus-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>👨‍👩‍👧‍👦 Parent Dashboard</h1>
+                <p>Welcome back, {{ parent_name }}!</p>
+            </div>
+            <div class="header-right">
+                <a href="/logout" class="btn btn-logout">Logout</a>
+            </div>
+        </header>
+        
+        <div class="dashboard-grid">
+            <!-- Add Child Section -->
+            <div class="card">
+                <h2>➕ Add a Child</h2>
+                <div id="successMessage" class="success-message"></div>
+                <div id="errorMessage" class="error-message"></div>
+                <form class="add-child-form" id="addChildForm">
+                    <div class="form-group">
+                        <label for="child_name">Child's Name</label>
+                        <input type="text" id="child_name" placeholder="e.g., Emma" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="child_email">Email Address</label>
+                        <input type="email" id="child_email" placeholder="emma@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="child_password">Password</label>
+                        <input type="password" id="child_password" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="child_confirm_password">Confirm Password</label>
+                        <input type="password" id="child_confirm_password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="add-child-submit">Create Child Account</button>
+                </form>
+            </div>
+            
+            <!-- Children Management Section -->
+            <div class="card">
+                <h2>👥 Manage Your Children</h2>
+                
+                {% if children|length > 0 %}
+                <div class="children-grid">
+                    {% for child in children %}
+                    <div class="child-card" data-child-id="{{ child.id }}">
+                        <div class="child-name">{{ child.name }}</div>
+                        <div class="child-email">{{ child.email }}</div>
+                        
+                        <!-- Game Time Display -->
+                        <div class="game-time-section">
+                            <div class="game-time-label">📱 Game Time</div>
+                            <div class="game-time-display">
+                                <div class="time-box">
+                                    <div class="time-value">{{ child.earned_game_time }}</div>
+                                    <div class="time-label">Earned (min)</div>
+                                </div>
+                                <div class="time-box">
+                                    <div class="time-value">{{ child.used_game_time }}</div>
+                                    <div class="time-label">Used (min)</div>
+                                </div>
+                            </div>
+                            <div class="balance-bar">
+                                <div class="balance-fill" style="width: {% if child.earned_game_time > 0 %}{{ (child.used_game_time / child.earned_game_time * 100)|int }}{% else %}0{% endif %}%;"></div>
+                            </div>
+                            <div class="balance-text">Balance: {{ child.earned_game_time - child.used_game_time }} minutes</div>
+                        </div>
+                        
+                        <!-- Screen Time Limits -->
+                        <div class="limits-section">
+                            <div class="limits-label">⏰ Daily Limit</div>
+                            <div class="limit-inputs">
+                                <div class="limit-input-group">
+                                    <label>Minutes/Day</label>
+                                    <input type="number" class="daily-limit" value="{{ child.daily_screen_time_limit }}" min="0" max="1440">
+                                </div>
+                                <div class="limit-input-group">
+                                    <label>Minutes/Week</label>
+                                    <input type="number" class="weekly-limit" value="{{ child.weekly_screen_time_limit }}" min="0" max="10080">
+                                </div>
+                            </div>
+                            <button class="bonus-btn update-limits" style="margin-top: 10px; grid-column: 1 / -1;">Update Limits</button>
+                        </div>
+                        
+                        <!-- Add Bonus Time -->
+                        <div class="bonus-section">
+                            <div class="bonus-label">🎁 Grant Bonus Time</div>
+                            <div class="bonus-input-group">
+                                <input type="number" class="bonus-minutes" placeholder="Minutes" min="0" max="1440">
+                                <button class="bonus-btn add-bonus">Add Time</button>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <textarea class="bonus-message" placeholder="Optional: Add a message (e.g., 'Great job this week!')" style="width: 100%; padding: 8px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 4px; color: #fff; font-size: 12px; font-family: inherit; resize: vertical; min-height: 60px; margin-top: 8px;" maxlength="200"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">👶</div>
+                    <p>No children added yet. Create a child account above to get started!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add Child Form Submission
+        document.getElementById('addChildForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('child_name').value;
+            const email = document.getElementById('child_email').value;
+            const password = document.getElementById('child_password').value;
+            const confirmPassword = document.getElementById('child_confirm_password').value;
+            
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            successMsg.classList.remove('show');
+            errorMsg.classList.remove('show');
+            
+            if (password !== confirmPassword) {
+                errorMsg.textContent = 'Passwords do not match';
+                errorMsg.classList.add('show');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/add-child', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        child_name: name,
+                        child_email: email,
+                        child_password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    successMsg.textContent = `Successfully created account for ${name}! Reload the page to see the new child.`;
+                    successMsg.classList.add('show');
+                    document.getElementById('addChildForm').reset();
+                    
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    errorMsg.textContent = data.error || 'Failed to create child account';
+                    errorMsg.classList.add('show');
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Error: ' + err.message;
+                errorMsg.classList.add('show');
+            }
+        });
+        
+        // Update Limits Button
+        document.querySelectorAll('.update-limits').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const dailyLimit = parseInt(card.querySelector('.daily-limit').value);
+                const weeklyLimit = parseInt(card.querySelector('.weekly-limit').value);
+                
+                try {
+                    const response = await fetch(`/api/update-child-limits/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            daily_limit: dailyLimit,
+                            weekly_limit: weeklyLimit
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
+                        this.textContent = '✓ Updated!';
+                        setTimeout(() => {
+                            this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
+                            this.textContent = 'Update Limits';
+                        }, 2000);
+                    }
+                } catch (err) {
+                    console.error('Error updating limits:', err);
+                }
+            });
+        });
+        
+        // Add Bonus Time Button
+        document.querySelectorAll('.add-bonus').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const minutes = parseInt(card.querySelector('.bonus-minutes').value);
+                const message = card.querySelector('.bonus-message').value.trim();
+                const originalText = this.textContent;
+                const originalBg = this.style.background;
+                
+                if (isNaN(minutes) || minutes <= 0) {
+                    alert('Please enter a valid number of minutes');
+                    return;
+                }
+                
+                try {
+                    // Disable button during request
+                    this.disabled = true;
+                    this.textContent = '⏳ Sending...';
+                    
+                    const response = await fetch(`/api/add-earned-time/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            minutes,
+                            message
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Show success feedback
+                        this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
+                        this.textContent = '✓ Sent!';
+                        
+                        // Clear inputs
+                        card.querySelector('.bonus-minutes').value = '';
+                        card.querySelector('.bonus-message').value = '';
+                        
+                        setTimeout(() => {
+                            // Reload to see updated balance
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        // Show error
+                        alert('Error: ' + (data.error || 'Failed to add bonus time'));
+                        this.disabled = false;
+                        this.textContent = originalText;
+                        this.style.background = originalBg;
+                    }
+                } catch (err) {
+                    console.error('Error adding bonus time:', err);
+                    alert('Error: ' + err.message);
+                    this.disabled = false;
+                    this.textContent = originalText;
+                    this.style.background = originalBg;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
