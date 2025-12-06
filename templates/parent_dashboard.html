@@ -483,7 +483,11 @@
                                     <input type="number" class="weekly-limit" value="{{ child.weekly_screen_time_limit }}" min="0" max="10080">
                                 </div>
                             </div>
-                            <button class="bonus-btn update-limits" style="margin-top: 10px; grid-column: 1 / -1;">Update Limits</button>
+                            <div style="display:flex;gap:8px;align-items:center;margin-top:10px;grid-column:1 / -1;">
+                                <button class="bonus-btn update-limits">Update Limits</button>
+                                <button class="bonus-btn timer-btn">{% if child.timer_running %}Stop Timer{% else %}Start Timer{% endif %}</button>
+                                <div class="timer-status" style="font-size:12px;color:#ddd;">{% if child.timer_running %}Running{% else %}Stopped{% endif %}</div>
+                            </div>
                         </div>
                         
                         <!-- Add Bonus Time -->
@@ -596,6 +600,49 @@
             });
         });
         
+        // Timer Start/Stop Button
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const statusEl = card.querySelector('.timer-status');
+                const action = this.textContent.trim().toLowerCase().startsWith('start') ? 'start' : 'stop';
+
+                try {
+                    this.disabled = true;
+                    this.textContent = action === 'start' ? '⏳ Starting...' : '⏳ Stopping...';
+
+                    const response = await fetch(`/api/control-timer/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        if (action === 'start') {
+                            this.textContent = 'Stop Timer';
+                            statusEl.textContent = 'Running';
+                        } else {
+                            this.textContent = 'Start Timer';
+                            statusEl.textContent = 'Stopped';
+                            if (data && data.minutes_recorded !== undefined) {
+                                alert(`Timer stopped - ${data.minutes_recorded} minutes recorded for the child.`);
+                            }
+                        }
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to control timer'));
+                    }
+                } catch (err) {
+                    console.error('Error controlling timer:', err);
+                    alert('Error: ' + err.message);
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        });
+
         // Add Bonus Time Button
         document.querySelectorAll('.add-bonus').forEach(btn => {
             btn.addEventListener('click', async function() {

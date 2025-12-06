@@ -211,6 +211,44 @@ class UserDB:
             return False
 
     @staticmethod
+    def set_timer_state(child_id, running, started_at=None):
+        """Set the child's timer running state and optionally the start timestamp."""
+        database = get_db()
+        if database is None:
+            return False
+
+        from bson import ObjectId
+        users = database['users']
+
+        update_data = {'timer_running': bool(running)}
+        if started_at is not None:
+            update_data['timer_started_at'] = started_at
+        else:
+            update_data['timer_started_at'] = None
+
+        try:
+            result = users.update_one(
+                {'_id': ObjectId(child_id)},
+                {'$set': update_data}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"Error setting timer state: {e}")
+            return False
+
+    @staticmethod
+    def get_timer_info(child_id):
+        """Return timer info for a child (timer_running and timer_started_at)"""
+        child = UserDB.get_user_by_id(child_id)
+        if not child:
+            return {'timer_running': False, 'timer_started_at': None}
+
+        return {
+            'timer_running': child.get('timer_running', False),
+            'timer_started_at': child.get('timer_started_at')
+        }
+
+    @staticmethod
     def add_child(parent_id, child_email, child_password, child_name):
         """Add a child to parent's account"""
         database = get_db()
@@ -269,7 +307,9 @@ class UserDB:
                     'earned_game_time': child.get('earned_game_time', 0),
                     'used_game_time': child.get('used_game_time', 0),
                     'daily_screen_time_limit': child.get('daily_screen_time_limit', 60),
-                    'weekly_screen_time_limit': child.get('weekly_screen_time_limit', 420)
+                    'weekly_screen_time_limit': child.get('weekly_screen_time_limit', 420),
+                    'timer_running': child.get('timer_running', False),
+                    'timer_started_at': child.get('timer_started_at')
                 })
         
         return children

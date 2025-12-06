@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import json
 import logging
+import math
 from database import UserDB
 from werkzeug.utils import secure_filename
 import pathlib
@@ -424,12 +425,99 @@ def api_update_child_limits(child_id):
     data = request.get_json()
     daily_limit = data.get('daily_limit')
     weekly_limit = data.get('weekly_limit')
+
+    # Fetch current child limits to produce notifications
+    child_before = UserDB.get_user_by_id(child_id)
+    old_daily = child_before.get('daily_screen_time_limit') if child_before else None
+    old_weekly = child_before.get('weekly_screen_time_limit') if child_before else None
     
     success = UserDB.update_child_screen_time_limit(child_id, daily_limit, weekly_limit)
     if success:
+        # Create messages for any changes
+        parent = UserDB.get_user_by_id(session['user_id'])
+        parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
+        now = datetime.utcnow()
+
+        if daily_limit is not None and old_daily is not None and daily_limit != old_daily:
+            if daily_limit > old_daily:
+                msg = f"Daily limit increased from {old_daily} to {daily_limit} minutes by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            else:
+                msg = f"Daily limit decreased from {old_daily} to {daily_limit} minutes by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+
+        if weekly_limit is not None and old_weekly is not None and weekly_limit != old_weekly:
+            if weekly_limit > old_weekly:
+                msg = f"Weekly limit increased from {old_weekly} to {weekly_limit} minutes by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            else:
+                msg = f"Weekly limit decreased from {old_weekly} to {weekly_limit} minutes by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+
         return jsonify({'success': True}), 200
     else:
         return jsonify({'error': 'Failed to update limits'}), 500
+
+
+@app.route('/api/control-timer/<child_id>', methods=['POST'])
+def api_control_timer(child_id):
+    """Parent can start/stop a child's timer from parent dashboard"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    action = data.get('action')
+    if action not in ('start', 'stop'):
+        return jsonify({'error': 'Invalid action'}), 400
+
+    parent = UserDB.get_user_by_id(session['user_id'])
+    parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
+    now = datetime.utcnow()
+
+    if action == 'start':
+        success = UserDB.set_timer_state(child_id, True, now)
+        if success:
+            msg = f"Timer started by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+            return jsonify({'success': True}), 200
+        else:
+            return jsonify({'error': 'Failed to start timer'}), 500
+
+    # stop
+    child = UserDB.get_user_by_id(child_id)
+    started_at = child.get('timer_started_at') if child else None
+    if not started_at:
+        # Nothing to stop
+        UserDB.set_timer_state(child_id, False, None)
+        msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (no running timer found)"
+        UserDB.add_parent_message(child_id, parent_name, msg, 0)
+        return jsonify({'success': True, 'minutes_recorded': 0}), 200
+
+    # calculate elapsed minutes
+    try:
+        if isinstance(started_at, str):
+            # parse string
+            started_dt = datetime.fromisoformat(started_at)
+        else:
+            started_dt = started_at
+    except Exception:
+        started_dt = None
+
+    if not started_dt:
+        UserDB.set_timer_state(child_id, False, None)
+        msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (invalid start time)"
+        UserDB.add_parent_message(child_id, parent_name, msg, 0)
+        return jsonify({'success': True, 'minutes_recorded': 0}), 200
+
+    elapsed_seconds = (now - started_dt).total_seconds()
+    minutes_used = max(0, int(math.ceil(elapsed_seconds / 60.0)))
+
+    # Record used time and clear timer
+    UserDB.use_game_time(child_id, minutes_used)
+    UserDB.set_timer_state(child_id, False, None)
+
+    msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}. Recorded {minutes_used} minutes."
+    UserDB.add_parent_message(child_id, parent_name, msg, 0)
+
+    return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
 
 
 @app.route('/api/add-earned-time/<child_id>', methods=['POST'])

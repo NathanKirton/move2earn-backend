@@ -652,17 +652,14 @@ async function loadGameTime() {
         const used = data.used || 0;
         const balance = Math.max(0, earned - used);
         const limit = data.limit || 180;
-
-        // Calculate minutes left (countdown): how many minutes of screen time remain
-        const minutesLeft = Math.max(0, limit - used);
-
-        // Update display: show minutes left (counting down)
-        gametimeValue.textContent = minutesLeft;
+        
+        // Update display (count-up): show how many minutes are available (earned - used)
+        gametimeValue.textContent = balance;
         gametimeLimit.textContent = `of ${limit} min limit`;
-
-        // Calculate progress bar width based on remaining time (fill represents time LEFT)
-        const remainingPercentage = limit > 0 ? Math.max(0, Math.min(100, (minutesLeft / limit) * 100)) : 0;
-        gametimeProgress.style.width = remainingPercentage + '%';
+        
+        // Calculate progress bar width based on used time (filled represents time USED)
+        const usedPercentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+        gametimeProgress.style.width = usedPercentage + '%';
         
     } catch (err) {
         console.error('Error loading game time:', err);
