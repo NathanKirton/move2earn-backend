@@ -819,11 +819,9 @@ async function loadGameTime() {
         const data = await response.json();
         const earned = Number(data.earned || 0);
         const used = Number(data.used || 0);
-        const balance = Math.max(0, earned - used);
         const limit = Number(data.limit || 180);
 
-        // Convert to seconds for smooth countdown
-        let secondsRemaining = Math.max(0, Math.floor(balance * 60));
+        // We'll display USED time as the main counter and count UP toward the limit
         let usedSeconds = Math.max(0, Math.floor(used * 60));
         const limitSeconds = Math.max(1, Math.floor(limit * 60));
 
@@ -842,20 +840,28 @@ async function loadGameTime() {
             window.gametimeInterval = null;
         }
 
-        // Initial render
-        gametimeValue.textContent = renderSeconds(secondsRemaining);
+        // Initial render (show used time counting up toward the limit)
+        gametimeValue.textContent = renderSeconds(usedSeconds);
         gametimeLimit.textContent = `of ${limit} min limit`;
         const usedPercentage = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
         gametimeProgress.style.width = usedPercentage + '%';
 
-        // Decrement per second for a live countdown; poll server periodically to re-sync
-        window.gametimeInterval = setInterval(async () => {
-            if (secondsRemaining > 0) {
-                secondsRemaining -= 1;
-                usedSeconds += 1;
-                gametimeValue.textContent = renderSeconds(secondsRemaining);
-                const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
-                gametimeProgress.style.width = pct + '%';
+        // Increment per second when timer is running (count up towards limit)
+        if (window.gametimeInterval) {
+            clearInterval(window.gametimeInterval);
+            window.gametimeInterval = null;
+        }
+        window.gametimeInterval = setInterval(() => {
+            try {
+                // Only increment locally when server indicates timer is running
+                if (data.timer_running) {
+                    usedSeconds += 1;
+                    gametimeValue.textContent = renderSeconds(usedSeconds);
+                    const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
+                    gametimeProgress.style.width = pct + '%';
+                }
+            } catch (err) {
+                console.error('Error in gametime interval:', err);
             }
         }, 1000);
 
@@ -865,33 +871,32 @@ async function loadGameTime() {
                 const resp = await fetch('/api/gametime-balance');
                 if (!resp.ok) return;
                 const fresh = await resp.json();
-                const freshEarned = Number(fresh.earned || 0);
                 const freshUsed = Number(fresh.used || 0);
-                const freshBalance = Math.max(0, freshEarned - freshUsed);
-                const freshSeconds = Math.max(0, Math.floor(freshBalance * 60));
                 const freshLimit = Number(fresh.limit || 180);
+                const freshUsedSec = Math.max(0, Math.floor(freshUsed * 60));
+                const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
 
-                // If server reports a larger remaining balance than currently displayed, animate a short count-up
-                if (freshSeconds > secondsRemaining) {
-                    const target = freshSeconds;
+                // If server reports used increased (e.g., parent stopped timer or applied minutes), animate count-up
+                if (freshUsedSec > usedSeconds) {
+                    const target = freshUsedSec;
                     const stepMs = 40;
-                    const stepInc = Math.max(1, Math.ceil((target - secondsRemaining) / 10));
+                    const stepInc = Math.max(1, Math.ceil((target - usedSeconds) / 10));
                     const anim = setInterval(() => {
-                        secondsRemaining = Math.min(target, secondsRemaining + stepInc);
-                        gametimeValue.textContent = renderSeconds(secondsRemaining);
-                        const usedSec = Math.max(0, Math.floor(freshUsed * 60));
-                        const pct = Math.min(100, (usedSec / Math.max(1, Math.floor(freshLimit * 60))) * 100);
+                        usedSeconds = Math.min(target, usedSeconds + stepInc);
+                        gametimeValue.textContent = renderSeconds(usedSeconds);
+                        const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
                         gametimeProgress.style.width = pct + '%';
-                        if (secondsRemaining >= target) clearInterval(anim);
+                        if (usedSeconds >= target) clearInterval(anim);
                     }, stepMs);
                 } else {
-                    secondsRemaining = freshSeconds;
-                    gametimeValue.textContent = renderSeconds(secondsRemaining);
-                    const usedSecondsNew = Math.max(0, Math.floor(freshUsed * 60));
-                    const pct = Math.min(100, (usedSecondsNew / Math.max(1, Math.floor(freshLimit * 60))) * 100);
+                    // Update used/limit normally
+                    usedSeconds = freshUsedSec;
+                    gametimeValue.textContent = renderSeconds(usedSeconds);
+                    const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
                     gametimeProgress.style.width = pct + '%';
                 }
 
+                // If limit increased (parent granted bonus), update limit display immediately
                 gametimeLimit.textContent = `of ${freshLimit} min limit`;
             } catch (err) {
                 console.error('Failed to refresh gametime:', err);
