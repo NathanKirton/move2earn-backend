@@ -926,30 +926,6 @@ def api_set_streak_settings():
         return jsonify({'error': 'Server error'}), 500
 
 
-@app.route('/api/record-activity/<child_id>', methods=['POST'])
-def api_record_activity(child_id):
-    """Parent can manually mark a child as having completed exercise for a date.
-    Body may include `date` (YYYY-MM-DD)."""
-    if 'user_id' not in session or session.get('account_type') != 'parent':
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    # Ensure child belongs to parent
-    parent_children = UserDB.get_parent_children(session['user_id'])
-    if not any(c.get('id') == child_id for c in parent_children):
-        return jsonify({'error': 'Child not found or not owned by parent'}), 403
-
-    data = request.get_json() or {}
-    date = data.get('date')
-    try:
-        res = UserDB.record_daily_activity(child_id, activity_date=date, source='manual_by_parent')
-        if res.get('applied'):
-            return jsonify({'success': True, 'streak_count': res.get('streak_count'), 'reward_minutes': res.get('reward_minutes')}), 200
-        return jsonify({'success': False, 'reason': res.get('reason', 'no action')}), 200
-    except Exception:
-        logger.exception('Error recording manual activity')
-        return jsonify({'error': 'Server error'}), 500
-
-
 @app.route('/api/apply-earned-strava/<child_id>', methods=['POST'])
 def api_apply_earned_strava(child_id):
     """Apply earned minutes from recent Strava activities for a child.
