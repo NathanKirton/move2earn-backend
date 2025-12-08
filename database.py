@@ -661,10 +661,15 @@ class UserDB:
             except Exception:
                 last_date = None
 
-        today_date = datetime.utcnow().date()
-        yesterday = today_date - timedelta(days=1)
+        # Convert activity_day to date object for comparison
+        try:
+            activity_date_obj = datetime.fromisoformat(activity_day).date()
+        except Exception:
+            activity_date_obj = datetime.utcnow().date()
 
-        if last_date == yesterday:
+        # Check if this activity is on consecutive day with last activity
+        # Streak continues if activity is EXACTLY one day after last activity
+        if last_date and activity_date_obj == last_date + timedelta(days=1):
             new_streak = current_streak + 1
         else:
             new_streak = 1
@@ -686,6 +691,7 @@ class UserDB:
         if cap and reward > cap:
             reward = cap
 
+        print(f"record_daily_activity: Streak check - last_date={last_date}, activity_date={activity_date_obj}, consecutive={last_date and activity_date_obj == last_date + timedelta(days=1)}")
         print(f"record_daily_activity: Reward calculation - base={base}, inc={inc}, cap={cap}, streak={new_streak}, reward={reward}")
 
         # Apply updates: set last_activity_date to activity_day, set streak_count, increment earned_game_time and daily limit
