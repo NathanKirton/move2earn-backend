@@ -425,6 +425,10 @@
         <div class="gametime-bar">
             <div class="gametime-progress" id="gametimeProgress"></div>
         </div>
+        <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+            <button id="childTimerBtn" class="btn btn-primary" style="padding:8px 12px; font-size:14px;">Start Timer</button>
+            <div id="childTimerStatus" style="color:#fff; font-size:13px;">Status: --</div>
+        </div>
     </div>
     
     <!-- Notifications Card -->
@@ -879,6 +883,52 @@ async function loadGameTime() {
                 console.error('Failed to refresh gametime:', err);
             }
         }, 20000);
+
+        // Update child timer UI (button/status) if present
+        const childTimerBtn = document.getElementById('childTimerBtn');
+        const childTimerStatus = document.getElementById('childTimerStatus');
+        if (childTimerBtn && childTimerStatus) {
+            const running = Boolean(data.timer_running);
+            childTimerBtn.textContent = running ? 'Stop Timer' : 'Start Timer';
+            childTimerStatus.textContent = 'Status: ' + (running ? 'Running' : 'Stopped');
+            // ensure event handler exists only once
+            if (!childTimerBtn.dataset.bound) {
+                childTimerBtn.dataset.bound = '1';
+                childTimerBtn.addEventListener('click', async function() {
+                    const action = this.textContent.trim().toLowerCase().startsWith('start') ? 'start' : 'stop';
+                    this.disabled = true;
+                    this.textContent = action === 'start' ? '⏳ Starting...' : '⏳ Stopping...';
+                    try {
+                        const resp = await fetch('/api/control-my-timer', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action })
+                        });
+                        const result = await resp.json();
+                        if (resp.ok) {
+                            if (action === 'start') {
+                                this.textContent = 'Stop Timer';
+                                childTimerStatus.textContent = 'Status: Running';
+                            } else {
+                                this.textContent = 'Start Timer';
+                                childTimerStatus.textContent = 'Status: Stopped';
+                                if (result && result.minutes_recorded !== undefined) {
+                                    alert(`Timer stopped - ${result.minutes_recorded} minutes recorded.`);
+                                }
+                            }
+                        } else {
+                            alert('Error: ' + (result.error || 'Failed to control timer'));
+                        }
+                    } catch (err) {
+                        console.error('Error controlling timer:', err);
+                        alert('Error: ' + err.message);
+                    } finally {
+                        this.disabled = false;
+                    }
+                });
+            }
+        }
 
     } catch (err) {
         console.error('Error loading game time:', err);

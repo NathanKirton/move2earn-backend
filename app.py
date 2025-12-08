@@ -710,6 +710,59 @@ def api_add_earned_time(child_id):
         return jsonify({'error': 'Failed to add time'}), 500
 
 
+@app.route('/api/control-my-timer', methods=['POST'])
+def api_control_my_timer():
+    """Allow a child to start/stop their own timer."""
+    if 'user_id' not in session or session.get('account_type') != 'child':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    action = data.get('action')
+    if action not in ('start', 'stop'):
+        return jsonify({'error': 'Invalid action'}), 400
+
+    child_id = session['user_id']
+    now = datetime.utcnow()
+
+    if action == 'start':
+        success = UserDB.set_timer_state(child_id, True, now)
+        if success:
+            # add a small notification message for audit
+            UserDB.add_parent_message(child_id, 'Self', f'Timer started by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}', 0)
+            return jsonify({'success': True}), 200
+        return jsonify({'error': 'Failed to start timer'}), 500
+
+    # stop
+    child = UserDB.get_user_by_id(child_id)
+    started_at = child.get('timer_started_at') if child else None
+    if not started_at:
+        UserDB.set_timer_state(child_id, False, None)
+        UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")} (no running timer found)', 0)
+        return jsonify({'success': True, 'minutes_recorded': 0}), 200
+
+    try:
+        if isinstance(started_at, str):
+            started_dt = datetime.fromisoformat(started_at)
+        else:
+            started_dt = started_at
+    except Exception:
+        started_dt = None
+
+    if not started_dt:
+        UserDB.set_timer_state(child_id, False, None)
+        UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")} (invalid start time)', 0)
+        return jsonify({'success': True, 'minutes_recorded': 0}), 200
+
+    elapsed_seconds = (now - started_dt).total_seconds()
+    minutes_used = max(0, int(math.ceil(elapsed_seconds / 60.0)))
+
+    UserDB.use_game_time(child_id, minutes_used)
+    UserDB.set_timer_state(child_id, False, None)
+    UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}. Recorded {minutes_used} minutes.', 0)
+
+    return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
+
+
 @app.route('/api/get-child-balance/<child_id>', methods=['GET'])
 def api_get_child_balance(child_id):
     """API endpoint to get child's game time balance"""
@@ -726,11 +779,14 @@ def api_get_child_balance(child_id):
     child = UserDB.get_user_by_id(child_id)
     if not child:
         return jsonify({'error': 'Child not found'}), 404
-    
-    balance = UserDB.get_child_game_time_balance(child_id)
+
+    # compute used including any running timer
+    used = UserDB.get_current_used_including_running(child_id)
+    earned = child.get('earned_game_time', 0)
+    balance = max(0, earned - used)
     return jsonify({
-        'earned': child.get('earned_game_time', 0),
-        'used': child.get('used_game_time', 0),
+        'earned': earned,
+        'used': used,
         'balance': balance
     }), 200
 
@@ -761,9 +817,10 @@ def api_gametime_balance():
     user = UserDB.get_user_by_id(session['user_id'])
     if not user:
         return jsonify({'error': 'User not found'}), 404
-    
+
     earned = user.get('earned_game_time', 0)
-    used = user.get('used_game_time', 0)
+    # include running timer elapsed minutes in used
+    used = UserDB.get_current_used_including_running(session['user_id'])
     balance = max(0, earned - used)
     limit = user.get('daily_screen_time_limit', 180)
     # Include streak info so client can show authoritative streak value
@@ -775,6 +832,8 @@ def api_gametime_balance():
         'used': used,
         'balance': balance,
         'limit': limit,
+        'timer_running': user.get('timer_running', False),
+        'timer_started_at': user.get('timer_started_at'),
         'streak_count': streak_count,
         'streak_bonus_minutes': streak_bonus
     }), 200

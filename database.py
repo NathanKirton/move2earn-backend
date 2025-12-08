@@ -299,18 +299,38 @@ class UserDB:
         children_ids = parent.get('children', [])
         children = []
         
+        from datetime import datetime
         for child_id in children_ids:
             child = users.find_one({'_id': child_id})
             if child:
+                # Compute used time including any currently running timer
+                used = child.get('used_game_time', 0)
+                timer_running = child.get('timer_running', False)
+                timer_started = child.get('timer_started_at')
+                try:
+                    if timer_running and timer_started:
+                        # parse timer_started if string
+                        if isinstance(timer_started, str):
+                            started_dt = datetime.fromisoformat(timer_started)
+                        else:
+                            started_dt = timer_started
+                        elapsed_seconds = (datetime.utcnow() - started_dt).total_seconds()
+                        elapsed_minutes = int(__import__('math').ceil(elapsed_seconds / 60.0))
+                        used_display = used + elapsed_minutes
+                    else:
+                        used_display = used
+                except Exception:
+                    used_display = used
+
                 children.append({
                     'id': str(child['_id']),
                     'name': child['name'],
                     'email': child['email'],
                     'earned_game_time': child.get('earned_game_time', 0),
-                    'used_game_time': child.get('used_game_time', 0),
+                    'used_game_time': used_display,
                     'daily_screen_time_limit': child.get('daily_screen_time_limit', 60),
                     'weekly_screen_time_limit': child.get('weekly_screen_time_limit', 420),
-                    'timer_running': child.get('timer_running', False),
+                    'timer_running': timer_running,
                     'timer_started_at': child.get('timer_started_at'),
                     'streak_count': child.get('streak_count', 0),
                     'streak_bonus_minutes': child.get('streak_bonus_minutes', 0)
@@ -405,6 +425,34 @@ class UserDB:
             return False
 
     @staticmethod
+    def get_current_used_including_running(child_id):
+        """Return used game time (minutes) including any currently running timer elapsed minutes."""
+        child = UserDB.get_user_by_id(child_id)
+        if not child:
+            return 0
+
+        used = child.get('used_game_time', 0)
+        timer_running = child.get('timer_running', False)
+        timer_started = child.get('timer_started_at')
+        if not timer_running or not timer_started:
+            return used
+
+        try:
+            from datetime import datetime
+            # parse ISO string if needed
+            if isinstance(timer_started, str):
+                started_dt = datetime.fromisoformat(timer_started)
+            else:
+                started_dt = timer_started
+            elapsed_seconds = (datetime.utcnow() - started_dt).total_seconds()
+            import math
+            elapsed_minutes = int(math.ceil(elapsed_seconds / 60.0))
+            return used + elapsed_minutes
+        except Exception as e:
+            print(f"Error computing running timer elapsed: {e}")
+            return used
+
+    @staticmethod
     def get_child_game_time_balance(child_id):
         """Get remaining game time balance for a child"""
         child = UserDB.get_user_by_id(child_id)
@@ -412,7 +460,8 @@ class UserDB:
             return 0
         
         earned = child.get('earned_game_time', 0)
-        used = child.get('used_game_time', 0)
+        # use computed used including running timer
+        used = UserDB.get_current_used_including_running(child_id)
         return max(0, earned - used)
 
     @staticmethod
