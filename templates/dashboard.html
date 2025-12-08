@@ -812,27 +812,74 @@ async function loadGameTime() {
     if (!gametimeValue) return;
     
     try {
-        // Fetch from Strava or database
+        // Fetch authoritative values from server
         const response = await fetch('/api/gametime-balance');
-        if (!response.ok) {
-            // If endpoint doesn't exist, try to get from page data
-            return;
-        }
-        
+        if (!response.ok) return;
+
         const data = await response.json();
-        const earned = data.earned || 0;
-        const used = data.used || 0;
+        const earned = Number(data.earned || 0);
+        const used = Number(data.used || 0);
         const balance = Math.max(0, earned - used);
-        const limit = data.limit || 180;
-        
-        // Update display (count-up): show how many minutes are available (earned - used)
-        gametimeValue.textContent = balance;
+        const limit = Number(data.limit || 180);
+
+        // Convert to seconds for smooth countdown
+        let secondsRemaining = Math.max(0, Math.floor(balance * 60));
+        let usedSeconds = Math.max(0, Math.floor(used * 60));
+        const limitSeconds = Math.max(1, Math.floor(limit * 60));
+
+        // Helper to render time (mm:ss or N min)
+        function renderSeconds(sec) {
+            if (sec <= 0) return '0:00';
+            const minutes = Math.floor(sec / 60);
+            const seconds = sec % 60;
+            if (minutes >= 60) return `${minutes}m`;
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Clean up any existing interval
+        if (window.gametimeInterval) {
+            clearInterval(window.gametimeInterval);
+            window.gametimeInterval = null;
+        }
+
+        // Initial render
+        gametimeValue.textContent = renderSeconds(secondsRemaining);
         gametimeLimit.textContent = `of ${limit} min limit`;
-        
-        // Calculate progress bar width based on used time (filled represents time USED)
-        const usedPercentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+        const usedPercentage = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
         gametimeProgress.style.width = usedPercentage + '%';
-        
+
+        // Decrement per second for a live countdown; poll server periodically to re-sync
+        window.gametimeInterval = setInterval(async () => {
+            if (secondsRemaining > 0) {
+                secondsRemaining -= 1;
+                usedSeconds += 1;
+                gametimeValue.textContent = renderSeconds(secondsRemaining);
+                const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
+                gametimeProgress.style.width = pct + '%';
+            }
+        }, 1000);
+
+        // Periodically refresh authoritative values from server every 20 seconds
+        window.gametimeRefreshTimer = setInterval(async () => {
+            try {
+                const resp = await fetch('/api/gametime-balance');
+                if (!resp.ok) return;
+                const fresh = await resp.json();
+                const freshEarned = Number(fresh.earned || 0);
+                const freshUsed = Number(fresh.used || 0);
+                const freshBalance = Math.max(0, freshEarned - freshUsed);
+                secondsRemaining = Math.max(0, Math.floor(freshBalance * 60));
+                usedSeconds = Math.max(0, Math.floor(freshUsed * 60));
+                const freshLimit = Number(fresh.limit || 180);
+                gametimeLimit.textContent = `of ${freshLimit} min limit`;
+                gametimeValue.textContent = renderSeconds(secondsRemaining);
+                const pct = Math.min(100, (usedSeconds / Math.max(1, Math.floor(freshLimit * 60))) * 100);
+                gametimeProgress.style.width = pct + '%';
+            } catch (err) {
+                console.error('Failed to refresh gametime:', err);
+            }
+        }, 20000);
+
     } catch (err) {
         console.error('Error loading game time:', err);
     }

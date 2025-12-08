@@ -716,6 +716,13 @@ def api_get_child_balance(child_id):
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
+    # Ensure daily used time is reset for the child if needed
+    try:
+        UserDB.reset_daily_used_if_needed(child_id)
+    except Exception:
+        # ignore reset failures and continue to return current values
+        pass
+
     child = UserDB.get_user_by_id(child_id)
     if not child:
         return jsonify({'error': 'Child not found'}), 404
@@ -744,6 +751,13 @@ def api_gametime_balance():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
+    # Reset daily used time on first read each day
+    try:
+        UserDB.reset_daily_used_if_needed(session['user_id'])
+    except Exception:
+        # ignore reset errors and continue
+        pass
+
     user = UserDB.get_user_by_id(session['user_id'])
     if not user:
         return jsonify({'error': 'User not found'}), 404
