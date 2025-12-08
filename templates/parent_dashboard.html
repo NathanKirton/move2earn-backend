@@ -526,11 +526,11 @@
                         
                         <!-- Manage Streak -->
                         <div class="bonus-section">
-                            <div class="bonus-label">🔥 Manage Streak</div>
-                            <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="bonus-label">🔥 Streak</div>
+                            <div style="display:flex;gap:12px;align-items:center;">
                                 <div style="flex:1;">
-                                    <label style="font-size:11px;color:#999;">Streak Days</label>
-                                    <input type="number" class="streak-count" value="{{ child.streak_count }}" min="0" style="width:100%;padding:8px;margin-top:6px;">
+                                    <div style="font-size:13px;color:#fff;font-weight:700;">{{ child.streak_count }} day(s)</div>
+                                    <div style="font-size:12px;color:#aaa;">Last activity: <span class="last-activity">{{ child.last_activity_date or 'n/a' }}</span></div>
                                 </div>
                                 <div style="width:140px;">
                                     <label style="font-size:11px;color:#999;">Bonus Min/Day</label>
@@ -538,13 +538,10 @@
                                 </div>
                             </div>
                             <div style="display:flex;gap:8px;margin-top:10px;">
-                                <button class="bonus-btn update-streak">Save</button>
-                                <button class="bonus-btn inc-streak">+1 Day</button>
-                                <button class="bonus-btn dec-streak">-1 Day</button>
-                                <button class="bonus-btn reset-streak">Reset</button>
                                 <button class="bonus-btn apply-streak">Apply Today</button>
+                                <button class="bonus-btn reset-streak">Reset</button>
+                                <button class="bonus-btn save-streak-bonus">Save Bonus</button>
                             </div>
-                            <div style="margin-top:8px;color:#ccc;font-size:12px;">Last activity: <span class="last-activity">{{ child.last_activity_date or 'n/a' }}</span></div>
                         </div>
                     </div>
                     {% endfor %}
@@ -801,45 +798,6 @@
             });
         });
 
-        // Increment Streak
-        document.querySelectorAll('.inc-streak').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const input = card.querySelector('.streak-count');
-                const newVal = (parseInt(input.value || '0') || 0) + 1;
-                input.value = newVal;
-                // Save
-                const bonusInput = card.querySelector('.streak-bonus');
-                await updateStreakApi(childId, newVal, parseInt(bonusInput.value || '0'));
-            });
-        });
-
-        // Decrement Streak
-        document.querySelectorAll('.dec-streak').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const input = card.querySelector('.streak-count');
-                const newVal = Math.max(0, (parseInt(input.value || '0') || 0) - 1);
-                input.value = newVal;
-                const bonusInput = card.querySelector('.streak-bonus');
-                await updateStreakApi(childId, newVal, parseInt(bonusInput.value || '0'));
-            });
-        });
-
-        // Reset Streak
-        document.querySelectorAll('.reset-streak').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                if (!confirm('Reset this child\'s streak to 0?')) return;
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const bonusInput = card.querySelector('.streak-bonus');
-                await updateStreakApi(childId, 0, parseInt(bonusInput.value || '0'));
-                card.querySelector('.streak-count').value = 0;
-            });
-        });
-
         // Apply Today's Activity (manually mark day done)
         document.querySelectorAll('.apply-streak').forEach(btn => {
             btn.addEventListener('click', async function() {
@@ -857,9 +815,10 @@
                     const j = await resp.json();
                     if (resp.ok && j.success) {
                         alert(`Applied: ${j.reward_minutes || 0} minutes; streak now ${j.streak_count}`);
-                        // Update UI
-                        card.querySelector('.streak-count').value = j.streak_count || card.querySelector('.streak-count').value;
+                        // Update UI values
                         card.querySelector('.last-activity').textContent = new Date().toISOString().split('T')[0];
+                        // If the child card shows streak count elsewhere, reload page to refresh values
+                        setTimeout(() => location.reload(), 800);
                     } else {
                         alert('No change: ' + (j.reason || j.error || 'already recorded'));
                     }
@@ -873,23 +832,66 @@
             });
         });
 
-        // Helper to call update-child-streak API
-        async function updateStreakApi(childId, streakCount, streakBonus) {
-            try {
-                const resp = await fetch(`/api/update-child-streak/${childId}`, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ streak_count: streakCount, streak_bonus_minutes: streakBonus })
-                });
-                const j = await resp.json();
-                if (!resp.ok) {
-                    alert('Failed to update streak: ' + (j.error || 'server error'));
+        // Reset Streak (set to zero)
+        document.querySelectorAll('.reset-streak').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                if (!confirm('Reset this child\'s streak to 0?')) return;
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                try {
+                    const resp = await fetch(`/api/update-child-streak/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ streak_count: 0, streak_bonus_minutes: parseInt(card.querySelector('.streak-bonus').value || '0') })
+                    });
+                    if (resp.ok) {
+                        alert('Streak reset to 0');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        const j = await resp.json();
+                        alert('Failed to reset: ' + (j.error || 'server error'));
+                    }
+                } catch (err) {
+                    console.error('Error resetting streak:', err);
+                    alert('Error resetting streak');
                 }
-            } catch (err) {
-                console.error('Error updating streak via API:', err);
-            }
-        }
+            });
+        });
+
+        // Save Bonus per day for a child
+        document.querySelectorAll('.save-streak-bonus').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const bonus = parseInt(card.querySelector('.streak-bonus').value || '0');
+                // Need to supply current streak_count; fetch current child details quickly
+                try {
+                    const childResp = await fetch(`/api/get-child-balance/${childId}`);
+                    let currentStreak = 0;
+                    if (childResp.ok) {
+                        const childData = await childResp.json();
+                        currentStreak = childData.streak_count || 0;
+                    }
+                    const resp = await fetch(`/api/update-child-streak/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ streak_count: currentStreak, streak_bonus_minutes: bonus })
+                    });
+                    if (resp.ok) {
+                        alert('Saved bonus minutes');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        const j = await resp.json();
+                        alert('Failed to save: ' + (j.error || 'server error'));
+                    }
+                } catch (err) {
+                    console.error('Error saving bonus:', err);
+                    alert('Error saving bonus');
+                }
+            });
+        });
 
         // Load current streak settings and wire up save
         async function loadStreakSettings() {

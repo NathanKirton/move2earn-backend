@@ -790,10 +790,16 @@ def api_get_child_balance(child_id):
     used = UserDB.get_current_used_including_running(child_id)
     earned = child.get('earned_game_time', 0)
     balance = max(0, earned - used)
+    streak_count = child.get('streak_count', 0)
+    streak_bonus = child.get('streak_bonus_minutes', 0)
+    last_activity = child.get('last_activity_date')
     return jsonify({
         'earned': earned,
         'used': used,
-        'balance': balance
+        'balance': balance,
+        'streak_count': streak_count,
+        'streak_bonus_minutes': streak_bonus,
+        'last_activity_date': last_activity
     }), 200
 
 
