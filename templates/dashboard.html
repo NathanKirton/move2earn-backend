@@ -869,7 +869,8 @@ async function loadGameTime() {
         try {
             if (typeof serverState.streak_count !== 'undefined') {
                 document.getElementById('streak-count').textContent = serverState.streak_count;
-                renderStreakDays(serverState.streak_count, serverState.streak_bonus_minutes || 0);
+                const settings = serverState.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
+                renderStreakDays(serverState.streak_count, settings);
             }
         } catch (e) {
             // ignore
@@ -929,7 +930,8 @@ async function loadGameTime() {
                 try {
                     if (typeof fresh.streak_count !== 'undefined') {
                         document.getElementById('streak-count').textContent = fresh.streak_count;
-                        renderStreakDays(fresh.streak_count, fresh.streak_bonus_minutes || 0);
+                        const settings = fresh.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
+                        renderStreakDays(fresh.streak_count, settings);
                     }
                 } catch (e) {
                     // ignore
@@ -944,17 +946,30 @@ async function loadGameTime() {
     }
 }
 
-function renderStreakDays(count, bonusPerDay) {
+function renderStreakDays(count, streakSettings) {
     const container = document.getElementById('streak-days');
     if (!container) return;
     // Render up to 7 day boxes showing most recent streak
     const maxBoxes = 7;
     const boxes = [];
+    
+    // Get settings
+    const base = streakSettings.base_minutes || 5;
+    const increment = streakSettings.increment_minutes || 2;
+    const cap = streakSettings.cap_minutes || 60;
+    
     for (let i = 0; i < maxBoxes; i++) {
         const box = document.createElement('div');
         box.className = 'day-box' + (i < count ? ' active' : '');
         const dayNum = (i + 1);
-        box.textContent = i < count ? `+${bonusPerDay}m` : `+${bonusPerDay}m`;
+        
+        // Calculate reward for this day using the formula: base + (day - 1) * increment
+        let reward = base + (Math.max(0, dayNum - 1) * increment);
+        if (cap && reward > cap) {
+            reward = cap;
+        }
+        
+        box.textContent = i < count ? `+${reward}m` : `+${reward}m`;
         boxes.push(box.outerHTML);
     }
     container.innerHTML = boxes.join('');

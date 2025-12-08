@@ -838,6 +838,15 @@ def api_gametime_balance():
     # Include streak info so client can show authoritative streak value
     streak_count = user.get('streak_count', 0)
     streak_bonus = user.get('streak_bonus_minutes', 0)
+    
+    # Get parent's streak settings for display calculations
+    parent_id = user.get('parent_id')
+    streak_settings = {'base_minutes': 5, 'increment_minutes': 2, 'cap_minutes': 60}
+    if parent_id:
+        try:
+            streak_settings = UserDB.get_parent_streak_settings(str(parent_id))
+        except Exception:
+            pass
 
     return jsonify({
         'earned': earned,
@@ -847,7 +856,8 @@ def api_gametime_balance():
         'timer_running': user.get('timer_running', False),
         'timer_started_at': user.get('timer_started_at'),
         'streak_count': streak_count,
-        'streak_bonus_minutes': streak_bonus
+        'streak_bonus_minutes': streak_bonus,
+        'streak_settings': streak_settings
     }), 200
 
 
