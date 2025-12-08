@@ -395,9 +395,10 @@ class UserDB:
         users = database['users']
 
         try:
+            # Increase both earned_game_time and daily_screen_time_limit
             result = users.update_one(
                 {'_id': ObjectId(child_id)},
-                {'$inc': {'earned_game_time': minutes}}
+                {'$inc': {'earned_game_time': minutes, 'daily_screen_time_limit': minutes}}
             )
             return result.modified_count > 0
         except Exception as e:

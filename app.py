@@ -697,15 +697,21 @@ def api_add_earned_time(child_id):
     
     # Add the bonus time and increase the daily limit so it adds to time-left as requested
     success = UserDB.add_earned_game_time_and_increase_limit(child_id, minutes)
-    
+
     # Add the message if provided
     if success and message:
         parent = UserDB.get_user_by_id(session.get('user_id'))
         parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
         UserDB.add_parent_message(child_id, parent_name, message, minutes)
-    
+
     if success:
-        return jsonify({'success': True}), 200
+        # Return updated values so the client can update UI without a reload
+        child = UserDB.get_user_by_id(child_id)
+        earned = child.get('earned_game_time', 0)
+        limit = child.get('daily_screen_time_limit', 0)
+        used = UserDB.get_current_used_including_running(child_id)
+        balance = max(0, earned - used)
+        return jsonify({'success': True, 'earned': earned, 'limit': limit, 'used': used, 'balance': balance}), 200
     else:
         return jsonify({'error': 'Failed to add time'}), 500
 

@@ -872,13 +872,31 @@ async function loadGameTime() {
                 const freshEarned = Number(fresh.earned || 0);
                 const freshUsed = Number(fresh.used || 0);
                 const freshBalance = Math.max(0, freshEarned - freshUsed);
-                secondsRemaining = Math.max(0, Math.floor(freshBalance * 60));
-                usedSeconds = Math.max(0, Math.floor(freshUsed * 60));
+                const freshSeconds = Math.max(0, Math.floor(freshBalance * 60));
                 const freshLimit = Number(fresh.limit || 180);
+
+                // If server reports a larger remaining balance than currently displayed, animate a short count-up
+                if (freshSeconds > secondsRemaining) {
+                    const target = freshSeconds;
+                    const stepMs = 40;
+                    const stepInc = Math.max(1, Math.ceil((target - secondsRemaining) / 10));
+                    const anim = setInterval(() => {
+                        secondsRemaining = Math.min(target, secondsRemaining + stepInc);
+                        gametimeValue.textContent = renderSeconds(secondsRemaining);
+                        const usedSec = Math.max(0, Math.floor(freshUsed * 60));
+                        const pct = Math.min(100, (usedSec / Math.max(1, Math.floor(freshLimit * 60))) * 100);
+                        gametimeProgress.style.width = pct + '%';
+                        if (secondsRemaining >= target) clearInterval(anim);
+                    }, stepMs);
+                } else {
+                    secondsRemaining = freshSeconds;
+                    gametimeValue.textContent = renderSeconds(secondsRemaining);
+                    const usedSecondsNew = Math.max(0, Math.floor(freshUsed * 60));
+                    const pct = Math.min(100, (usedSecondsNew / Math.max(1, Math.floor(freshLimit * 60))) * 100);
+                    gametimeProgress.style.width = pct + '%';
+                }
+
                 gametimeLimit.textContent = `of ${freshLimit} min limit`;
-                gametimeValue.textContent = renderSeconds(secondsRemaining);
-                const pct = Math.min(100, (usedSeconds / Math.max(1, Math.floor(freshLimit * 60))) * 100);
-                gametimeProgress.style.width = pct + '%';
             } catch (err) {
                 console.error('Failed to refresh gametime:', err);
             }
