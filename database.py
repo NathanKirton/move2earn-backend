@@ -686,6 +686,8 @@ class UserDB:
         if cap and reward > cap:
             reward = cap
 
+        print(f"record_daily_activity: Reward calculation - base={base}, inc={inc}, cap={cap}, streak={new_streak}, reward={reward}")
+
         # Apply updates: set last_activity_date to activity_day, set streak_count, increment earned_game_time and daily limit
         try:
             print(f"record_daily_activity: applying update child={child_id} date={activity_day} new_streak={new_streak} reward={reward}")

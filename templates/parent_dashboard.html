@@ -764,10 +764,17 @@
         }
 
         document.getElementById('saveStreakSettings').addEventListener('click', async function() {
-            const base = parseInt(document.getElementById('streak_base').value) || 0;
-            const inc = parseInt(document.getElementById('streak_increment').value) || 0;
-            const cap = parseInt(document.getElementById('streak_cap').value) || 0;
+            const base = parseInt(document.getElementById('streak_base').value) || 5;
+            const inc = parseInt(document.getElementById('streak_increment').value) || 2;
+            const cap = parseInt(document.getElementById('streak_cap').value) || 60;
             const msgEl = document.getElementById('streakSaveMsg');
+            
+            // Validate
+            if (base < 0 || inc < 0 || cap < 0) {
+                msgEl.textContent = 'Values must be non-negative';
+                return;
+            }
+            
             this.disabled = true;
             msgEl.textContent = 'Saving...';
             try {
@@ -778,7 +785,7 @@
                     body: JSON.stringify({ base_minutes: base, increment_minutes: inc, cap_minutes: cap })
                 });
                 if (resp.ok) {
-                    msgEl.textContent = 'Saved';
+                    msgEl.textContent = '✓ Saved';
                     setTimeout(() => msgEl.textContent = '', 2000);
                 } else {
                     const j = await resp.json();

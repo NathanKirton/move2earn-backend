@@ -912,11 +912,15 @@ def api_set_streak_settings():
 
     data = request.get_json() or {}
     try:
-        base = data.get('base_minutes')
-        inc = data.get('increment_minutes')
-        cap = data.get('cap_minutes')
+        # Convert to int and validate
+        base = int(data.get('base_minutes', 5)) if data.get('base_minutes') is not None else 5
+        inc = int(data.get('increment_minutes', 2)) if data.get('increment_minutes') is not None else 2
+        cap = int(data.get('cap_minutes', 60)) if data.get('cap_minutes') is not None else 60
+        
+        # Log for debugging
+        print(f"Setting streak settings for parent {session['user_id']}: base={base}, inc={inc}, cap={cap}")
 
-        # Only update provided values
+        # Update all values
         success = UserDB.set_parent_streak_settings(session['user_id'], base_minutes=base, increment_minutes=inc, cap_minutes=cap)
         if success:
             return jsonify({'success': True}), 200
