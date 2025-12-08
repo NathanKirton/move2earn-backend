@@ -489,7 +489,8 @@ class UserDB:
                 {'_id': ObjectId(child_id)},
                 {'$set': {'streak_count': max(0, int(streak_count))}}
             )
-            return result.modified_count > 0
+            # Return True if operation executed (even if value was the same and modified_count == 0)
+            return True
         except Exception as e:
             print(f"Error updating streak count: {e}")
             return False
@@ -509,7 +510,8 @@ class UserDB:
                 {'_id': ObjectId(child_id)},
                 {'$set': {'streak_bonus_minutes': max(0, int(bonus_minutes_per_day))}}
             )
-            return result.modified_count > 0
+            # Return True on success of the update operation (even if no modification was needed)
+            return True
         except Exception as e:
             print(f"Error updating streak bonus: {e}")
             return False

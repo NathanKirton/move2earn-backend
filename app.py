@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
+from flask_cors import CORS
 from flask_session import Session
 import requests
 import os
@@ -21,11 +22,21 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
+# Allow CORS for API endpoints (adjust origins in production)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 STRAVA_CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 STRAVA_CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 STRAVA_REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
-REDIRECT_URI = 'http://localhost:5000/callback'
+
+# Determine Strava redirect URI based on environment
+# In production (Render), use RENDER_EXTERNAL_URL or construct from request; in dev, use localhost
+RENDER_EXTERNAL_URL = os.getenv('RENDER_EXTERNAL_URL')
+if RENDER_EXTERNAL_URL:
+    REDIRECT_URI = f'{RENDER_EXTERNAL_URL}/callback'
+else:
+    REDIRECT_URI = 'http://localhost:5000/callback'
+
 STRAVA_API_URL = 'https://www.strava.com/api/v3'
 STRAVA_AUTH_URL = 'https://www.strava.com/oauth/authorize'
 STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token'
@@ -61,6 +72,55 @@ def get_strava_headers():
     token = get_strava_access_token()
     if token:
         return {'Authorization': f'Bearer {token}'}
+    return None
+
+
+def get_user_strava_headers(user_id):
+    """Get Strava headers for a specific user (refresh token if needed)."""
+    # Fetch user's tokens from DB
+    user = UserDB.get_user_by_id(user_id)
+    if not user:
+        return None
+
+    access_token = user.get('strava_access_token')
+    refresh_token = user.get('strava_refresh_token')
+    token_expiry = user.get('strava_token_expiry')
+
+    # If expiry exists and not expired, use current token
+    try:
+        if access_token and token_expiry:
+            expiry_dt = datetime.fromisoformat(token_expiry)
+            if datetime.now() < expiry_dt:
+                return {'Authorization': f'Bearer {access_token}'}
+    except Exception:
+        # If parsing fails, we'll attempt refresh if refresh_token present
+        pass
+
+    # Attempt to refresh using refresh_token
+    if refresh_token:
+        data = {
+            'client_id': STRAVA_CLIENT_ID,
+            'client_secret': STRAVA_CLIENT_SECRET,
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+        try:
+            resp = requests.post(STRAVA_TOKEN_URL, data=data)
+            if resp.status_code == 200:
+                token_data = resp.json()
+                new_access = token_data.get('access_token')
+                new_refresh = token_data.get('refresh_token', refresh_token)
+                expires_at = datetime.fromtimestamp(token_data.get('expires_at'))
+                # Persist updated tokens
+                UserDB.update_strava_token(user_id, new_access, new_refresh, expires_at.isoformat())
+                return {'Authorization': f'Bearer {new_access}'}
+        except Exception:
+            logger.exception('Failed to refresh Strava token for user %s', user_id)
+
+    # Fallback to whatever access_token exists
+    if access_token:
+        return {'Authorization': f'Bearer {access_token}'}
+
     return None
 
 
@@ -308,28 +368,130 @@ def get_activities():
     if response.status_code == 200:
         activities = response.json()
         formatted_activities = []
-        
+
+        def compute_earned_minutes_for_strava(distance_km, duration_minutes, avg_hr=None, max_hr=None, pace_min_per_km=None, type_label=None):
+            # Normalize inputs
+            try:
+                d = float(distance_km)
+            except Exception:
+                d = 0.0
+            try:
+                t = float(duration_minutes)
+            except Exception:
+                t = 0.0
+
+            # Compute pace if not provided
+            if pace_min_per_km is None:
+                if d > 0:
+                    pace = t / d
+                else:
+                    pace = 999
+            else:
+                pace = pace_min_per_km
+
+            # Heart-rate based multiplier using chosen thresholds
+            hr_mul = None
+            try:
+                if avg_hr is not None:
+                    avg_hr_f = float(avg_hr)
+                    if avg_hr_f < 150:
+                        hr_mul = 1.0
+                    elif avg_hr_f > 170:
+                        hr_mul = 2.0
+                    else:
+                        hr_mul = 1.5
+            except Exception:
+                hr_mul = None
+
+            # Pace bonus: faster pace gives small bonus
+            pace_bonus = 0.0
+            if pace < 5:
+                pace_bonus = 0.5
+            elif pace < 6.5:
+                pace_bonus = 0.2
+
+            # Intensity multiplier fallback
+            intensity_mul = 1.0
+            # Optional: weight by type (running vs cycling)
+            if type_label:
+                tlabel = type_label.lower()
+                if 'run' in tlabel:
+                    intensity_mul = 1.0
+                elif 'ride' in tlabel:
+                    intensity_mul = 0.8
+
+            # Combine factors
+            if hr_mul is not None:
+                earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+            else:
+                earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+
+            earned_minutes = max(1, int(math.floor(earned)))
+            return earned_minutes
+
+        def compute_intensity_label(avg_hr=None, pace_min_per_km=None):
+            # Prefer HR thresholds if available
+            try:
+                if avg_hr is not None:
+                    avg_hr_f = float(avg_hr)
+                    if avg_hr_f < 150:
+                        return 'Easy'
+                    if avg_hr_f > 170:
+                        return 'Hard'
+                    return 'Medium'
+            except Exception:
+                pass
+
+            # Fallback to pace-based labels
+            try:
+                if pace_min_per_km is not None:
+                    pace = float(pace_min_per_km)
+                    if pace < 5:
+                        return 'Hard'
+                    if pace < 6.5:
+                        return 'Medium'
+                    return 'Easy'
+            except Exception:
+                pass
+
+            return 'Easy'
+
         for activity in activities:
+            dist_km = round(activity.get('distance', 0) / 1000, 2)
+            moving_time = activity.get('moving_time', 0)
+            duration_minutes = moving_time / 60.0 if moving_time else 0
+            pace = None
+            if dist_km > 0:
+                # pace in min/km
+                pace = (moving_time / 60.0) / dist_km
+
+            avg_hr = activity.get('average_heartrate')
+            max_hr = activity.get('max_heartrate')
+            intensity_label = compute_intensity_label(avg_hr=avg_hr, pace_min_per_km=pace)
+            earned = compute_earned_minutes_for_strava(dist_km, duration_minutes, avg_hr=avg_hr, max_hr=max_hr, pace_min_per_km=pace, type_label=activity.get('type'))
+
             formatted_activities.append({
                 'id': activity['id'],
                 'name': activity['name'],
                 'type': activity.get('sport_type', activity.get('type')),
-                'distance': round(activity['distance'] / 1000, 2),  # Convert to km
+                'distance': dist_km,
                 'moving_time': activity['moving_time'],
                 'elapsed_time': activity['elapsed_time'],
                 'total_elevation_gain': activity.get('total_elevation_gain', 0),
                 'start_date': activity['start_date'],
-                'average_speed': round(activity.get('average_speed', 0) * 3.6, 2),  # m/s to km/h
+                'average_speed': round(activity.get('average_speed', 0) * 3.6, 2),
                 'max_speed': round(activity.get('max_speed', 0) * 3.6, 2),
                 'average_heartrate': activity.get('average_heartrate'),
                 'max_heartrate': activity.get('max_heartrate'),
                 'kilojoules': activity.get('kilojoules'),
                 'device_name': activity.get('device_name'),
-                'trainer': activity.get('trainer', False)
+                'trainer': activity.get('trainer', False),
+                'intensity': intensity_label,
+                'earned_minutes': earned
             })
-        
+
         return jsonify(formatted_activities)
-    
+
     return jsonify({'error': 'Failed to fetch activities'}), response.status_code
 
 
@@ -590,12 +752,17 @@ def api_gametime_balance():
     used = user.get('used_game_time', 0)
     balance = max(0, earned - used)
     limit = user.get('daily_screen_time_limit', 180)
-    
+    # Include streak info so client can show authoritative streak value
+    streak_count = user.get('streak_count', 0)
+    streak_bonus = user.get('streak_bonus_minutes', 0)
+
     return jsonify({
         'earned': earned,
         'used': used,
         'balance': balance,
-        'limit': limit
+        'limit': limit,
+        'streak_count': streak_count,
+        'streak_bonus_minutes': streak_bonus
     }), 200
 
 
@@ -640,6 +807,179 @@ def api_update_child_streak(child_id):
     except Exception as e:
         logger.exception(f"Error updating streak: {str(e)}")
         return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/apply-earned-strava/<child_id>', methods=['POST'])
+def api_apply_earned_strava(child_id):
+    """Apply earned minutes from recent Strava activities for a child.
+    Only a parent of the child (logged-in) may call this endpoint.
+    The endpoint will only apply minutes for Strava activities not already applied.
+    """
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    # Verify that the child belongs to this parent
+    parent_children = UserDB.get_parent_children(session['user_id'])
+    if not any(c.get('id') == child_id for c in parent_children):
+        return jsonify({'error': 'Child not found or not owned by parent'}), 403
+
+    # Get Strava headers for the child
+    child = UserDB.get_user_by_id(child_id)
+    if not child:
+        return jsonify({'error': 'Child not found'}), 404
+
+    if not child.get('strava_connected'):
+        return jsonify({'error': 'Child has not connected Strava'}), 400
+
+    headers = get_user_strava_headers(child_id)
+    if not headers:
+        return jsonify({'error': 'Failed to obtain Strava token for child'}), 500
+
+    # Fetch recent activities for the child
+    per_page = request.json.get('per_page', 10) if request.is_json else request.form.get('per_page', 10)
+    try:
+        params = {'per_page': int(per_page), 'page': 1}
+    except Exception:
+        params = {'per_page': 10, 'page': 1}
+
+    resp = requests.get(f'{STRAVA_API_URL}/athlete/activities', headers=headers, params=params)
+    if resp.status_code != 200:
+        return jsonify({'error': 'Failed to fetch activities from Strava', 'status': resp.status_code}), 502
+
+    activities = resp.json()
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    activities_collection = db['activities']
+
+    total_applied = 0
+    applied_items = []
+
+    # Helper copied from earlier algorithm for fairness
+    def compute_earned(distance_km, duration_minutes, avg_hr=None, max_hr=None, pace=None, type_label=None):
+        try:
+            d = float(distance_km)
+        except Exception:
+            d = 0.0
+        try:
+            t = float(duration_minutes)
+        except Exception:
+            t = 0.0
+
+        if pace is None:
+            if d > 0:
+                pace_calc = t / d
+            else:
+                pace_calc = 999
+        else:
+            pace_calc = pace
+
+        hr_mul = None
+        try:
+            if avg_hr is not None:
+                avg_hr_f = float(avg_hr)
+                if avg_hr_f < 150:
+                    hr_mul = 1.0
+                elif avg_hr_f > 170:
+                    hr_mul = 2.0
+                else:
+                    hr_mul = 1.5
+        except Exception:
+            hr_mul = None
+
+        pace_bonus = 0.0
+        if pace_calc < 5:
+            pace_bonus = 0.5
+        elif pace_calc < 6.5:
+            pace_bonus = 0.2
+
+        intensity_mul = 1.0
+        if type_label:
+            tl = type_label.lower()
+            if 'run' in tl:
+                intensity_mul = 1.0
+            elif 'ride' in tl:
+                intensity_mul = 0.8
+
+        if hr_mul is not None:
+            earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+        else:
+            earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+
+        return max(1, int(math.floor(earned)))
+
+    from datetime import datetime as dt
+
+    for act in activities:
+        act_id = str(act.get('id'))
+        # Skip if already applied (check activities collection for external_id)
+        existing = activities_collection.find_one({'source': 'strava_applied', 'external_id': act_id, 'user_id': child_id})
+        if existing:
+            continue
+
+        dist_km = round(act.get('distance', 0) / 1000, 2)
+        moving = act.get('moving_time', 0)
+        duration_minutes = moving / 60.0 if moving else 0
+        pace = (moving / 60.0) / dist_km if dist_km > 0 else None
+        avg_hr = act.get('average_heartrate')
+        intensity_label = None
+        try:
+            if avg_hr is not None:
+                avg_hr_f = float(avg_hr)
+                if avg_hr_f < 150:
+                    intensity_label = 'Easy'
+                elif avg_hr_f > 170:
+                    intensity_label = 'Hard'
+                else:
+                    intensity_label = 'Medium'
+        except Exception:
+            intensity_label = None
+
+        if not intensity_label:
+            if pace is not None:
+                if pace < 5:
+                    intensity_label = 'Hard'
+                elif pace < 6.5:
+                    intensity_label = 'Medium'
+                else:
+                    intensity_label = 'Easy'
+            else:
+                intensity_label = 'Medium'
+
+        earned = compute_earned(dist_km, duration_minutes, avg_hr=avg_hr, pace=pace, type_label=act.get('type'))
+
+        # Insert record to mark applied activity
+        try:
+            activities_collection.insert_one({
+                'user_id': child_id,
+                'source': 'strava_applied',
+                'external_id': act_id,
+                'title': act.get('name'),
+                'date': act.get('start_date'),
+                'type': act.get('type'),
+                'distance': dist_km,
+                'time_minutes': int(math.ceil(duration_minutes)),
+                'intensity': intensity_label,
+                'earned_minutes': earned,
+                'created_at': dt.utcnow()
+            })
+            # Credit earned minutes to child (and increase daily limit so it's usable)
+            UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+            total_applied += earned
+            applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+        except Exception:
+            logger.exception('Failed to apply activity %s for child %s', act_id, child_id)
+            continue
+
+    # Add a parent message summarizing the applied minutes
+    if total_applied > 0:
+        parent = UserDB.get_user_by_id(session['user_id'])
+        parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
+        msg = f"Applied {total_applied} minutes from Strava activities by {parent_name}"
+        UserDB.add_parent_message(child_id, parent_name, msg, total_applied)
+
+    return jsonify({'applied_minutes': total_applied, 'applied_activities': applied_items}), 200
 
 
 @app.route('/logout')
@@ -690,7 +1030,7 @@ def api_upload():
         return jsonify({'error': 'Failed to save file'}), 500
 
 
-@app.route('/api/activities', methods=['GET'])
+@app.route('/api/manual-activities', methods=['GET'])
 def api_get_manual_activities():
     """API endpoint to get manual activities for the current user"""
     if 'user_id' not in session:
@@ -708,7 +1048,22 @@ def api_get_manual_activities():
     # Convert ObjectId to string
     for activity in activities:
         activity['id'] = str(activity['_id'])
+        # Normalize date fields so JSON can be safely consumed by client
+        try:
+            if 'created_at' in activity:
+                activity['created_at'] = activity['created_at'].isoformat()
+        except Exception:
+            pass
+        # Ensure date (user-provided) is a string
+        try:
+            if 'date' in activity and not isinstance(activity['date'], str):
+                activity['date'] = str(activity['date'])
+        except Exception:
+            pass
         del activity['_id']
+
+    # Debug log how many manual activities are returned
+    logger.debug(f"Returning {len(activities)} manual activities for user_id={session.get('user_id')}")
     
     return jsonify({'activities': activities}), 200
 
@@ -753,24 +1108,67 @@ def upload_activity():
     try:
         distance = float(distance)
         time_minutes_total = int(time_hours) * 60 + int(time_minutes)
-        
+
         if distance <= 0 or time_minutes_total <= 0:
             error = 'Distance and time must be greater than 0'
             if is_json_request:
                 return jsonify({'error': error}), 400
             return render_template('upload_activity.html', error=error)
-        
-        # Calculate earned game time based on intensity and distance
-        intensity_multipliers = {
-            'Easy': 1.0,
-            'Medium': 1.5,
-            'Hard': 2.0
-        }
-        multiplier = intensity_multipliers.get(intensity, 1.0)
-        
-        # Calculate earned minutes: 1 minute earned per km at easy intensity
-        # Scale with intensity multiplier
-        earned_minutes = int(distance * multiplier)
+
+        # Compute earned minutes using HR-aware algorithm when possible, otherwise fallback
+        def compute_earned_minutes(distance_km, duration_minutes, intensity_label=None, avg_hr=None, max_hr=None, pace_min_per_km=None):
+            # Normalize inputs
+            d = float(distance_km)
+            t = float(duration_minutes)
+
+            # Pace in min/km
+            if pace_min_per_km is None:
+                pace = (t / d) if d > 0 else 999
+            else:
+                pace = pace_min_per_km
+
+            # Heart-rate based multiplier
+            hr_mul = None
+            try:
+                if avg_hr and max_hr:
+                    hr_pct = float(avg_hr) / float(max_hr)
+                    if hr_pct < 0.6:
+                        hr_mul = 1.0
+                    elif hr_pct < 0.75:
+                        hr_mul = 1.5
+                    else:
+                        hr_mul = 2.0
+            except Exception:
+                hr_mul = None
+
+            # Pace bonus: faster pace gives small bonus
+            pace_bonus = 0.0
+            if pace < 5:
+                pace_bonus = 0.5
+            elif pace < 6.5:
+                pace_bonus = 0.2
+
+            # Intensity multiplier fallback
+            intensity_mul = 1.0
+            if intensity_label:
+                label = intensity_label.lower()
+                if label == 'easy':
+                    intensity_mul = 1.0
+                elif label == 'medium':
+                    intensity_mul = 1.5
+                elif label == 'hard':
+                    intensity_mul = 2.0
+
+            # Combine factors. Base on distance with multipliers, plus small contribution from duration
+            if hr_mul is not None:
+                earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+            else:
+                earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+
+            earned_minutes = max(1, int(math.floor(earned)))
+            return earned_minutes
+
+        earned_minutes = compute_earned_minutes(distance, time_minutes_total, intensity_label=intensity)
         
         # Store activity in database
         db = get_db()
@@ -832,4 +1230,7 @@ def get_db():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='localhost', port=5000)
+    # Production-friendly run: read port from environment and bind to 0.0.0.0
+    port = int(os.getenv('PORT', '5000'))
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() in ('1', 'true', 'yes')
+    app.run(debug=debug, host='0.0.0.0', port=port)

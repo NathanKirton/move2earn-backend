@@ -583,29 +583,22 @@
 
 {% block extra_js %}
 function calculateIntensity(avgHR, maxHR) {
-    if (!avgHR) return 'easy';
-    
-    // Using HR zones: Easy <60%, Medium 60-75%, Hard >75% of max HR
-    const hrPercent = (avgHR / (maxHR || 180)) * 100;
-    
-    if (hrPercent < 60) return 'easy';
-    if (hrPercent < 75) return 'medium';
-    return 'hard';
+    // Prefer absolute HR thresholds if available
+    if (avgHR) {
+        const hr = Number(avgHR);
+        if (hr < 150) return 'easy';
+        if (hr > 170) return 'hard';
+        return 'medium';
+    }
+
+    // Fallback: use pace if maxHR not available (pace in min/km)
+    return 'medium';
 }
 
 function getIntensityBadge(avgHR, maxHR) {
     const intensity = calculateIntensity(avgHR, maxHR);
-    const labels = {
-        'easy': 'Easy',
-        'medium': 'Medium',
-        'hard': 'Hard'
-    };
-    const classes = {
-        'easy': 'intensity-easy',
-        'medium': 'intensity-medium',
-        'hard': 'intensity-hard'
-    };
-    
+    const labels = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
+    const classes = { 'easy': 'intensity-easy', 'medium': 'intensity-medium', 'hard': 'intensity-hard' };
     return `<span class="intensity-badge ${classes[intensity]}">${labels[intensity]}</span>`;
 }
 
@@ -660,7 +653,7 @@ async function loadActivities() {
         }
         
         try {
-            const manualResponse = await fetch('/api/activities');
+            const manualResponse = await fetch('/api/manual-activities');
             if (manualResponse.ok) {
                 const manualData = await manualResponse.json();
                 if (manualData.activities) {
@@ -670,8 +663,10 @@ async function loadActivities() {
         } catch (err) {
             console.error('Error loading manual activities:', err);
         }
+
         
-        // Combine and sort activities (manual activities have different field names)
+        
+        // Combine activities (manual activities have different field names)
         const allActivities = [
             ...stravasActivities.map(a => ({
                 ...a,
@@ -693,14 +688,34 @@ async function loadActivities() {
                 source: 'manual'
             }))
         ];
+        // Sort by activity date (newest first) so manual uploads appear immediately
+        allActivities.sort((a, b) => {
+            const da = new Date(a.start_date || a.activity_date);
+            const db = new Date(b.start_date || b.activity_date);
+            return db - da;
+        });
+
+        
         
         if (allActivities.length === 0) {
             list.innerHTML = '<div class="no-data">No activities found. Connect Strava or log an activity manually!</div>';
             return;
         }
         
-        // Calculate streak
+        // Calculate streak from activities (fallback) then overwrite with server value if available
         calculateStreak(allActivities);
+        // Try to get authoritative streak from server (gametime endpoint includes streak now)
+        try {
+            const streakResp = await fetch('/api/gametime-balance');
+            if (streakResp.ok) {
+                const streakData = await streakResp.json();
+                if (typeof streakData.streak_count !== 'undefined') {
+                    document.getElementById('streak-count').textContent = streakData.streak_count;
+                }
+            }
+        } catch (e) {
+            // ignore - we already showed the computed streak
+        }
         
         list.innerHTML = allActivities.map(activity => {
             const isStravasActivity = activity.source === 'strava';
@@ -708,9 +723,9 @@ async function loadActivities() {
                 ? `${Math.floor((activity.moving_time / activity.distance) / 60)}:${String(Math.round((activity.moving_time / activity.distance) % 60)).padStart(2, '0')} min/km`
                 : '';
             
-            const intensityBadge = isStravasActivity 
-                ? getIntensityBadge(activity.average_heartrate, activity.max_heartrate)
-                : `<span class="intensity-badge intensity-${activity.intensity.toLowerCase()}">${activity.intensity}</span>`;
+            // Prefer server-provided intensity label when present
+            const intensityLabel = activity.intensity || (isStravasActivity ? (activity.average_heartrate ? (activity.average_heartrate < 150 ? 'Easy' : (activity.average_heartrate > 170 ? 'Hard' : 'Medium')) : 'Medium') : activity.intensity);
+            const intensityBadge = `<span class="intensity-badge ${intensityLabel === 'Easy' ? 'intensity-easy' : intensityLabel === 'Hard' ? 'intensity-hard' : 'intensity-medium'}">${intensityLabel}</span>`;
             
             return `
                 <div class="activity-item" ${isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : ''} style="${isStravasActivity ? 'cursor: pointer;' : 'cursor: default;'}">

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Move2Earn — Dashboard</title>
+  <link rel="stylesheet" href="./static/styles.css">
+  <style>
+    .card{background:rgba(255,255,255,0.03);padding:18px;border-radius:8px;margin-bottom:16px}
+    .activities{max-width:900px;margin:24px auto}
+    .activity{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-top:20px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;">
+      <div class="logo"><img src="./static/logo.png" class="logo-img" alt="Move2Earn"> <span>Move2Earn</span></div>
+      <div><a class="btn btn-secondary" href="upload_activity.html">Add Activity</a> <a class="btn btn-secondary" id="logoutBtn" href="#">Logout</a></div>
+    </header>
+
+    <section class="activities">
+      <div class="card topbar">
+        <div><strong>Recent Activities</strong></div>
+        <div id="balance">Game Time: 0 min</div>
+      </div>
+      <div id="activityList" class="card"></div>
+    </section>
+  </div>
+  <script src="./static/js/app.js"></script>
+  <script>
+    // require login
+    const current = localStorage.getItem('move2earn_current');
+    if (!current) location.href='login.html';
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.removeItem('move2earn_current'); location.href='index.html'; });
+
+    function render() {
+      const email = localStorage.getItem('move2earn_current');
+      const activities = JSON.parse(localStorage.getItem('activities_'+email)||'[]');
+      const list = document.getElementById('activityList');
+      list.innerHTML = '';
+      if (activities.length===0) list.innerHTML = '<div style="color:#aaa">No activities yet. Add one.</div>';
+      activities.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+      activities.forEach(act => {
+        const el = document.createElement('div'); el.className='activity';
+        el.innerHTML = `<div><strong>${act.description||act.type||'Activity'}</strong><div style="color:#aaa;font-size:13px">${new Date(act.createdAt).toLocaleString()}</div></div><div style="text-align:right">${act.earnedMinutes||0} min<br/><span style="color:#aaa;font-size:12px">${act.source||'manual'}</span></div>`;
+        list.appendChild(el);
+      });
+      // balance
+      const balance = activities.reduce((s,a)=>s+(a.earnedMinutes||0),0);
+      document.getElementById('balance').textContent = 'Game Time: '+balance+' min';
+    }
+
+    render();
+  </script>
+</body>
+</html>

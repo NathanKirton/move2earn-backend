@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Strava Activity Dashboard</title>
+    <title>Register - Move2Earn</title>
     <style>
         * {
             margin: 0;
@@ -22,12 +22,14 @@
         }
         
         .auth-container {
-            background: white;
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             width: 100%;
-            max-width: 400px;
-            padding: 40px;
+            max-width: 420px;
+            padding: 36px;
+            color: #fff;
+            backdrop-filter: blur(8px);
         }
         
         .auth-header {
@@ -36,9 +38,17 @@
         }
         
         .auth-header h1 {
-            color: #667eea;
-            font-size: 28px;
+            color: #fff;
+            font-size: 24px;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-img {
+            height: 28px;
+            width: auto;
         }
         
         .auth-header p {
@@ -217,8 +227,8 @@
 <body>
     <div class="auth-container">
         <div class="auth-header">
-            <h1>🏃 Strava Dashboard</h1>
-            <p>Create your account</p>
+            <h1><img src="/static/logo.png" alt="Move2Earn" class="logo-img"> Move2Earn</h1>
+            <p style="color: #ddd;">Create your account</p>
         </div>
         
         {% if error %}
