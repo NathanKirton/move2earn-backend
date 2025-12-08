@@ -816,13 +816,32 @@ async function loadGameTime() {
         const response = await fetch('/api/gametime-balance');
         if (!response.ok) return;
 
-        const data = await response.json();
-        const earned = Number(data.earned || 0);
-        const used = Number(data.used || 0);
-        const limit = Number(data.limit || 180);
+        // Keep a local copy of server state so interval can reference latest values
+        let serverState = await response.json();
+        const earned = Number(serverState.earned || 0);
+        const used = Number(serverState.used || 0);
+        const limit = Number(serverState.limit || 180);
 
-        // We'll display USED time as the main counter and count UP toward the limit
-        let usedSeconds = Math.max(0, Math.floor(used * 60));
+        // We'll display USED time as the main counter and count UP toward the limit.
+        // Compute usedSeconds as stored used + elapsed since timer_started_at if running.
+        function computeUsedSeconds(state) {
+            const baseUsed = Math.max(0, Math.floor((Number(state.used) || 0) * 60));
+            if (state.timer_running && state.timer_started_at) {
+                try {
+                    const startedMs = Date.parse(state.timer_started_at);
+                    if (!isNaN(startedMs)) {
+                        const nowMs = Date.now();
+                        const elapsedSec = Math.floor((nowMs - startedMs) / 1000);
+                        return baseUsed + elapsedSec;
+                    }
+                } catch (e) {
+                    // ignore and fallback to baseUsed
+                }
+            }
+            return baseUsed;
+        }
+
+        let usedSeconds = computeUsedSeconds(serverState);
         const limitSeconds = Math.max(1, Math.floor(limit * 60));
 
         // Helper to render time (mm:ss or N min)
@@ -846,20 +865,27 @@ async function loadGameTime() {
         const usedPercentage = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
         gametimeProgress.style.width = usedPercentage + '%';
 
-        // Increment per second when timer is running (count up towards limit)
+        // Render streak from initial serverState if present
+        try {
+            if (typeof serverState.streak_count !== 'undefined') {
+                document.getElementById('streak-count').textContent = serverState.streak_count;
+                renderStreakDays(serverState.streak_count, serverState.streak_bonus_minutes || 0);
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        // Recompute displayed usedSeconds every second based on serverState and current time.
         if (window.gametimeInterval) {
             clearInterval(window.gametimeInterval);
             window.gametimeInterval = null;
         }
         window.gametimeInterval = setInterval(() => {
             try {
-                // Only increment locally when server indicates timer is running
-                if (data.timer_running) {
-                    usedSeconds += 1;
-                    gametimeValue.textContent = renderSeconds(usedSeconds);
-                    const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
-                    gametimeProgress.style.width = pct + '%';
-                }
+                usedSeconds = computeUsedSeconds(serverState);
+                gametimeValue.textContent = renderSeconds(usedSeconds);
+                const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
+                gametimeProgress.style.width = pct + '%';
             } catch (err) {
                 console.error('Error in gametime interval:', err);
             }
@@ -871,12 +897,13 @@ async function loadGameTime() {
                 const resp = await fetch('/api/gametime-balance');
                 if (!resp.ok) return;
                 const fresh = await resp.json();
-                const freshUsed = Number(fresh.used || 0);
+                // Update serverState so the interval uses the newest values
+                serverState = fresh;
+                const freshUsedSec = computeUsedSeconds(serverState);
                 const freshLimit = Number(fresh.limit || 180);
-                const freshUsedSec = Math.max(0, Math.floor(freshUsed * 60));
                 const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
 
-                // If server reports used increased (e.g., parent stopped timer or applied minutes), animate count-up
+                // If server reports used increased (e.g., parent stopped timer or applied minutes), animate count-up to the new used value
                 if (freshUsedSec > usedSeconds) {
                     const target = freshUsedSec;
                     const stepMs = 40;
@@ -896,8 +923,17 @@ async function loadGameTime() {
                     gametimeProgress.style.width = pct + '%';
                 }
 
-                // If limit increased (parent granted bonus), update limit display immediately
+                // Update limit display immediately
                 gametimeLimit.textContent = `of ${freshLimit} min limit`;
+                // Update streak display if provided by server
+                try {
+                    if (typeof fresh.streak_count !== 'undefined') {
+                        document.getElementById('streak-count').textContent = fresh.streak_count;
+                        renderStreakDays(fresh.streak_count, fresh.streak_bonus_minutes || 0);
+                    }
+                } catch (e) {
+                    // ignore
+                }
             } catch (err) {
                 console.error('Failed to refresh gametime:', err);
             }
@@ -906,6 +942,22 @@ async function loadGameTime() {
     } catch (err) {
         console.error('Error loading game time:', err);
     }
+}
+
+function renderStreakDays(count, bonusPerDay) {
+    const container = document.getElementById('streak-days');
+    if (!container) return;
+    // Render up to 7 day boxes showing most recent streak
+    const maxBoxes = 7;
+    const boxes = [];
+    for (let i = 0; i < maxBoxes; i++) {
+        const box = document.createElement('div');
+        box.className = 'day-box' + (i < count ? ' active' : '');
+        const dayNum = (i + 1);
+        box.textContent = i < count ? `+${bonusPerDay}m` : `+${bonusPerDay}m`;
+        boxes.push(box.outerHTML);
+    }
+    container.innerHTML = boxes.join('');
 }
 
 async function loadParentMessages() {

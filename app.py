@@ -888,6 +888,62 @@ def api_update_child_streak(child_id):
         return jsonify({'error': 'Server error'}), 500
 
 
+@app.route('/api/get-streak-settings', methods=['GET'])
+def api_get_streak_settings():
+    """Return current parent's streak reward settings."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    settings = UserDB.get_parent_streak_settings(session['user_id'])
+    return jsonify({'success': True, 'settings': settings}), 200
+
+
+@app.route('/api/set-streak-settings', methods=['POST'])
+def api_set_streak_settings():
+    """Set parent's streak reward configuration."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    try:
+        base = data.get('base_minutes')
+        inc = data.get('increment_minutes')
+        cap = data.get('cap_minutes')
+
+        # Only update provided values
+        success = UserDB.set_parent_streak_settings(session['user_id'], base_minutes=base, increment_minutes=inc, cap_minutes=cap)
+        if success:
+            return jsonify({'success': True}), 200
+        return jsonify({'error': 'Failed to save settings'}), 500
+    except Exception as e:
+        logger.exception('Error saving streak settings')
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/record-activity/<child_id>', methods=['POST'])
+def api_record_activity(child_id):
+    """Parent can manually mark a child as having completed exercise for a date.
+    Body may include `date` (YYYY-MM-DD)."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    # Ensure child belongs to parent
+    parent_children = UserDB.get_parent_children(session['user_id'])
+    if not any(c.get('id') == child_id for c in parent_children):
+        return jsonify({'error': 'Child not found or not owned by parent'}), 403
+
+    data = request.get_json() or {}
+    date = data.get('date')
+    try:
+        res = UserDB.record_daily_activity(child_id, activity_date=date, source='manual_by_parent')
+        if res.get('applied'):
+            return jsonify({'success': True, 'streak_count': res.get('streak_count'), 'reward_minutes': res.get('reward_minutes')}), 200
+        return jsonify({'success': False, 'reason': res.get('reason', 'no action')}), 200
+    except Exception:
+        logger.exception('Error recording manual activity')
+        return jsonify({'error': 'Server error'}), 500
+
+
 @app.route('/api/apply-earned-strava/<child_id>', methods=['POST'])
 def api_apply_earned_strava(child_id):
     """Apply earned minutes from recent Strava activities for a child.
@@ -934,6 +990,7 @@ def api_apply_earned_strava(child_id):
 
     total_applied = 0
     applied_items = []
+    total_streak_rewards = 0
 
     # Helper copied from earlier algorithm for fairness
     def compute_earned(distance_km, duration_minutes, avg_hr=None, max_hr=None, pace=None, type_label=None):
@@ -1047,6 +1104,17 @@ def api_apply_earned_strava(child_id):
             UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
             total_applied += earned
             applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+
+            # Record daily activity for streaks (will only apply once per day)
+            try:
+                activity_day = act.get('start_date')
+                if activity_day and 'T' in activity_day:
+                    activity_day = activity_day.split('T')[0]
+                streak_result = UserDB.record_daily_activity(child_id, activity_date=activity_day, source='strava')
+                if streak_result.get('applied') and isinstance(streak_result.get('reward_minutes', 0), int):
+                    total_streak_rewards += int(streak_result.get('reward_minutes', 0))
+            except Exception:
+                logger.exception('Failed to record streak for activity %s', act_id)
         except Exception:
             logger.exception('Failed to apply activity %s for child %s', act_id, child_id)
             continue
@@ -1058,7 +1126,12 @@ def api_apply_earned_strava(child_id):
         msg = f"Applied {total_applied} minutes from Strava activities by {parent_name}"
         UserDB.add_parent_message(child_id, parent_name, msg, total_applied)
 
-    return jsonify({'applied_minutes': total_applied, 'applied_activities': applied_items}), 200
+    # If any streak rewards were applied, add a message summarizing them
+    if total_streak_rewards > 0:
+        msg2 = f"Awarded {total_streak_rewards} minutes total from streak rewards."
+        UserDB.add_parent_message(child_id, parent_name, msg2, total_streak_rewards)
+
+    return jsonify({'applied_minutes': total_applied, 'applied_activities': applied_items, 'streak_rewards_applied': total_streak_rewards}), 200
 
 
 @app.route('/logout')
@@ -1277,16 +1350,29 @@ def upload_activity():
         
         # Add earned game time to user
         UserDB.add_earned_game_time(session['user_id'], earned_minutes)
+
+        # Record daily activity for streaks (manual upload)
+        try:
+            streak_res = UserDB.record_daily_activity(session['user_id'], activity_date=activity_date, source='manual')
+        except Exception:
+            streak_res = {'applied': False}
         
         success_msg = f'Activity logged successfully! Earned {earned_minutes} minutes of game time.'
         
         if is_json_request:
-            return jsonify({
+            resp = {
                 'success': True,
                 'message': success_msg,
                 'earned_minutes': earned_minutes,
                 'activity_id': str(result.inserted_id)
-            }), 201
+            }
+            if streak_res.get('applied'):
+                resp['streak_reward_minutes'] = streak_res.get('reward_minutes', 0)
+                resp['streak_count'] = streak_res.get('streak_count')
+            return jsonify(resp), 201
+        # Render page with optional note about streak reward
+        if streak_res.get('applied'):
+            success_msg += f" Also awarded {streak_res.get('reward_minutes', 0)} min for a {streak_res.get('streak_count')} day streak."
         return render_template('upload_activity.html', success=success_msg)
     
     except ValueError:
