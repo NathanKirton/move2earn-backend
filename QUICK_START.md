@@ -6,7 +6,7 @@
 
 1. **Create test accounts**
    ```bash
-   python setup_test_accounts.py
+   python tools/setup_test_accounts.py
    ```
 
 2. **Start the app**
@@ -73,8 +73,8 @@ GET /api/get-parent-messages
 | `app.py` | API endpoints for messages |
 | `parent_dashboard.html` | Parent UI with message input |
 | `dashboard.html` | Child UI with message display |
-| `test_messaging.py` | Automated tests |
-| `setup_test_accounts.py` | Create test accounts |
+| `tests/test_messaging.py` | Automated tests |
+| `tools/setup_test_accounts.py` | Create test accounts |
 
 ---
 

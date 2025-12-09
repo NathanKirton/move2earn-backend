@@ -928,7 +928,7 @@ def api_set_streak_settings():
         cap = int(data.get('cap_minutes', 60)) if data.get('cap_minutes') is not None else 60
         
         # Log for debugging
-        print(f"Setting streak settings for parent {session['user_id']}: base={base}, inc={inc}, cap={cap}")
+        logger.debug("Setting streak settings for parent %s: base=%s, inc=%s, cap=%s", session.get('user_id'), base, inc, cap)
 
         # Update all values
         success = UserDB.set_parent_streak_settings(session['user_id'], base_minutes=base, increment_minutes=inc, cap_minutes=cap)

@@ -4,6 +4,9 @@ import os
 from dotenv import load_dotenv
 import bcrypt
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -33,13 +36,13 @@ def get_db():
         # Verify connection
         client.admin.command('ping')
         db = client[MONGODB_DB_NAME]
-        print("✓ Connected to MongoDB")
+        logger.info("Connected to MongoDB")
         return db
     except ConnectionFailure as e:
-        print(f"✗ Failed to connect to MongoDB: {e}")
+        logger.error(f"Failed to connect to MongoDB: {e}")
         return None
     except Exception as e:
-        print(f"✗ MongoDB Connection Error: {e}")
+        logger.exception(f"MongoDB Connection Error: {e}")
         return None
 
 
@@ -71,8 +74,8 @@ class UserDB:
         
         # Hash password
         hashed_password = hash_password(password)
-        print(f"DEBUG: Creating user {email} with password length {len(password)}")
-        print(f"DEBUG: Hashed password: {hashed_password[:20]}...")
+        logger.debug("Creating user %s (password length %d)", email, len(password))
+        logger.debug("Hashed password: %s...", hashed_password[:20])
         
         # Create user document
         user_doc = {
@@ -139,18 +142,18 @@ class UserDB:
         user = UserDB.get_user_by_email(email)
         
         if user is None:
-            print(f"DEBUG: User not found for email: {email}")
+            logger.debug("User not found for email: %s", email)
             return None
         
-        print(f"DEBUG: User found: {email}")
-        print(f"DEBUG: Password input length: {len(password)}")
-        print(f"DEBUG: Hashed password in DB: {user['password'][:20]}...")
+        logger.debug("User found: %s", email)
+        logger.debug("Password input length: %d", len(password))
+        logger.debug("Hashed password in DB: %s...", user['password'][:20])
         
         if verify_password(password, user['password']):
-            print(f"DEBUG: Password verification PASSED")
+            logger.debug("Password verification PASSED")
             return user
         
-        print(f"DEBUG: Password verification FAILED")
+        logger.debug("Password verification FAILED")
         return None
     
     @staticmethod
@@ -177,7 +180,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error updating Strava credentials: {e}")
+            logger.exception("Error updating Strava credentials: %s", e)
             return False
     
     @staticmethod
@@ -209,7 +212,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error updating Strava token: {e}")
+            logger.exception("Error updating Strava token: %s", e)
             return False
 
     @staticmethod
@@ -235,7 +238,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error setting timer state: {e}")
+            logger.exception("Error setting timer state: %s", e)
             return False
 
     @staticmethod
@@ -280,7 +283,7 @@ class UserDB:
             
             return True, str(child_id)
         except Exception as e:
-            print(f"Error adding child: {e}")
+            logger.exception("Error adding child: %s", e)
             return False, str(e)
 
     @staticmethod
@@ -362,7 +365,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error updating screen time limits: {e}")
+            logger.exception("Error updating screen time limits: %s", e)
             return False
 
     @staticmethod
@@ -382,7 +385,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error adding earned game time: {e}")
+            logger.exception("Error adding earned game time: %s", e)
             return False
 
     @staticmethod
@@ -403,7 +406,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error adding earned game time: {e}")
+            logger.exception("Error adding earned game time: %s", e)
             return False
 
     @staticmethod
@@ -423,7 +426,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error using game time: {e}")
+            logger.exception("Error using game time: %s", e)
             return False
 
     @staticmethod
@@ -451,7 +454,7 @@ class UserDB:
             elapsed_minutes = int(math.ceil(elapsed_seconds / 60.0))
             return used + elapsed_minutes
         except Exception as e:
-            print(f"Error computing running timer elapsed: {e}")
+            logger.exception("Error computing running timer elapsed: %s", e)
             return used
 
     @staticmethod
@@ -491,7 +494,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error adding parent message: {e}")
+            logger.exception("Error adding parent message: %s", e)
             return False
 
     @staticmethod
@@ -522,7 +525,7 @@ class UserDB:
             )
             return result.modified_count > 0
         except Exception as e:
-            print(f"Error marking message as read: {e}")
+            logger.exception("Error marking message as read: %s", e)
             return False
 
     @staticmethod
@@ -543,7 +546,7 @@ class UserDB:
             # Return True if operation executed (even if value was the same and modified_count == 0)
             return True
         except Exception as e:
-            print(f"Error updating streak count: {e}")
+            logger.exception("Error updating streak count: %s", e)
             return False
 
     @staticmethod
@@ -564,7 +567,7 @@ class UserDB:
             # Return True on success of the update operation (even if no modification was needed)
             return True
         except Exception as e:
-            print(f"Error updating streak bonus: {e}")
+            logger.exception("Error updating streak bonus: %s", e)
             return False
 
     @staticmethod
@@ -604,7 +607,7 @@ class UserDB:
             users.update_one({'_id': ObjectId(parent_id)}, {'$set': update})
             return True
         except Exception as e:
-            print(f"Error setting parent streak settings: {e}")
+            logger.exception("Error setting parent streak settings: %s", e)
             return False
 
     @staticmethod
@@ -643,7 +646,7 @@ class UserDB:
 
         # If already recorded for this day, do nothing
         if last_day == activity_day:
-            print(f"record_daily_activity: child={child_id} date={activity_day} already recorded (last={last_day})")
+            logger.debug("record_daily_activity: child=%s date=%s already recorded (last=%s)", child_id, activity_day, last_day)
             return {'applied': False, 'reason': 'already recorded', 'streak_count': current_streak, 'reward_minutes': 0}
 
         # Compute whether this continues streak. Normalize last_day to a date object when possible.
@@ -691,18 +694,18 @@ class UserDB:
         if cap and reward > cap:
             reward = cap
 
-        print(f"record_daily_activity: Streak check - last_date={last_date}, activity_date={activity_date_obj}, consecutive={last_date and activity_date_obj == last_date + timedelta(days=1)}")
-        print(f"record_daily_activity: Reward calculation - base={base}, inc={inc}, cap={cap}, streak={new_streak}, reward={reward}")
+        logger.debug("record_daily_activity: Streak check - last_date=%s, activity_date=%s, consecutive=%s", last_date, activity_date_obj, bool(last_date and activity_date_obj == last_date + timedelta(days=1)))
+        logger.debug("record_daily_activity: Reward calculation - base=%s, inc=%s, cap=%s, streak=%s, reward=%s", base, inc, cap, new_streak, reward)
 
         # Apply updates: set last_activity_date to activity_day, set streak_count, increment earned_game_time and daily limit
         try:
-            print(f"record_daily_activity: applying update child={child_id} date={activity_day} new_streak={new_streak} reward={reward}")
+            logger.debug("record_daily_activity: applying update child=%s date=%s new_streak=%s reward=%s", child_id, activity_day, new_streak, reward)
             res = users.update_one(
                 {'_id': ObjectId(child_id)},
                 {'$set': {'last_activity_date': activity_day, 'streak_count': new_streak, 'streak_bonus_minutes': reward},
                  '$inc': {'earned_game_time': int(reward), 'daily_screen_time_limit': int(reward)}}
             )
-            print(f"record_daily_activity: update result matched={getattr(res, 'matched_count', None)} modified={getattr(res, 'modified_count', None)}")
+            logger.debug("record_daily_activity: update result matched=%s modified=%s", getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
 
             # Add a parent message noting the streak reward for the child (from system)
             try:
@@ -717,6 +720,6 @@ class UserDB:
 
             return {'applied': True, 'streak_count': new_streak, 'reward_minutes': reward}
         except Exception as e:
-            print(f"Error recording daily activity/streak: {e}")
+            logger.exception("Error recording daily activity/streak: %s", e)
             return {'applied': False, 'reason': 'update failed'}
 

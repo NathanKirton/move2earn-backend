@@ -236,10 +236,10 @@ parent_messages: [
 ### Quick Test
 ```bash
 # Create test accounts
-python setup_test_accounts.py
+python tools/setup_test_accounts.py
 
 # Run tests
-python test_messaging.py
+python -m tests.test_messaging
 ```
 
 ### Manual Test
@@ -254,7 +254,7 @@ python test_messaging.py
 ## 🎓 Learning the System
 
 1. **Read**: QUICK_START.md
-2. **Test**: python test_messaging.py
+2. **Test**: python -m tests.test_messaging
 3. **Explore**: Login and try it manually
 4. **Customize**: Modify messages in parent dashboard
 5. **Extend**: Add more features!

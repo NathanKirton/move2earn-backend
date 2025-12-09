@@ -135,7 +135,7 @@ The `test_messaging.py` script validates the complete workflow:
 
 Run tests with:
 ```bash
-python test_messaging.py
+python -m tests.test_messaging
 ```
 
 ## Technical Details

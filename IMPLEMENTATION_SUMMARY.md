@@ -118,10 +118,10 @@ Response:
 
 ## 🧪 Testing & Verification
 
-### Automated Test (`test_messaging.py`)
+### Automated Test (`tests/test_messaging.py`)
 Validates complete workflow:
 ```bash
-python test_messaging.py
+python -m tests.test_messaging
 ```
 ✅ Registers parent account
 ✅ Logs in parent
@@ -130,10 +130,10 @@ python test_messaging.py
 ✅ Logs in child
 ✅ Retrieves and displays messages
 
-### Setup Test Accounts (`setup_test_accounts.py`)
+### Setup Test Accounts (`tools/setup_test_accounts.py`)
 Creates ready-to-use accounts:
 ```bash
-python setup_test_accounts.py
+python tools/setup_test_accounts.py
 ```
 **Accounts Created**:
 - Parent: `parent@test.com` / `parent123`
@@ -282,10 +282,10 @@ Go outside and be more active 🏃‍♂️
 ### For Testing
 ```bash
 # Create test accounts
-python setup_test_accounts.py
+python tools/setup_test_accounts.py
 
 # Run automated tests
-python test_messaging.py
+python -m tests.test_messaging
 ```
 
 ### For Manual Testing
