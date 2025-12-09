@@ -6,7 +6,8 @@ This repository contains the Flask backend and supporting scripts for the Move2E
 
 1) Project goals and scope
 
-- Host the Flask backend on Render while keeping the static site on IONOS.
+- Host the Flask backend microservice on Render (https://move2earn-backend.onrender.com)
+- Primary domain (https://move2earn.uk/) redirects to Render backend
 - Integrate Strava OAuth and ingestion of activities to award game time.
 - Implement and harden a streaks feature that awards escalating daily rewards for consecutive active days.
 - Provide parent controls for configuring streak rewards (but not manual per-child manipulation).

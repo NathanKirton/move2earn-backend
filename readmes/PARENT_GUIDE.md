@@ -8,7 +8,8 @@ The Move2Earn application now supports both parent/guardian and child accounts. 
 
 ### Step 1: Create a Parent Account
 
-1. Navigate to `/register`
+1. Go to https://move2earn.uk/
+2. Click "Register" or navigate to `/register`
 2. Fill in your details:
    - Full Name
    - Email Address
@@ -19,7 +20,7 @@ The Move2Earn application now supports both parent/guardian and child accounts. 
 
 ### Step 2: Login
 
-1. Go to `/login`
+1. Go to https://move2earn.uk/ and click "Login" or navigate to `/login`
 2. Enter your parent email and password
 3. You'll be automatically redirected to the **Parent Dashboard**
 

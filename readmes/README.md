@@ -1,89 +1,107 @@
 ````markdown
-# Strava Activity Dashboard
+# Move2Earn — Parent-Child Game Time Management System
 
-A web application that connects to the Strava API and displays your recent activities with biometric data including heart rate averages, max heart rate, distance, and activity type.
+Move2Earn is a **family-friendly platform** that rewards children with earned gaming minutes based on physical activities. Parents set rules and limits; children earn minutes by running, cycling, swimming, or other activities tracked via Strava; and the system automatically calculates rewards, maintains streaks, and manages screen time balances.
 
-## Features
+**Live at:** https://move2earn.uk/
 
-- 🔐 Strava OAuth Login/Logout
-- 📊 Dashboard with activity statistics
-- 🏃 Recent activities list with filtering
-- 💓 Heart rate data (average and max)
-- 📏 Distance and elevation tracking
-- ⚡ Activity type filtering (Running, Cycling, Swimming, Walking, Workouts)
-- 🔍 Detailed activity view modal
-- 📱 Responsive design
+## 🎯 Key Features
 
-## Prerequisites
+- 🔐 **Parent & Child Accounts** — Separate roles with different dashboards and controls
+- 🎮 **Game Time Rewards** — Children earn minutes by completing physical activities
+- 📊 **Activity Dashboard** — View earned time, used time, and current balance
+- 🔥 **Streak System** — Consecutive day bonuses encourage daily activity
+- 💪 **Strava Integration** — Optional auto-sync of activities via Strava API
+- 👨‍👩‍👧 **Parent Controls** — Set daily/weekly limits, grant bonus time, send messages
+- 💬 **Parent-Child Messaging** — Send encouragement with bonus time awards
+- 📈 **Activity Tracking** — Manual entry or Strava API for activity records
+- 📱 **Responsive Design** — Works on desktop, tablet, and mobile
 
-- Python 3.8+
-- pip (Python package manager)
+## 🚀 Getting Started
 
-## Setup
+### Visit the App
 
-### 1. Install Dependencies
+1. **Open** https://move2earn.uk/
+2. **Register** — Create a parent or child account
+3. **Parent?** Check "I am a Parent/Guardian" during registration
+4. **Child?** Leave unchecked; have your parent add you from their dashboard
 
-```bash
-pip install -r requirements.txt
+### For Parents
+
+1. **Create Account** — Register with your email and password
+2. **Add Child** — Use parent dashboard to create child accounts
+3. **Set Limits** — Configure daily and weekly screen time limits
+4. **Monitor** — Track earned vs. used game time per child
+5. **Reward** — Grant bonus time with encouraging messages
+
+### For Children
+
+1. **Create Account** — Your parent can create your account from their dashboard
+2. **Log Activities** — Upload activities manually OR connect Strava
+3. **Earn Time** — Get gaming minutes based on distance and intensity
+4. **Check Balance** — View game time earned, used, and available
+5. **Build Streaks** — Stay active daily for streak bonuses!
+
+## 📱 Dashboard Overview
+
+### Parent Dashboard
+- **Manage Children** — View all your children's accounts
+- **Game Time Tracking** — See earned, used, and balance per child
+- **Limit Controls** — Set daily and weekly screen time caps
+- **Bonus Rewards** — Award extra minutes with personalized messages
+- **Account Settings** — Manage your profile and preferences
+
+### Child Dashboard
+- **Game Time Card** — Shows balance at a glance
+- **Recent Activities** — List of uploaded or Strava-synced activities
+- **Activity Streak** — Current consecutive day count and bonuses
+- **Parent Messages** — View messages and bonuses from parent
+- **Activity Upload** — Manually log activities or connect Strava
+
+## 💰 How Game Time Works
+
+**Formula:**
+```
+Earned Minutes = Distance (km) × Intensity Multiplier
+
+Intensity Multipliers:
+  Easy    = 1.0x
+  Medium  = 1.5x
+  Hard    = 2.0x
+
+Example: 10 km Medium intensity activity
+  = 10 × 1.5 = 15 minutes earned
 ```
 
-### 2. Configure Environment Variables
-
-The `.env` file is already set up with your Strava credentials:
-
+**Streak Bonuses:**
 ```
-STRAVA_CLIENT_ID=13312b64f7078def8184ad368e2c5e02edf87003
-STRAVA_CLIENT_SECRET=f133150b8516de0fe598093056f54132b2dc445e
-STRAVA_REFRESH_TOKEN=8f8cd4cbe45866d3333ba628a23f85a19da4d656
-FLASK_SECRET_KEY=your-secret-key-change-in-production
+Days 1-2:   1.0x (no bonus)
+Days 3-5:   1.2x (20% bonus)
+Days 6+:    1.5x (50% bonus)
 ```
 
-**Important:** For production, change the `FLASK_SECRET_KEY` to a secure random value.
+## 🔗 API Endpoints
 
-### 3. Run the Application
+### Authentication
+- `POST /register` — Create new account
+- `POST /login` — Authenticate user
+- `GET /logout` — End session
 
-```bash
-python app.py
-```
+### Child Dashboard
+- `GET /dashboard` — View child dashboard
+- `GET /api/get-parent-messages` — Fetch parent messages
+- `POST /api/record-activity` — Log activity and earn time
 
-The application will start on `http://localhost:5000`
+### Parent Dashboard
+- `GET /parent-dashboard` — View parent control center
+- `POST /api/add-child` — Create child account
+- `POST /api/add-earned-time/<child_id>` — Grant bonus time with message
+- `POST /api/update-child-limits/<child_id>` — Set daily/weekly limits
 
-## Usage
-
-1. **Login**: Click the login button to authenticate with Strava
-2. **View Dashboard**: After authentication, you'll see your activity statistics and recent activities
-3. **Filter Activities**: Use the filter buttons to view specific activity types
-4. **View Details**: Click on any activity card to see detailed information
-5. **Logout**: Click the logout button to end your session
-
-## API Endpoints
-
-### Public Endpoints
-- `GET /health` - Health check
-
-### Protected Endpoints (Require Authentication)
-- `GET /` - Home page (redirects to dashboard if logged in)
-- `GET /dashboard` - Main dashboard view
-- `GET /api/athlete` - Get current athlete information
-- `GET /api/activities` - Get recent activities (10 most recent)
-- `GET /api/activity/<id>` - Get detailed activity information
-
-### Authentication Endpoints
-- `GET /login` - Redirect to Strava OAuth
-- `GET /callback` - OAuth callback handler
-- `GET /logout` - Logout user
-
-## Data Displayed
-
-### Dashboard Statistics
-- Number of recent activities
-- Total distance (km)
-- Average heart rate (bpm)
-- Total elevation gain (m)
-
-### Activity Cards
-- Activity name
-- Activity type (Run, Ride, Swim, Walk, Workout, etc.)
+### Strava Integration
+- `GET /strava-auth` — Initiate Strava OAuth
+- `GET /callback` — OAuth callback
+- `GET /api/activities` — Fetch Strava activities
 - Date and time
 - Distance (km)
 - Duration
