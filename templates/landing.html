@@ -122,6 +122,14 @@
             align-items: center;
             justify-content: center;
             font-size: 48px;
+            overflow: hidden;
+        }
+
+        .placeholder-box img.responsive-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
         
         .features {
@@ -303,7 +311,9 @@
                 <a href="/register" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Get Started</a>
             </div>
             <div class="hero-image">
-                <div class="placeholder-box">📱</div>
+                <div class="placeholder-box">
+                    <img src="/static/logo.png" class="responsive-image" alt="">
+                </div>
             </div>
         </section>
         
