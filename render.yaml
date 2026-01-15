@@ -1,10 +1,5 @@
 services:
   - type: web
     name: move2earn-backend
-    runtime: python-3.11
+    dockerfilePath: ./Dockerfile
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
