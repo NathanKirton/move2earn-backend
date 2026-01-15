@@ -1,14 +1,10 @@
 services:
   - type: web
     name: move2earn-backend
-    env: python
+    runtime: python-3.11
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: MONGODB_URI
-        fromDatabase:
-          name: move2earn-db
-          property: connectionString
