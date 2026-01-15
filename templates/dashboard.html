@@ -419,7 +419,7 @@
     
     <!-- Game Time Card -->
     <div class="gametime-card" id="gametimeCard">
-        <div class="gametime-header">⏱️ Game Time Available</div>
+        <div class="gametime-header">⏱️ Game Time Used</div>
         <div class="gametime-value" id="gametimeValue">--</div>
         <div class="gametime-limit" id="gametimeLimit">of 180 min limit</div>
         <div class="gametime-bar">
@@ -898,34 +898,28 @@ async function loadGameTime() {
                 const resp = await fetch('/api/gametime-balance');
                 if (!resp.ok) return;
                 const fresh = await resp.json();
-                // Update serverState so the interval uses the newest values
-                serverState = fresh;
-                const freshUsedSec = computeUsedSeconds(serverState);
+                
+                const freshUsedSec = computeUsedSeconds(fresh);
                 const freshLimit = Number(fresh.limit || 180);
                 const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
 
-                // If server reports used increased (e.g., parent stopped timer or applied minutes), animate count-up to the new used value
-                if (freshUsedSec > usedSeconds) {
-                    const target = freshUsedSec;
-                    const stepMs = 40;
-                    const stepInc = Math.max(1, Math.ceil((target - usedSeconds) / 10));
-                    const anim = setInterval(() => {
-                        usedSeconds = Math.min(target, usedSeconds + stepInc);
-                        gametimeValue.textContent = renderSeconds(usedSeconds);
-                        const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
-                        gametimeProgress.style.width = pct + '%';
-                        if (usedSeconds >= target) clearInterval(anim);
-                    }, stepMs);
-                } else {
-                    // Update used/limit normally
+                // Update limit display if it changed
+                const newLimitText = `of ${freshLimit} min limit`;
+                if (gametimeLimit.textContent !== newLimitText) {
+                    gametimeLimit.textContent = newLimitText;
+                }
+                
+                // Only update serverState and recalculate if there's a significant difference (> 5 seconds)
+                // This prevents rapid jumping due to network latency
+                const currentUsedSec = computeUsedSeconds(serverState);
+                if (Math.abs(freshUsedSec - currentUsedSec) > 5) {
+                    serverState = fresh;
                     usedSeconds = freshUsedSec;
                     gametimeValue.textContent = renderSeconds(usedSeconds);
                     const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
                     gametimeProgress.style.width = pct + '%';
                 }
 
-                // Update limit display immediately
-                gametimeLimit.textContent = `of ${freshLimit} min limit`;
                 // Update streak display if provided by server
                 try {
                     if (typeof fresh.streak_count !== 'undefined') {

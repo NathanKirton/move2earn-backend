@@ -462,8 +462,8 @@
                             <div class="game-time-label">📱 Game Time</div>
                             <div class="game-time-display">
                                 <div class="time-box">
-                                    <div class="time-value">{{ child.earned_game_time }}</div>
-                                    <div class="time-label">Earned (min)</div>
+                                    <div class="time-value earned-total">{{ child.earned_game_time }}</div>
+                                    <div class="time-label">Total Available (min)</div>
                                 </div>
                                 <div class="time-box">
                                     <div class="time-value">{{ child.used_game_time }}</div>
@@ -714,14 +714,21 @@
                         this.textContent = '✓ Sent!';
                         
                         // Update the earned game time display on the card
-                        const earnedBox = card.querySelector('.time-box:first-child .time-value');
+                        const earnedBox = card.querySelector('.earned-total');
                         const balanceText = card.querySelector('.balance-text');
+                        const dailyLimitInput = card.querySelector('.daily-limit');
+                        
                         if (earnedBox) {
                             earnedBox.textContent = data.earned;
                         }
                         if (balanceText) {
                             const balance = data.earned - data.used;
                             balanceText.textContent = `Balance: ${balance} minutes`;
+                        }
+                        
+                        // Update the daily limit display to show the new limit
+                        if (dailyLimitInput) {
+                            dailyLimitInput.value = data.limit;
                         }
                         
                         // Update balance bar
