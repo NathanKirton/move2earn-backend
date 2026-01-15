@@ -724,3 +724,27 @@ class UserDB:
             logger.exception("Error recording daily activity/streak: %s", e)
             return {'applied': False, 'reason': 'update failed'}
 
+    @staticmethod
+    def delete_child(parent_id, child_id):
+        """Delete a child account and remove from parent's children list"""
+        database = get_db()
+        if database is None:
+            return False
+        
+        from bson import ObjectId
+        users = database['users']
+        
+        try:
+            # Remove child from parent's children list
+            users.update_one(
+                {'_id': ObjectId(parent_id)},
+                {'$pull': {'children': ObjectId(child_id)}}
+            )
+            
+            # Delete the child user account
+            result = users.delete_one({'_id': ObjectId(child_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.exception("Error deleting child: %s", e)
+            return False
+

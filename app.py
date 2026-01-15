@@ -578,6 +578,26 @@ def api_add_child():
         return jsonify({'error': result}), 400
 
 
+@app.route('/api/delete-child/<child_id>', methods=['POST'])
+def api_delete_child(child_id):
+    """API endpoint to delete a child account"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Verify the child belongs to this parent
+    children = UserDB.get_parent_children(session['user_id'])
+    child_ids = [str(c['id']) for c in children]
+    
+    if child_id not in child_ids:
+        return jsonify({'error': 'Child not found or not your child'}), 404
+    
+    success = UserDB.delete_child(session['user_id'], child_id)
+    if success:
+        return jsonify({'success': True, 'message': 'Child account deleted'}), 200
+    else:
+        return jsonify({'error': 'Failed to delete child'}), 500
+
+
 @app.route('/api/update-child-limits/<child_id>', methods=['POST'])
 def api_update_child_limits(child_id):
     """API endpoint to update child's screen time limits"""
@@ -695,14 +715,21 @@ def api_add_earned_time(child_id):
     if minutes < 0:
         return jsonify({'error': 'Invalid minutes value'}), 400
     
-    # Add the bonus time and increase the daily limit so it adds to time-left as requested
+    # Add the bonus time
     success = UserDB.add_earned_game_time_and_increase_limit(child_id, minutes)
 
-    # Add the message if provided
-    if success and message:
+    # Always add a notification when bonus time is granted
+    if success:
         parent = UserDB.get_user_by_id(session.get('user_id'))
         parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
-        UserDB.add_parent_message(child_id, parent_name, message, minutes)
+        
+        # If no message provided, create a default one
+        if message:
+            notification_message = message
+        else:
+            notification_message = f'You received {minutes} bonus minutes!'
+        
+        UserDB.add_parent_message(child_id, parent_name, notification_message, minutes)
 
     if success:
         # Return updated values so the client can update UI without a reload

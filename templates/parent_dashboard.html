@@ -488,6 +488,7 @@
                                 <button class="bonus-btn update-limits">Update Limits</button>
                                 <button class="bonus-btn timer-btn">{% if child.timer_running %}Stop Timer{% else %}Start Timer{% endif %}</button>
                                 <div class="timer-status" style="font-size:12px;color:#ddd;">{% if child.timer_running %}Running{% else %}Stopped{% endif %}</div>
+                                <button class="bonus-btn delete-btn" style="background:#ff6b6b;margin-left:auto;">Delete Child</button>
                             </div>
                         </div>
                         
@@ -735,6 +736,50 @@
                     this.disabled = false;
                     this.textContent = originalText;
                     this.style.background = originalBg;
+                }
+            });
+        });
+
+        // Delete Child Button
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const card = this.closest('.child-card');
+                const childId = card.dataset.childId;
+                const childName = card.querySelector('.child-name').textContent;
+                
+                if (!confirm(`Are you sure you want to delete ${childName}'s account? This cannot be undone.`)) {
+                    return;
+                }
+                
+                this.disabled = true;
+                const originalText = this.textContent;
+                this.textContent = 'Deleting...';
+                
+                try {
+                    const response = await fetch(`/api/delete-child/${childId}`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Remove the card from the DOM
+                        card.style.opacity = '0';
+                        card.style.transition = 'opacity 0.3s ease';
+                        setTimeout(() => card.remove(), 300);
+                        alert(`${childName}'s account has been deleted.`);
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to delete child'));
+                        this.disabled = false;
+                        this.textContent = originalText;
+                    }
+                } catch (err) {
+                    console.error('Error deleting child:', err);
+                    alert('Error: ' + err.message);
+                    this.disabled = false;
+                    this.textContent = originalText;
                 }
             });
         });
