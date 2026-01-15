@@ -449,8 +449,13 @@
                 <div class="children-grid">
                     {% for child in children %}
                     <div class="child-card" data-child-id="{{ child.id }}">
-                        <div class="child-name">{{ child.name }}</div>
-                        <div class="child-email">{{ child.email }}</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                            <div>
+                                <div class="child-name">{{ child.name }}</div>
+                                <div class="child-email">{{ child.email }}</div>
+                            </div>
+                            <button class="bonus-btn delete-btn" style="background:#ff6b6b;padding:8px 16px;font-size:13px;">Delete</button>
+                        </div>
                         
                         <!-- Game Time Display -->
                         <div class="game-time-section">
@@ -479,16 +484,11 @@
                                     <label>Minutes/Day</label>
                                     <input type="number" class="daily-limit" value="{{ child.daily_screen_time_limit }}" min="0" max="1440">
                                 </div>
-                                <div class="limit-input-group">
-                                    <label>Minutes/Week</label>
-                                    <input type="number" class="weekly-limit" value="{{ child.weekly_screen_time_limit }}" min="0" max="10080">
-                                </div>
                             </div>
                             <div style="display:flex;gap:8px;align-items:center;margin-top:10px;grid-column:1 / -1;">
                                 <button class="bonus-btn update-limits">Update Limits</button>
                                 <button class="bonus-btn timer-btn">{% if child.timer_running %}Stop Timer{% else %}Start Timer{% endif %}</button>
                                 <div class="timer-status" style="font-size:12px;color:#ddd;">{% if child.timer_running %}Running{% else %}Stopped{% endif %}</div>
-                                <button class="bonus-btn delete-btn" style="background:#ff6b6b;margin-left:auto;">Delete Child</button>
                             </div>
                         </div>
                         
@@ -606,7 +606,6 @@
                 const card = this.closest('.child-card');
                 const childId = card.dataset.childId;
                 const dailyLimit = parseInt(card.querySelector('.daily-limit').value);
-                const weeklyLimit = parseInt(card.querySelector('.weekly-limit').value);
                 
                 try {
                     const response = await fetch(`/api/update-child-limits/${childId}`, {
@@ -614,8 +613,7 @@
                         credentials: 'same-origin',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            daily_limit: dailyLimit,
-                            weekly_limit: weeklyLimit
+                            daily_limit: dailyLimit
                         })
                     });
                     
@@ -715,14 +713,33 @@
                         this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
                         this.textContent = '✓ Sent!';
                         
+                        // Update the earned game time display on the card
+                        const earnedBox = card.querySelector('.time-box:first-child .time-value');
+                        const balanceText = card.querySelector('.balance-text');
+                        if (earnedBox) {
+                            earnedBox.textContent = data.earned;
+                        }
+                        if (balanceText) {
+                            const balance = data.earned - data.used;
+                            balanceText.textContent = `Balance: ${balance} minutes`;
+                        }
+                        
+                        // Update balance bar
+                        const balanceFill = card.querySelector('.balance-fill');
+                        if (balanceFill && data.earned > 0) {
+                            const percentage = (data.used / data.earned * 100);
+                            balanceFill.style.width = percentage + '%';
+                        }
+                        
                         // Clear inputs
                         card.querySelector('.bonus-minutes').value = '';
                         card.querySelector('.bonus-message').value = '';
                         
                         setTimeout(() => {
-                            // Reload to see updated balance
-                            location.reload();
-                        }, 1500);
+                            // Reset button
+                            this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
+                            this.textContent = 'Add Time';
+                        }, 2000);
                     } else {
                         // Show error
                         alert('Error: ' + (data.error || 'Failed to add bonus time'));

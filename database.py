@@ -318,7 +318,7 @@ class UserDB:
                         else:
                             started_dt = timer_started
                         elapsed_seconds = (datetime.utcnow() - started_dt).total_seconds()
-                        elapsed_minutes = int(__import__('math').ceil(elapsed_seconds / 60.0))
+                        elapsed_minutes = int(__import__('math').floor(elapsed_seconds / 60.0))
                         used_display = used + elapsed_minutes
                     else:
                         used_display = used
@@ -452,7 +452,7 @@ class UserDB:
                 started_dt = timer_started
             elapsed_seconds = (datetime.utcnow() - started_dt).total_seconds()
             import math
-            elapsed_minutes = int(math.ceil(elapsed_seconds / 60.0))
+            elapsed_minutes = int(math.floor(elapsed_seconds / 60.0))
             return used + elapsed_minutes
         except Exception as e:
             logger.exception("Error computing running timer elapsed: %s", e)
