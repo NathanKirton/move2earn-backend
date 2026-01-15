@@ -462,7 +462,7 @@
                             <div class="game-time-label">📱 Game Time</div>
                             <div class="game-time-display">
                                 <div class="time-box">
-                                    <div class="time-value earned-total">{{ child.earned_game_time }}</div>
+                                    <div class="time-value daily-limit-display">{{ child.daily_screen_time_limit }}</div>
                                     <div class="time-label">Total Available (min)</div>
                                 </div>
                                 <div class="time-box">
@@ -471,9 +471,9 @@
                                 </div>
                             </div>
                             <div class="balance-bar">
-                                <div class="balance-fill" style="width: {% if child.earned_game_time > 0 %}{{ (child.used_game_time / child.earned_game_time * 100)|int }}{% else %}0{% endif %}%;"></div>
+                                <div class="balance-fill" style="width: {% if child.daily_screen_time_limit > 0 %}{{ (child.used_game_time / child.daily_screen_time_limit * 100)|int }}{% else %}0{% endif %}%;"></div>
                             </div>
-                            <div class="balance-text">Balance: {{ child.earned_game_time - child.used_game_time }} minutes</div>
+                            <div class="balance-text">Balance: {{ child.daily_screen_time_limit - child.used_game_time }} minutes</div>
                         </div>
                         
                         <!-- Screen Time Limits -->
@@ -713,28 +713,28 @@
                         this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
                         this.textContent = '✓ Sent!';
                         
-                        // Update the earned game time display on the card
-                        const earnedBox = card.querySelector('.earned-total');
+                        // Update the total available display on the card (which is the daily limit)
+                        const totalAvailableBox = card.querySelector('.daily-limit-display');
                         const balanceText = card.querySelector('.balance-text');
                         const dailyLimitInput = card.querySelector('.daily-limit');
                         
-                        if (earnedBox) {
-                            earnedBox.textContent = data.earned;
+                        if (totalAvailableBox) {
+                            totalAvailableBox.textContent = data.limit;
                         }
                         if (balanceText) {
-                            const balance = data.earned - data.used;
+                            const balance = data.limit - data.used;
                             balanceText.textContent = `Balance: ${balance} minutes`;
                         }
                         
-                        // Update the daily limit display to show the new limit
+                        // Update the daily limit input field to match
                         if (dailyLimitInput) {
                             dailyLimitInput.value = data.limit;
                         }
                         
                         // Update balance bar
                         const balanceFill = card.querySelector('.balance-fill');
-                        if (balanceFill && data.earned > 0) {
-                            const percentage = (data.used / data.earned * 100);
+                        if (balanceFill && data.limit > 0) {
+                            const percentage = (data.used / data.limit * 100);
                             balanceFill.style.width = percentage + '%';
                         }
                         
