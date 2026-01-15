@@ -690,7 +690,8 @@ def api_control_timer(child_id):
         return jsonify({'success': True, 'minutes_recorded': 0}), 200
 
     elapsed_seconds = (now - started_dt).total_seconds()
-    minutes_used = max(0, int(round(elapsed_seconds / 60.0)))
+    # Round to nearest 0.5 minutes (30 seconds)
+    minutes_used = max(0, round(elapsed_seconds / 30.0) * 0.5)
     seconds_used = max(0, int(elapsed_seconds % 60))
 
     # Record used time and clear timer
@@ -790,7 +791,8 @@ def api_control_my_timer():
         return jsonify({'success': True, 'minutes_recorded': 0}), 200
 
     elapsed_seconds = (now - started_dt).total_seconds()
-    minutes_used = max(0, int(round(elapsed_seconds / 60.0)))
+    # Round to nearest 0.5 minutes (30 seconds)
+    minutes_used = max(0, round(elapsed_seconds / 30.0) * 0.5)
     seconds_used = max(0, int(elapsed_seconds % 60))
 
     UserDB.use_game_time(child_id, minutes_used)
