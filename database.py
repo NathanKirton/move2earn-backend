@@ -390,7 +390,7 @@ class UserDB:
 
     @staticmethod
     def add_earned_game_time_and_increase_limit(child_id, minutes):
-        """Add earned game time (only earned_game_time, not the limit). The limit stays fixed by parent."""
+        """Add bonus game time. The daily limit stays fixed by parent - only earned_game_time increases."""
         database = get_db()
         if database is None:
             return False
@@ -399,10 +399,11 @@ class UserDB:
         users = database['users']
 
         try:
-            # Increase both earned_game_time and daily_screen_time_limit
+            # Only increase earned_game_time, NOT the daily_screen_time_limit
+            # This way bonus time is extra on top of the standard daily limit
             result = users.update_one(
                 {'_id': ObjectId(child_id)},
-                {'$inc': {'earned_game_time': minutes, 'daily_screen_time_limit': minutes}}
+                {'$inc': {'earned_game_time': minutes}}
             )
             return result.modified_count > 0
         except Exception as e:
