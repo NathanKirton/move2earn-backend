@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 MONGODB_URI = os.getenv('MONGODB_URI')
-MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME')
+MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'move2earn')
 
 # Initialize MongoDB client lazily to avoid blocking on startup
 client = None

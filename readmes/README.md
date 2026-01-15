@@ -1,189 +1,50 @@
-````markdown
-# Move2Earn — Parent-Child Game Time Management System
+# Move2Earn
 
-Move2Earn is a **family-friendly platform** that rewards children with earned gaming minutes based on physical activities. Parents set rules and limits; children earn minutes by running, cycling, swimming, or other activities tracked via Strava; and the system automatically calculates rewards, maintains streaks, and manages screen time balances.
+Parent-child game time management system. Children earn gaming time through physical activities. Parents manage accounts and set screen time limits.
 
-**Live at:** https://move2earn.uk/
+## Quick Start
 
-## 🎯 Key Features
+1. Install Python 3.11+
+2. Run: `pip install -r requirements.txt`
+3. Run: `python app.py`
+4. Open: http://localhost:5000
 
-- 🔐 **Parent & Child Accounts** — Separate roles with different dashboards and controls
-- 🎮 **Game Time Rewards** — Children earn minutes by completing physical activities
-- 📊 **Activity Dashboard** — View earned time, used time, and current balance
-- 🔥 **Streak System** — Consecutive day bonuses encourage daily activity
-- 💪 **Strava Integration** — Optional auto-sync of activities via Strava API
-- 👨‍👩‍👧 **Parent Controls** — Set daily/weekly limits, grant bonus time, send messages
-- 💬 **Parent-Child Messaging** — Send encouragement with bonus time awards
-- 📈 **Activity Tracking** — Manual entry or Strava API for activity records
-- 📱 **Responsive Design** — Works on desktop, tablet, and mobile
+## Features
 
-## 🚀 Getting Started
+- Parent and child account types
+- Game time earned through activities
+- Parent dashboard to manage children
+- Screen time limits
+- Activity tracking
+- Streak bonuses
+- Parent messaging to children
+- Strava integration (optional)
 
-### Visit the App
+## Database
 
-1. **Open** https://move2earn.uk/
-2. **Register** — Create a parent or child account
-3. **Parent?** Check "I am a Parent/Guardian" during registration
-4. **Child?** Leave unchecked; have your parent add you from their dashboard
+MongoDB Atlas cloud database. Connection configured in `.env`.
 
-### For Parents
+## File Structure
 
-1. **Create Account** — Register with your email and password
-2. **Add Child** — Use parent dashboard to create child accounts
-3. **Set Limits** — Configure daily and weekly screen time limits
-4. **Monitor** — Track earned vs. used game time per child
-5. **Reward** — Grant bonus time with encouraging messages
+- `app.py` - Main application
+- `database.py` - Database operations  
+- `templates/` - HTML pages
+- `static/` - CSS and JavaScript
+- `.env` - Configuration
 
-### For Children
+## For Parents
 
-1. **Create Account** — Your parent can create your account from their dashboard
-2. **Log Activities** — Upload activities manually OR connect Strava
-3. **Earn Time** — Get gaming minutes based on distance and intensity
-4. **Check Balance** — View game time earned, used, and available
-5. **Build Streaks** — Stay active daily for streak bonuses!
+1. Register with parent account type
+2. Add children from parent dashboard
+3. Grant bonus game time
+4. Send messages to children
+5. Set screen time limits
 
-## 📱 Dashboard Overview
+## For Children
 
-### Parent Dashboard
-- **Manage Children** — View all your children's accounts
-- **Game Time Tracking** — See earned, used, and balance per child
-- **Limit Controls** — Set daily and weekly screen time caps
-- **Bonus Rewards** — Award extra minutes with personalized messages
-- **Account Settings** — Manage your profile and preferences
-
-### Child Dashboard
-- **Game Time Card** — Shows balance at a glance
-- **Recent Activities** — List of uploaded or Strava-synced activities
-- **Activity Streak** — Current consecutive day count and bonuses
-- **Parent Messages** — View messages and bonuses from parent
-- **Activity Upload** — Manually log activities or connect Strava
-
-## 💰 How Game Time Works
-
-**Formula:**
-```
-Earned Minutes = Distance (km) × Intensity Multiplier
-
-Intensity Multipliers:
-  Easy    = 1.0x
-  Medium  = 1.5x
-  Hard    = 2.0x
-
-Example: 10 km Medium intensity activity
-  = 10 × 1.5 = 15 minutes earned
-```
-
-**Streak Bonuses:**
-```
-Days 1-2:   1.0x (no bonus)
-Days 3-5:   1.2x (20% bonus)
-Days 6+:    1.5x (50% bonus)
-```
-
-## 🔗 API Endpoints
-
-### Authentication
-- `POST /register` — Create new account
-- `POST /login` — Authenticate user
-- `GET /logout` — End session
-
-### Child Dashboard
-- `GET /dashboard` — View child dashboard
-- `GET /api/get-parent-messages` — Fetch parent messages
-- `POST /api/record-activity` — Log activity and earn time
-
-### Parent Dashboard
-- `GET /parent-dashboard` — View parent control center
-- `POST /api/add-child` — Create child account
-- `POST /api/add-earned-time/<child_id>` — Grant bonus time with message
-- `POST /api/update-child-limits/<child_id>` — Set daily/weekly limits
-
-### Strava Integration
-- `GET /strava-auth` — Initiate Strava OAuth
-- `GET /callback` — OAuth callback
-- `GET /api/activities` — Fetch Strava activities
-- Date and time
-- Distance (km)
-- Duration
-- Average heart rate (if available)
-- Max heart rate (if available)
-
-### Detailed Activity View
-- All basic information
-- Average and max speed
-- Heart rate data
-- Power data (average/max watts)
-- Calories burned
-- Description
-- Device used
-
-## Technology Stack
-
-- **Backend**: Flask (Python web framework)
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **API**: Strava API v3
-- **Authentication**: OAuth 2.0
-- **Session Management**: Flask-Session
-
-## Project Structure
-
-```
-Strava_Code/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── .env                   # Environment variables
-├── README.md             # This file
-└── templates/
-    ├── base.html         # Base template with header/nav
-    └── dashboard.html    # Dashboard with activities
-```
-
-## Security Notes
-
-- The application stores session data locally (filesystem)
-- Tokens are refreshed automatically when expired
-- For production deployment:
-  - Change `FLASK_SECRET_KEY` to a secure random value
-  - Use HTTPS instead of HTTP
-  - Configure proper session storage (database, Redis)
-  - Store secrets in environment variables, not in .env file
-
-## Troubleshooting
-
-### OAuth Login Issues
-- Ensure your callback URL matches the registered URL in Strava settings
-- Check that client ID and secret are correct
-- Verify the redirect URI is `http://localhost:5000/callback`
-
-### No Activities Displayed
-- Ensure your Strava account has activities
-- Check that your Strava token has valid permissions
-- Verify the access token hasn't expired
-
-### Session Issues
-- Clear browser cookies and try again
-- Check that the `flask_session` directory exists
-- Ensure sufficient disk space for session storage
-
-## Future Enhancements
-
-- [ ] Export activities to CSV/PDF
-- [ ] Activity statistics graphs and charts
-- [ ] Segment performance tracking
-- [ ] Training load analysis
-- [ ] Goal setting and tracking
-- [ ] Social features (following athletes)
-- [ ] Activity stream visualization on maps
-- [ ] Integration with other fitness platforms
-
-## License
-
-MIT License
-
-## Support
-
-For issues or questions, refer to:
-- [Strava API Documentation](https://developers.strava.com/docs)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-
-````
+1. Register or be added by parent
+2. Log in to dashboard
+3. Record activities
+4. Earn game time
+5. View parent messages
+6. Track streaks
