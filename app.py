@@ -691,12 +691,14 @@ def api_control_timer(child_id):
 
     elapsed_seconds = (now - started_dt).total_seconds()
     minutes_used = max(0, int(math.floor(elapsed_seconds / 60.0)))
+    seconds_used = max(0, int(elapsed_seconds % 60))
 
     # Record used time and clear timer
     UserDB.use_game_time(child_id, minutes_used)
     UserDB.set_timer_state(child_id, False, None)
 
-    msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}. Recorded {minutes_used} minutes."
+    time_display = f"{minutes_used}m {seconds_used}s" if seconds_used > 0 else f"{minutes_used}m"
+    msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}. Recorded {time_display}."
     UserDB.add_parent_message(child_id, parent_name, msg, 0)
 
     return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
@@ -788,10 +790,13 @@ def api_control_my_timer():
 
     elapsed_seconds = (now - started_dt).total_seconds()
     minutes_used = max(0, int(math.floor(elapsed_seconds / 60.0)))
+    seconds_used = max(0, int(elapsed_seconds % 60))
 
     UserDB.use_game_time(child_id, minutes_used)
     UserDB.set_timer_state(child_id, False, None)
-    UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}. Recorded {minutes_used} minutes.', 0)
+    
+    time_display = f"{minutes_used}m {seconds_used}s" if seconds_used > 0 else f"{minutes_used}m"
+    UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}. Recorded {time_display}.', 0)
 
     return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
 
