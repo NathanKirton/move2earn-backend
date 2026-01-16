@@ -206,7 +206,8 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
     confirm_password = request.form.get('confirm_password')
-    is_parent = request.form.get('is_parent') == 'on'
+    # All new users are created as parents (children are created via parent dashboard)
+    is_parent = True
     
     # Validation
     if not all([name, email, password, confirm_password]):
@@ -222,7 +223,7 @@ def register():
     if UserDB.get_user_by_email(email):
         return render_template('register.html', error='Email already registered')
     
-    # Create new user
+    # Create new user (always as parent)
     success, result = UserDB.create_user(email, password, name, is_parent=is_parent)
     if success:
         return render_template('register.html', success='Account created successfully! You can now login.')
