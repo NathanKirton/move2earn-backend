@@ -399,6 +399,217 @@
         .error-message.show {
             display: block;
         }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 20px;
+                text-align: center;
+            }
+
+            .header-left h1 {
+                font-size: 22px;
+            }
+
+            .header-right {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .add-child-form {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 15px;
+            }
+
+            .children-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .child-card {
+                padding: 15px;
+            }
+
+            .game-time-display {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .time-value {
+                font-size: 20px;
+            }
+
+            .time-label {
+                font-size: 10px;
+            }
+
+            .limit-inputs {
+                grid-template-columns: 1fr;
+            }
+
+            .bonus-input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .bonus-section {
+                margin-top: 15px;
+                padding-top: 12px;
+            }
+
+            .game-time-section {
+                margin-bottom: 15px;
+            }
+
+            .limits-section {
+                margin-bottom: 15px;
+            }
+
+            .child-card > div {
+                display: flex !important;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .child-card > div[style*="display:flex"] {
+                flex-direction: column !important;
+            }
+
+            .btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+
+            .btn-primary {
+                width: 100%;
+            }
+
+            .bonus-btn, .update-limits, .timer-btn, .delete-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .card h2 {
+                font-size: 18px;
+            }
+
+            .child-name {
+                font-size: 16px;
+            }
+
+            .child-email {
+                font-size: 11px;
+            }
+
+            textarea.bonus-message {
+                min-height: 50px !important;
+            }
+
+            .form-group label {
+                font-size: 11px;
+            }
+
+            .form-group input {
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            /* Streak Settings on mobile */
+            div[style*="grid-template-columns:1fr 1fr 1fr"] {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 8px;
+            }
+
+            header {
+                padding: 12px 15px;
+                margin-bottom: 15px;
+            }
+
+            .header-left h1 {
+                font-size: 18px;
+            }
+
+            .header-left p {
+                font-size: 12px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .card {
+                padding: 15px;
+                margin-bottom: 12px;
+            }
+
+            .card h2 {
+                font-size: 16px;
+                margin-bottom: 15px;
+            }
+
+            .game-time-display {
+                gap: 8px;
+            }
+
+            .time-box {
+                padding: 10px;
+            }
+
+            .time-value {
+                font-size: 18px;
+            }
+
+            .child-card {
+                padding: 12px;
+            }
+
+            .child-name {
+                font-size: 15px;
+            }
+
+            .bonus-btn, .update-limits, .timer-btn, .delete-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
+            .bonus-input-group input {
+                font-size: 11px;
+                padding: 6px;
+            }
+
+            textarea.bonus-message {
+                font-size: 11px !important;
+                min-height: 45px !important;
+                padding: 6px !important;
+            }
+
+            .add-child-form {
+                padding: 12px;
+            }
+
+            .form-group input {
+                font-size: 11px;
+                padding: 6px;
+            }
+
+            .dashboard-grid {
+                gap: 12px;
+            }
+        }
     </style>
 </head>
 <body>
