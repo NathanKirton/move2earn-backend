@@ -35,7 +35,7 @@ def clear_all_users():
         return
     
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
@@ -55,7 +55,7 @@ def clear_all_activities():
         return
     
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
@@ -70,7 +70,7 @@ def clear_all_activities():
 def delete_user_by_email(email):
     """Delete a specific user account by email"""
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
@@ -160,7 +160,7 @@ def delete_user_by_id(user_id):
 def reset_user_game_time(email):
     """Reset game time for a specific user"""
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
@@ -199,7 +199,7 @@ def reset_all_user_game_time():
         return
     
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
@@ -225,7 +225,7 @@ def reset_all_user_game_time():
 def list_all_users():
     """List all users in the database"""
     db = get_db()
-    if not db:
+    if db is None:
         print("ERROR: Could not connect to database")
         return
     
