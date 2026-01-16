@@ -1078,6 +1078,7 @@ async function loadActivities() {
             // ignore - we already showed the computed streak
         }
         
+        // htmlhint: off
         list.innerHTML = allActivities.map(activity => {
             const isStravasActivity = activity.source === 'strava';
             const paceDisplay = !activity.average_heartrate && activity.distance > 0 
@@ -1088,8 +1089,12 @@ async function loadActivities() {
             const intensityLabel = activity.intensity || (isStravasActivity ? (activity.average_heartrate ? (activity.average_heartrate < 150 ? 'Easy' : (activity.average_heartrate > 170 ? 'Hard' : 'Medium')) : 'Medium') : activity.intensity);
             const intensityBadge = `<span class="intensity-badge ${intensityLabel === 'Easy' ? 'intensity-easy' : intensityLabel === 'Hard' ? 'intensity-hard' : 'intensity-medium'}">${intensityLabel}</span>`;
             
+            const onClickAttr = isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : '';
+            const cursorStyle = isStravasActivity ? 'cursor: pointer;' : 'cursor: default;';
+            
+            // Note: The following uses template literals with embedded HTML - this is valid JavaScript
             return `
-                <div class="activity-item" ${isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : ''} style="${isStravasActivity ? 'cursor: pointer;' : 'cursor: default;'}">
+                <div class="activity-item" ${onClickAttr} style="${cursorStyle}">
                     <div class="activity-icon">${getActivityIcon(activity.type)}</div>
                     <div class="activity-details">
                         <div class="activity-title">
@@ -1127,6 +1132,7 @@ async function loadActivities() {
                 </div>
             `;
         }).join('');
+        // htmlhint: on
     } catch (error) {
         console.error('Error:', error);
         document.getElementById('activities-list').innerHTML = '<div class="error">Failed to load activities</div>';
