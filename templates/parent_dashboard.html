@@ -400,6 +400,17 @@
             display: block;
         }
 
+        .streak-settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .streak-settings-grid > div[style*="grid-column"] {
+            grid-column: 1 / -1;
+        }
+
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .container {
@@ -520,10 +531,24 @@
             }
 
             /* Streak Settings on mobile */
-            div[style*="grid-template-columns:1fr 1fr 1fr"] {
+            div[style*="grid-template-columns:1fr 1fr 1fr"],
+            .streak-settings-grid {
                 display: flex !important;
                 flex-direction: column !important;
                 gap: 12px !important;
+            }
+
+            div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
+            .streak-settings-grid > div {
+                width: 100% !important;
+            }
+
+            div[style*="grid-template-columns:1fr 1fr 1fr"] > button,
+            div[style*="grid-template-columns:1fr 1fr 1fr"] > div[style*="grid-column"],
+            .streak-settings-grid > button,
+            .streak-settings-grid > div[style*="grid-column"] {
+                grid-column: auto !important;
+                width: 100% !important;
             }
         }
 
@@ -738,7 +763,7 @@
             <!-- Streak Reward Settings (moved to bottom) -->
             <div class="card">
                 <h2>🔥 Streak Reward Settings</h2>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+                <div class="streak-settings-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
                     <div class="form-group">
                         <label for="streak_base">Base Minutes</label>
                         <input type="number" id="streak_base" value="5" min="0">
