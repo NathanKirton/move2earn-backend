@@ -834,6 +834,32 @@
 
 <!-- Dashboard Container -->
 <div class="dashboard-container" style="display: none;">
+    <div class="dashboard-layout" style="display:flex; gap:20px; align-items:flex-start;">
+        <aside class="dashboard-sidebar" style="width:300px; min-width:260px;">
+            <div style="background: rgba(20,20,30,0.6); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);">
+                <h3 style="margin:0 0 8px 0;color:#fff;">Social</h3>
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:12px;color:#aaa;margin-bottom:6px;">Friends</div>
+                    <div id="friendsList" style="max-height:160px; overflow:auto; padding:6px; background: rgba(255,255,255,0.02); border-radius:6px;"></div>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <input id="friendEmail" placeholder="friend@example.com" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff;font-size:13px;">
+                        <button id="sendFriendBtn" style="padding:8px 10px;border-radius:6px;background:linear-gradient(135deg,#9c27b0 0%,#673ab7 100%);border:none;color:#fff;">Send</button>
+                    </div>
+                </div>
+
+                <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0;">
+
+                <h3 style="margin:0 0 8px 0;color:#fff;">Leaderboard</h3>
+                <div id="leaderboardList" style="max-height:200px; overflow:auto; padding:6px; background: rgba(255,255,255,0.02); border-radius:6px; margin-bottom:8px;"></div>
+
+                <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0;">
+
+                <h3 style="margin:0 0 8px 0;color:#fff;">Challenges</h3>
+                <div id="challengesList" style="max-height:240px; overflow:auto; padding:6px; background: rgba(255,255,255,0.02); border-radius:6px;"></div>
+            </div>
+        </aside>
+        <div class="dashboard-main" style="flex:1;">
+
     <!-- Greeting Section -->
     <div class="greeting-section">
         <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
@@ -891,6 +917,9 @@
         </div>
     </div>
 </div>
+
+</div> <!-- end dashboard-main -->
+    </div> <!-- end dashboard-layout -->
 
 <!-- Activity Detail Modal -->
 <div class="modal" id="activity-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
@@ -1899,4 +1928,104 @@ function updateSimulateProgress(percent) {
         percentSpan.textContent = Math.round(percent);
     }
 }
+
+// ----- Friends, Leaderboard, Challenges JS -----
+async function loadFriends() {
+    try {
+        const resp = await fetch('/api/friends');
+        if (!resp.ok) return;
+        const j = await resp.json();
+        const list = document.getElementById('friendsList');
+        if (!list) return;
+        list.innerHTML = '';
+        (j.friends || []).forEach(f => {
+            const el = document.createElement('div');
+            el.className = 'friend-item';
+            el.textContent = `${f.name || f.email} · ${f.status || 'friend'}`;
+            list.appendChild(el);
+        });
+    } catch (err) {
+        console.error('Failed to load friends', err);
+    }
+}
+
+async function sendFriendRequest(email) {
+    try {
+        const resp = await fetch('/api/friend-request', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email})});
+        const j = await resp.json();
+        if (resp.ok) {
+            alert('Friend request sent');
+            loadFriends();
+        } else {
+            alert('Error: ' + (j.error || 'failed'));
+        }
+    } catch (err) { alert('Network error'); }
+}
+
+async function loadLeaderboard() {
+    try {
+        const resp = await fetch('/api/leaderboard');
+        if (!resp.ok) return;
+        const j = await resp.json();
+        const list = document.getElementById('leaderboardList');
+        if (!list) return;
+        list.innerHTML = '';
+        (j.leaderboard || []).forEach((u, idx) => {
+            const el = document.createElement('div');
+            el.className = 'leader-row';
+            el.innerHTML = `<strong>#${idx+1} ${u.name}</strong> — ${u.earned_game_time}m`;
+            list.appendChild(el);
+        });
+    } catch (err) { console.error('Failed to load leaderboard', err); }
+}
+
+async function loadChallenges() {
+    try {
+        const resp = await fetch('/api/challenges');
+        if (!resp.ok) return;
+        const j = await resp.json();
+        const list = document.getElementById('challengesList');
+        if (!list) return;
+        list.innerHTML = '';
+        (j.challenges || []).forEach(ch => {
+            const el = document.createElement('div');
+            el.className = 'challenge-item';
+            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${ch.title}</strong><div style="font-size:12px;color:#ccc;">${ch.description}</div></div><div>${ch.locked ? '🔒' : ''}<button style="margin-left:8px;" data-id="${ch.id}" ${ch.locked?"disabled":""}>${ch.locked? 'Locked' : 'Attempt'}</button></div></div>`;
+            const btn = el.querySelector('button');
+            if (btn && !ch.locked) {
+                btn.addEventListener('click', async function() {
+                    try {
+                        const resp2 = await fetch('/api/complete-challenge', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({challenge_id: ch.id})});
+                        const j2 = await resp2.json();
+                        if (resp2.ok) {
+                            alert('Completed! Reward: ' + j2.reward_minutes + ' minutes');
+                            loadGameTime();
+                        } else {
+                            alert('Error: ' + (j2.error || 'failed'));
+                        }
+                    } catch (err) { alert('Network error'); }
+                });
+            }
+            list.appendChild(el);
+        });
+    } catch (err) { console.error('Failed to load challenges', err); }
+}
+
+// Hook up sidebar actions
+document.addEventListener('DOMContentLoaded', function() {
+    const sendBtn = document.getElementById('sendFriendBtn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', function() {
+            const email = document.getElementById('friendEmail').value.trim();
+            if (!email) return alert('Enter an email');
+            sendFriendRequest(email);
+        });
+    }
+
+    // Initial loads
+    try { loadFriends(); } catch (e) {}
+    try { loadLeaderboard(); } catch (e) {}
+    try { loadChallenges(); } catch (e) {}
+});
+
 {% endblock %}

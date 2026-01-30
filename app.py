@@ -9,6 +9,9 @@ import json
 import logging
 import math
 import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from database import UserDB, hash_password
 from werkzeug.utils import secure_filename
 
@@ -156,6 +159,66 @@ def get_user_strava_headers(user_id):
         return {'Authorization': f'Bearer {access_token}'}
 
     return None
+
+
+def send_email(recipient_email, subject, html_body):
+    """
+    Send an email via SendGrid or SMTP. 
+    Uses SENDGRID_API_KEY if available, otherwise falls back to SMTP configuration.
+    Returns (success: bool, message: str)
+    """
+    try:
+        # Try SendGrid API first
+        sendgrid_key = os.getenv('SENDGRID_API_KEY')
+        if sendgrid_key:
+            import requests as req
+            headers = {
+                'Authorization': f'Bearer {sendgrid_key}',
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                'personalizations': [{'to': [{'email': recipient_email}]}],
+                'from': {'email': os.getenv('EMAIL_FROM', 'noreply@move2earn.app')},
+                'subject': subject,
+                'content': [{'type': 'text/html', 'value': html_body}]
+            }
+            resp = req.post('https://api.sendgrid.com/v3/mail/send', json=payload, headers=headers)
+            if resp.status_code in (200, 201, 202):
+                return True, 'Email sent successfully'
+            else:
+                logger.warning(f'SendGrid API error: {resp.status_code} {resp.text}')
+                return False, f'SendGrid error: {resp.status_code}'
+        
+        # Fallback to SMTP
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        smtp_user = os.getenv('SMTP_USER')
+        smtp_pass = os.getenv('SMTP_PASSWORD')
+        email_from = os.getenv('EMAIL_FROM', smtp_user or 'noreply@move2earn.app')
+        
+        if not smtp_user or not smtp_pass:
+            logger.warning('No email configuration (SendGrid API key or SMTP credentials) found')
+            return False, 'Email service not configured'
+        
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = email_from
+        msg['To'] = recipient_email
+        
+        # Attach HTML body
+        msg.attach(MIMEText(html_body, 'html'))
+        
+        # Send via SMTP
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(email_from, recipient_email, msg.as_string())
+        
+        return True, 'Email sent successfully'
+    
+    except Exception as e:
+        logger.exception(f'Error sending email to {recipient_email}: {str(e)}')
+        return False, f'Error sending email: {str(e)}'
 
 
 @app.route('/')
@@ -614,6 +677,540 @@ def api_parent_children():
 @app.route('/api/add-child', methods=['POST'])
 def api_add_child():
     """API endpoint to add a child"""
+
+
+# ------------------------
+# Friend Requests & Approvals
+# ------------------------
+@app.route('/api/friend-request', methods=['POST'])
+def api_friend_request():
+    """Child sends a friend request to another child via email."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    to_email = data.get('email')
+    if not to_email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    friend_requests = db['friend_requests']
+
+    # Get from_user info
+    from_user = users.find_one({'_id': ObjectId(session['user_id'])})
+    from_name = from_user.get('name', 'A friend') if from_user else 'A friend'
+
+    # Try to resolve to_user_id if exists
+    to_user = users.find_one({'email': to_email})
+    to_user_id = str(to_user['_id']) if to_user else None
+
+    req_doc = {
+        'from_user_id': session['user_id'],
+        'to_user_id': to_user_id,
+        'to_email': to_email,
+        'status': 'pending',
+        'created_at': datetime.utcnow()
+    }
+    res = friend_requests.insert_one(req_doc)
+
+    # Send notification email to recipient
+    email_subject = f'{from_name} sent you a friend request on Move2Earn!'
+    email_body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2>You have a new friend request!</h2>
+            <p><strong>{from_name}</strong> sent you a friend request on Move2Earn.</p>
+            <p>Your parent will review and approve this request. You'll be notified once they decide.</p>
+            <p>Keep earning game time! 🎮</p>
+            <hr>
+            <p><em>Move2Earn - Earn game time through physical activity</em></p>
+        </body>
+    </html>
+    """
+    send_email(to_email, email_subject, email_body)
+
+    return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
+
+
+@app.route('/api/parent-friend-approvals')
+def api_parent_friend_approvals():
+    """Return pending friend requests involving this parent's children"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    friend_requests = db['friend_requests']
+
+    # Get parent children IDs
+    parent = users.find_one({'_id': ObjectId(session['user_id'])})
+    children = parent.get('children', []) if parent else []
+    child_ids = [str(c) for c in children]
+
+    # Find requests where either from_user_id or to_user_id is one of these children and status pending
+    pending = list(friend_requests.find({'status': 'pending', '$or': [{'from_user_id': {'$in': child_ids}}, {'to_user_id': {'$in': child_ids}}]}))
+
+    # Normalize
+    out = []
+    for p in pending:
+        p['id'] = str(p['_id'])
+        p['from_user_id'] = p.get('from_user_id')
+        p['to_user_id'] = p.get('to_user_id')
+        p['to_email'] = p.get('to_email')
+        p['created_at'] = p.get('created_at').isoformat() if p.get('created_at') else None
+        del p['_id']
+        out.append(p)
+
+    return jsonify({'requests': out}), 200
+
+
+@app.route('/api/respond-friend-request', methods=['POST'])
+def api_respond_friend_request():
+    """Parent approves or rejects a pending friend request for their child."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    req_id = data.get('request_id')
+    action = data.get('action')  # 'approve' or 'reject'
+    if not req_id or action not in ('approve', 'reject'):
+        return jsonify({'error': 'Invalid parameters'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    friend_requests = db['friend_requests']
+    users = db['users']
+
+    try:
+        fr = friend_requests.find_one({'_id': ObjectId(req_id)})
+        if not fr:
+            return jsonify({'error': 'Request not found'}), 404
+
+        # Ensure parent is owner of at least one child in the request
+        parent = users.find_one({'_id': ObjectId(session['user_id'])})
+        children = [str(c) for c in parent.get('children', [])]
+        if not (fr.get('from_user_id') in children or (fr.get('to_user_id') and fr.get('to_user_id') in children)):
+            return jsonify({'error': 'Not authorized for this request'}), 403
+
+        from_user_id = fr.get('from_user_id')
+        from_user = users.find_one({'_id': ObjectId(from_user_id)}) if from_user_id else None
+        from_name = from_user.get('name', 'A friend') if from_user else 'A friend'
+        
+        to_email = fr.get('to_email')
+        to_user_id = fr.get('to_user_id')
+        to_user = users.find_one({'_id': ObjectId(to_user_id)}) if to_user_id else None
+
+        if action == 'reject':
+            friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
+            
+            # Send rejection email to from_user if they have an email
+            if from_user and from_user.get('email'):
+                email_subject = f'Friend request rejected'
+                email_body = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333;">
+                        <h2>Friend request decision</h2>
+                        <p>Your parent has reviewed your friend request and decided not to approve it at this time.</p>
+                        <p>You can try again later. Keep earning! 🏃</p>
+                        <hr>
+                        <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                    </body>
+                </html>
+                """
+                send_email(from_user.get('email'), email_subject, email_body)
+            
+            return jsonify({'success': True}), 200
+
+        # Approve: set status and add friends to both users (if both exist)
+        friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+        
+        # If to_user_id is unknown (email-only) we do nothing further until that user registers
+        if from_user_id and to_user_id:
+            users.update_one({'_id': ObjectId(from_user_id)}, {'$addToSet': {'friends': ObjectId(to_user_id)}})
+            users.update_one({'_id': ObjectId(to_user_id)}, {'$addToSet': {'friends': ObjectId(from_user_id)}})
+
+        # Send approval emails to both parties
+        if from_user and from_user.get('email'):
+            email_subject = f'Friend request approved! 🎉'
+            to_name = to_user.get('name', 'Your friend') if to_user else 'Your friend'
+            email_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>Friend request approved!</h2>
+                    <p>Your parent approved your friend request! You're now friends with {to_name}.</p>
+                    <p>You can now compete on the leaderboard together and take on challenges. 🏆</p>
+                    <hr>
+                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                </body>
+            </html>
+            """
+            send_email(from_user.get('email'), email_subject, email_body)
+        
+        # If to_user exists and has email, send notification
+        if to_user and to_user.get('email'):
+            email_subject = f'Friend request approved! 🎉'
+            from_name_display = from_user.get('name', 'A friend') if from_user else 'A friend'
+            email_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>Friend request approved!</h2>
+                    <p>Your friend request from {from_name_display} has been approved by their parent!</p>
+                    <p>You're now friends and can compete on the leaderboard together. 🏆</p>
+                    <hr>
+                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                </body>
+            </html>
+            """
+            send_email(to_user.get('email'), email_subject, email_body)
+        
+        # If to_user doesn't exist yet (invited by email), send them an approval email
+        if not to_user and to_email:
+            email_subject = f'{from_name} wants to be your friend on Move2Earn!'
+            email_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>You have a new friend!</h2>
+                    <p><strong>{from_name}</strong> sent you a friend request on Move2Earn and their parent approved it!</p>
+                    <p>Sign up to join and start competing with your friends. 🎮</p>
+                    <a href="{os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:5000')}/register" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Sign Up</a>
+                    <hr>
+                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                </body>
+            </html>
+            """
+            send_email(to_email, email_subject, email_body)
+
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.exception('Error responding to friend request: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+# ------------------------
+# Leaderboard
+# ------------------------
+@app.route('/api/leaderboard')
+def api_leaderboard():
+    """Return top children across the app by earned game time."""
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    # Select children accounts
+    top = list(users.find({'account_type': 'child'}).sort('earned_game_time', -1).limit(10))
+    out = []
+    for u in top:
+        out.append({
+            'id': str(u['_id']),
+            'name': u.get('name', ''),
+            'earned_game_time': int(u.get('earned_game_time', 0)),
+            'daily_screen_time_limit': int(u.get('daily_screen_time_limit', 0))
+        })
+    return jsonify({'leaderboard': out}), 200
+
+
+# ------------------------
+# Challenges
+# ------------------------
+@app.route('/api/challenges', methods=['GET'])
+def api_get_challenges():
+    """Return list of challenges; include whether current user has unlocked each."""
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    challenges = db['challenges']
+    unlocks = db['challenge_unlocks']
+
+    all_ch = list(challenges.find().sort('created_at', -1))
+    out = []
+    user_id = session.get('user_id')
+    for ch in all_ch:
+        ch_id = str(ch['_id'])
+        unlocked = False
+        try:
+            if user_id:
+                unlocked = unlocks.find_one({'user_id': user_id, 'challenge_id': ch_id}) is not None
+        except Exception:
+            unlocked = False
+        out.append({
+            'id': ch_id,
+            'title': ch.get('title'),
+            'description': ch.get('description'),
+            'reward_minutes': int(ch.get('reward_minutes', 0)),
+            'locked': not unlocked
+        })
+    return jsonify({'challenges': out}), 200
+
+
+@app.route('/api/request-challenge-unlock', methods=['POST'])
+def api_request_challenge_unlock():
+    """Child requests parent approval to unlock a challenge."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    challenge_id = data.get('challenge_id')
+    if not challenge_id:
+        return jsonify({'error': 'challenge_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_unlock_requests']
+    challenges = db['challenges']
+    users = db['users']
+
+    # Get child name and parent email
+    child = users.find_one({'_id': ObjectId(session['user_id'])})
+    child_name = child.get('name', 'Your child') if child else 'Your child'
+
+    # Get parent info
+    parent = users.find_one({'children': ObjectId(session['user_id'])})
+    parent_email = parent.get('email') if parent else None
+
+    # Get challenge info
+    challenge = challenges.find_one({'_id': ObjectId(challenge_id)})
+    challenge_name = challenge.get('name', 'a challenge') if challenge else 'a challenge'
+
+    doc = {
+        'user_id': session['user_id'],
+        'challenge_id': challenge_id,
+        'status': 'pending',
+        'created_at': datetime.utcnow()
+    }
+    res = reqs.insert_one(doc)
+
+    # Send email to parent
+    if parent_email:
+        email_subject = f'{child_name} wants to unlock a challenge!'
+        email_body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <h2>Challenge unlock request</h2>
+                <p><strong>{child_name}</strong> wants to unlock the challenge: <strong>{challenge_name}</strong></p>
+                <p>Review this request in the Approvals section of your parent dashboard and approve or reject it.</p>
+                <hr>
+                <p><em>Move2Earn - Earn game time through physical activity</em></p>
+            </body>
+        </html>
+        """
+        send_email(parent_email, email_subject, email_body)
+
+    return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
+
+
+@app.route('/api/parent-challenge-approvals')
+def api_parent_challenge_approvals():
+    """Return pending challenge-unlock requests for this parent's children"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    reqs = db['challenge_unlock_requests']
+
+    parent = users.find_one({'_id': ObjectId(session['user_id'])})
+    children = [str(c) for c in parent.get('children', [])]
+
+    pending = list(reqs.find({'status': 'pending', 'user_id': {'$in': children}}))
+    out = []
+    for p in pending:
+        out.append({'id': str(p['_id']), 'user_id': p['user_id'], 'challenge_id': p['challenge_id'], 'created_at': p.get('created_at').isoformat()})
+    return jsonify({'requests': out}), 200
+
+
+@app.route('/api/respond-challenge-unlock', methods=['POST'])
+def api_respond_challenge_unlock():
+    """Parent approves or rejects a challenge unlock request."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    req_id = data.get('request_id')
+    action = data.get('action')
+    if not req_id or action not in ('approve', 'reject'):
+        return jsonify({'error': 'Invalid parameters'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_unlock_requests']
+    unlocks = db['challenge_unlocks']
+    challenges = db['challenges']
+    users = db['users']
+
+    try:
+        r = reqs.find_one({'_id': ObjectId(req_id)})
+        if not r:
+            return jsonify({'error': 'Request not found'}), 404
+
+        # Verify parent owns child
+        parent = users.find_one({'_id': ObjectId(session['user_id'])})
+        children = [str(c) for c in parent.get('children', [])]
+        if r.get('user_id') not in children:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        # Get child and challenge info
+        child = users.find_one({'_id': ObjectId(r.get('user_id'))})
+        child_name = child.get('name', 'Your child') if child else 'Your child'
+        child_email = child.get('email') if child else None
+
+        challenge = challenges.find_one({'_id': ObjectId(r.get('challenge_id'))})
+        challenge_name = challenge.get('name', 'the challenge') if challenge else 'the challenge'
+
+        if action == 'reject':
+            reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
+            
+            # Send rejection email to child
+            if child_email:
+                email_subject = f'Challenge unlock request denied'
+                email_body = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333;">
+                        <h2>Challenge request decision</h2>
+                        <p>Your parent decided not to unlock the challenge: <strong>{challenge_name}</strong></p>
+                        <p>You can try again later. Keep earning! 🏃</p>
+                        <hr>
+                        <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                    </body>
+                </html>
+                """
+                send_email(child_email, email_subject, email_body)
+            
+            return jsonify({'success': True}), 200
+
+        # Approve: create unlock record and mark request approved
+        reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+        unlocks.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'unlocked_at': datetime.utcnow()})
+        
+        # Send approval email to child
+        if child_email:
+            email_subject = f'Challenge unlocked! 🎉 {challenge_name}'
+            email_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>Challenge unlocked!</h2>
+                    <p>Your parent approved your request! The challenge <strong>{challenge_name}</strong> is now unlocked.</p>
+                    <p>Complete it to earn the reward. Good luck! 🚀</p>
+                    <hr>
+                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
+                </body>
+            </html>
+            """
+            send_email(child_email, email_subject, email_body)
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.exception('Error responding to challenge unlock: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/complete-challenge', methods=['POST'])
+def api_complete_challenge():
+    """Mark a challenge as completed by a child and credit reward minutes."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    challenge_id = data.get('challenge_id')
+    if not challenge_id:
+        return jsonify({'error': 'challenge_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    unlocks = db['challenge_unlocks']
+    challenges = db['challenges']
+    user_ch = db['user_challenges']
+    users = db['users']
+
+    # Check unlock
+    unlocked = unlocks.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+    if not unlocked:
+        return jsonify({'error': 'Challenge locked or not approved'}), 403
+
+    ch = challenges.find_one({'_id': ObjectId(challenge_id)})
+    if not ch:
+        return jsonify({'error': 'Challenge not found'}), 404
+
+    reward = int(ch.get('reward_minutes', 0))
+    # Record completion
+    user_ch.insert_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'completed_at': datetime.utcnow()})
+
+    # Credit reward minutes
+    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+
+    # Send completion congratulations email
+    child = users.find_one({'_id': ObjectId(session['user_id'])})
+    child_email = child.get('email') if child else None
+    challenge_name = ch.get('name', 'the challenge') if ch else 'the challenge'
+
+    if child_email:
+        email_subject = f'Challenge completed! You earned {reward} minutes! 🎊'
+        email_body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <h2>Congratulations! 🎉</h2>
+                <p>You completed <strong>{challenge_name}</strong>!</p>
+                <p>You earned <strong>{reward} game time minutes</strong>. Great work!</p>
+                <p>Check the leaderboard to see how you compare to your friends.</p>
+                <hr>
+                <p><em>Move2Earn - Earn game time through physical activity</em></p>
+            </body>
+        </html>
+        """
+        send_email(child_email, email_subject, email_body)
+
+    return jsonify({'success': True, 'reward_minutes': reward}), 200
+
+
+@app.route('/api/friends')
+def api_get_friends():
+    """Return current user's friends and pending requests."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    friend_requests = db['friend_requests']
+
+    user = users.find_one({'_id': ObjectId(session['user_id'])})
+    friends = []
+    if user:
+        for f in user.get('friends', []):
+            try:
+                fu = users.find_one({'_id': f})
+                if fu:
+                    friends.append({'id': str(fu['_id']), 'name': fu.get('name'), 'email': fu.get('email'), 'status': 'friend'})
+            except Exception:
+                pass
+
+    # also include outgoing requests
+    outgoing = list(friend_requests.find({'from_user_id': session['user_id'], 'status': 'pending'}))
+    outgoing_fmt = [{'to_email': r.get('to_email'), 'id': str(r['_id'])} for r in outgoing]
+
+    return jsonify({'friends': friends, 'outgoing_requests': outgoing_fmt}), 200
+
+
     logger.debug(f"Add child request - session: {dict(session)}")
     logger.debug(f"user_id in session: {'user_id' in session}")
     logger.debug(f"account_type in session: {'account_type' in session}")

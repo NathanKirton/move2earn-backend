@@ -761,6 +761,21 @@
                 </div>
                 {% endif %}
             </div>
+            <!-- Approvals & Requests -->
+            <div class="card">
+                <h2>✅ Approvals & Requests</h2>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                        <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px;">Friend Requests</div>
+                        <div id="friendApprovalsList" style="max-height:220px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;">No pending requests</div>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px;">Challenge Unlock Requests</div>
+                        <div id="challengeApprovalsList" style="max-height:220px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;">No pending requests</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Streak Reward Settings (moved to bottom) -->
             <div class="card">
                 <h2>🔥 Streak Reward Settings</h2>
@@ -1229,6 +1244,122 @@
 
         // Start polling
         setInterval(refreshChildren, 8000);
+
+        // Load approvals for friend requests and challenges
+        async function loadApprovals() {
+            try {
+                const resp = await fetch('/api/parent-friend-approvals');
+                if (resp.ok) {
+                    const j = await resp.json();
+                    const el = document.getElementById('friendApprovalsList');
+                    if (el) {
+                        if (j.requests && j.requests.length) {
+                            el.innerHTML = '';
+                            j.requests.forEach(r => {
+                                const row = document.createElement('div');
+                                row.style.display = 'flex';
+                                row.style.justifyContent = 'space-between';
+                                row.style.alignItems = 'center';
+                                row.style.padding = '10px 8px';
+                                row.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+                                row.style.backgroundColor = 'rgba(0,212,255,0.05)';
+                                row.style.borderRadius = '6px';
+                                row.style.marginBottom = '6px';
+                                
+                                // Show who sent the request (or to email)
+                                const fromDisplay = r.from_user_id ? `Child ${r.from_user_id.substring(0, 8)}` : r.to_email || 'Unknown';
+                                const toDisplay = r.to_user_id ? `to ${r.to_user_id.substring(0, 8)}` : `to ${r.to_email}`;
+                                
+                                row.innerHTML = `<div style="font-size:13px;color:#00ff88;">👥 ${fromDisplay} <span style="color:#aaa;">${toDisplay}</span></div>`;
+                                const btns = document.createElement('div');
+                                const approve = document.createElement('button');
+                                approve.textContent = '✅ Approve';
+                                approve.style.marginRight = '6px';
+                                approve.className = 'bonus-btn';
+                                approve.addEventListener('click', async () => {
+                                    await respondFriendRequest(r.id, 'approve');
+                                    loadApprovals();
+                                });
+                                const reject = document.createElement('button');
+                                reject.textContent = '❌ Reject';
+                                reject.className = 'bonus-btn';
+                                reject.style.background = '#ff6b6b';
+                                reject.addEventListener('click', async () => { await respondFriendRequest(r.id, 'reject'); loadApprovals(); });
+                                btns.appendChild(approve); btns.appendChild(reject);
+                                row.appendChild(btns);
+                                el.appendChild(row);
+                            });
+                        } else {
+                            el.innerHTML = '<div style="color:#aaa;padding:8px;">No pending friend requests</div>';
+                        }
+                    }
+                }
+            } catch (err) { console.error('Failed to load friend approvals', err); }
+
+            try {
+                const resp2 = await fetch('/api/parent-challenge-approvals');
+                if (resp2.ok) {
+                    const j2 = await resp2.json();
+                    const el2 = document.getElementById('challengeApprovalsList');
+                    if (el2) {
+                        if (j2.requests && j2.requests.length) {
+                            el2.innerHTML = '';
+                            j2.requests.forEach(r => {
+                                const row = document.createElement('div');
+                                row.style.display = 'flex';
+                                row.style.justifyContent = 'space-between';
+                                row.style.alignItems = 'center';
+                                row.style.padding = '10px 8px';
+                                row.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+                                row.style.backgroundColor = 'rgba(255,193,7,0.05)';
+                                row.style.borderRadius = '6px';
+                                row.style.marginBottom = '6px';
+                                
+                                // Show child name/ID and challenge ID
+                                const childDisplay = r.user_id.substring(0, 8);
+                                const challengeDisplay = r.challenge_id.substring(0, 8);
+                                
+                                row.innerHTML = `<div style="font-size:13px;color:#ffc107;">🎯 Child ${childDisplay} <span style="color:#aaa;">wants to unlock challenge</span> ${challengeDisplay}</div>`;
+                                const btns = document.createElement('div');
+                                const approve = document.createElement('button');
+                                approve.textContent = '✅ Approve';
+                                approve.style.marginRight = '6px';
+                                approve.className = 'bonus-btn';
+                                approve.addEventListener('click', async () => { await respondChallengeUnlock(r.id, 'approve'); loadApprovals(); });
+                                const reject = document.createElement('button');
+                                reject.textContent = '❌ Reject';
+                                reject.className = 'bonus-btn';
+                                reject.style.background = '#ff6b6b';
+                                reject.addEventListener('click', async () => { await respondChallengeUnlock(r.id, 'reject'); loadApprovals(); });
+                                btns.appendChild(approve); btns.appendChild(reject);
+                                row.appendChild(btns);
+                                el2.appendChild(row);
+                            });
+                        } else {
+                            el2.innerHTML = '<div style="color:#aaa;padding:8px;">No pending challenge unlocks</div>';
+                        }
+                    }
+                }
+            } catch (err) { console.error('Failed to load challenge approvals', err); }
+        }
+
+        async function respondFriendRequest(requestId, action) {
+            try {
+                const resp = await fetch('/api/respond-friend-request', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({request_id: requestId, action})});
+                return resp.ok;
+            } catch (err) { return false; }
+        }
+
+        async function respondChallengeUnlock(requestId, action) {
+            try {
+                const resp = await fetch('/api/respond-challenge-unlock', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({request_id: requestId, action})});
+                return resp.ok;
+            } catch (err) { return false; }
+        }
+
+        // Start approvals polling
+        loadApprovals();
+        setInterval(loadApprovals, 8000);
     </script>
 </body>
 </html>
