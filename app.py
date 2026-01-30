@@ -11,8 +11,9 @@ import math
 import random
 from database import UserDB
 from werkzeug.utils import secure_filename
-import pathlib
 
+import pathlib
+from bson.objectid import ObjectId
 load_dotenv()
 
 # Setup logging
@@ -1302,31 +1303,36 @@ def api_get_manual_activities():
     # Debug log how many manual activities are returned
     logger.debug(f"Returning {len(activities)} manual activities for user_id={session.get('user_id')}")
     
+
     return jsonify({'activities': activities}), 200
 
 
 @app.route('/api/skip-strava', methods=['POST'])
 def skip_strava():
     """Mark user as having skipped Strava connection"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    # Set a flag in the session to indicate Strava was skipped
-    session['skip_strava'] = True
-    session['strava_connected'] = False
-    session.modified = True
-    
-    # Also update the user document to reflect this
-    db = get_db()
-    if db is not None:
-        users_collection = db['users']
-        users_collection.update_one(
-            {'_id': ObjectId(session['user_id'])},
-            {'$set': {'skip_strava': True}}
-        )
-    
-    return jsonify({'success': True}), 200
-
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Set a flag in the session to indicate Strava was skipped
+        session['skip_strava'] = True
+        session['strava_connected'] = False
+        session.modified = True
+        
+        # Also update the user document to reflect this
+        db = get_db()
+        if db is not None:
+            users_collection = db['users']
+            users_collection.update_one(
+                {'_id': ObjectId(session['user_id'])},
+                {'$set': {'skip_strava': True}}
+            )
+        
+        logger.info(f"User {session['user_id']} skipped Strava connection")
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.error(f"Error in skip_strava: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/simulate-activities', methods=['POST'])
 def api_simulate_activities():
