@@ -1305,6 +1305,29 @@ def api_get_manual_activities():
     return jsonify({'activities': activities}), 200
 
 
+@app.route('/api/skip-strava', methods=['POST'])
+def skip_strava():
+    """Mark user as having skipped Strava connection"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Set a flag in the session to indicate Strava was skipped
+    session['skip_strava'] = True
+    session['strava_connected'] = False
+    session.modified = True
+    
+    # Also update the user document to reflect this
+    db = get_db()
+    if db is not None:
+        users_collection = db['users']
+        users_collection.update_one(
+            {'_id': ObjectId(session['user_id'])},
+            {'$set': {'skip_strava': True}}
+        )
+    
+    return jsonify({'success': True}), 200
+
+
 @app.route('/api/simulate-activities', methods=['POST'])
 def api_simulate_activities():
     """API endpoint to generate simulated activities for testing"""
@@ -1348,9 +1371,12 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
         
-        # Random date in the last 30 days
-        days_ago = random.randint(0, 30)
-        activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+        # Ensure first activity is always today, others random in last 30 days
+        if i == 0:
+            activity_date = datetime.utcnow().strftime('%Y-%m-%d')
+        else:
+            days_ago = random.randint(1, 30)
+            activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
         
         activity_doc = {
             'user_id': session['user_id'],

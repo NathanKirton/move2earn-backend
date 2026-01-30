@@ -1064,19 +1064,6 @@
 {% endblock %}
 
 {% block extra_js %}
-// Check if user skipped Strava and show dashboard
-if (sessionStorage.getItem('skipStrava') === 'true') {
-    const straElement = document.querySelector('[style*="Connect Your Strava"]')?.parentElement;
-    if (straElement) {
-        straElement.style.display = 'none';
-    }
-    const dashElement = document.querySelector('.dashboard-container');
-    if (dashElement) {
-        dashElement.style.display = 'flex';
-    }
-    sessionStorage.removeItem('skipStrava');
-}
-
 function calculateIntensity(avgHR, maxHR) {
     // Prefer absolute HR thresholds if available
     if (avgHR) {
@@ -1762,10 +1749,29 @@ function closeSimulateModal() {
 }
 
 function skipStrava() {
-    // Mark user as having skipped Strava setup and redirect to main dashboard
-    // The dashboard will show manual upload options instead of Strava prompt
-    sessionStorage.setItem('skipStrava', 'true');
-    window.location.href = '/dashboard';
+    // Mark user as having skipped Strava setup via API
+    fetch('/api/skip-strava', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(response => {
+        if (response.ok) {
+            // Hide the Strava connection prompt
+            const straPrompt = document.querySelector('[style*="Connect Your Strava"]')?.parentElement;
+            if (straPrompt) {
+                straPrompt.style.display = 'none';
+            }
+            // Show the dashboard container
+            const dashContainer = document.querySelector('.dashboard-container');
+            if (dashContainer) {
+                dashContainer.style.display = 'flex';
+            }
+            // Load activities
+            loadActivities();
+        }
+    }).catch(err => {
+        console.error('Error skipping Strava:', err);
+        alert('Failed to skip Strava connection');
+    });
 }
 
 // Handle simulate form submission
