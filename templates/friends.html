@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends - Move2Earn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .header-left h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-logout {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-logout:hover {
+            background: #ee5a52;
+        }
+        
+        .card {
+            background: rgba(50, 50, 80, 0.4);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .friend-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(100, 100, 150, 0.2);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group input {
+            padding: 10px 12px;
+            background: rgba(100, 100, 120, 0.4);
+            border: 1px solid rgba(150, 150, 180, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input::placeholder {
+            color: #777;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(100, 100, 120, 0.6);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+        
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+        
+        .friends-list, .requests-list {
+            margin-top: 15px;
+        }
+        
+        .friend-item, .request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .friend-info {
+            flex: 1;
+        }
+        
+        .friend-name {
+            font-weight: 600;
+            color: #00ff88;
+            margin-bottom: 4px;
+        }
+        
+        .friend-email {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #aaa;
+        }
+        
+        .empty-state p {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .friend-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .send-btn {
+                align-self: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>👥 Friends</h1>
+            </div>
+            <div class="header-right">
+                <a href="/dashboard" class="btn btn-back">← Back to Dashboard</a>
+                <a href="/logout" class="btn btn-logout">Logout</a>
+            </div>
+        </header>
+
+        <!-- Send Friend Request -->
+        <div class="card">
+            <h2>Send Friend Request</h2>
+            <div class="friend-form">
+                <div class="form-group">
+                    <input type="email" id="friendEmail" placeholder="Enter friend's email address" />
+                </div>
+                <button class="send-btn" onclick="sendFriendRequest()">Send Request</button>
+            </div>
+        </div>
+
+        <!-- Friends List -->
+        <div class="card">
+            <h2>My Friends</h2>
+            <div id="friendsList" class="friends-list">
+                <div class="empty-state">
+                    <p>Loading friends...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="card">
+            <h2>Pending Requests</h2>
+            <div id="pendingList" class="requests-list">
+                <div class="empty-state">
+                    <p>Loading requests...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadFriends() {
+            try {
+                const resp = await fetch('/api/friends');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const friendsEl = document.getElementById('friendsList');
+                    const pendingEl = document.getElementById('pendingList');
+
+                    // Display friends
+                    if (data.friends && data.friends.length) {
+                        friendsEl.innerHTML = data.friends.map(f => `
+                            <div class="friend-item">
+                                <div class="friend-info">
+                                    <div class="friend-name">${f.name || 'Unknown'}</div>
+                                    <div class="friend-email">${f.email}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        friendsEl.innerHTML = '<div class="empty-state"><p>No friends yet. Send a request to get started!</p></div>';
+                    }
+
+                    // Display outgoing requests
+                    if (data.outgoing_requests && data.outgoing_requests.length) {
+                        pendingEl.innerHTML = data.outgoing_requests.map(r => `
+                            <div class="request-item">
+                                <div class="friend-info">
+                                    <div class="friend-name">Request sent to</div>
+                                    <div class="friend-email">${r.to_email}</div>
+                                </div>
+                                <small style="color:#aaa;">⏳ Pending parent approval</small>
+                            </div>
+                        `).join('');
+                    } else {
+                        pendingEl.innerHTML = '<div class="empty-state"><p>No pending requests.</p></div>';
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load friends:', err);
+                document.getElementById('friendsList').innerHTML = '<div class="empty-state"><p>Error loading friends</p></div>';
+            }
+        }
+
+        async function sendFriendRequest() {
+            const email = document.getElementById('friendEmail').value.trim();
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/friend-request', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (resp.ok) {
+                    document.getElementById('friendEmail').value = '';
+                    alert('Friend request sent! Your parent will review it.');
+                    loadFriends();
+                } else {
+                    const err = await resp.json();
+                    alert('Error: ' + (err.error || 'Failed to send request'));
+                }
+            } catch (err) {
+                console.error('Error sending request:', err);
+                alert('Error sending request');
+            }
+        }
+
+        // Load on page load
+        loadFriends();
+        // Refresh every 8 seconds
+        setInterval(loadFriends, 8000);
+    </script>
+</body>
+</html>

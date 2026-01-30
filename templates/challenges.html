@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenges - Move2Earn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .header-left h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-logout {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-logout:hover {
+            background: #ee5a52;
+        }
+        
+        .challenges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .challenge-card {
+            background: rgba(50, 50, 80, 0.4);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .challenge-card:hover {
+            border-color: rgba(255, 193, 7, 0.5);
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+        }
+        
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .challenge-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffc107;
+        }
+        
+        .challenge-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .challenge-description {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .challenge-reward {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #00ff88;
+        }
+        
+        .challenge-action {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .unlock-btn, .complete-btn, .request-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .request-btn {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .request-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+        
+        .unlock-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #000;
+        }
+        
+        .unlock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        }
+        
+        .complete-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            color: #000;
+        }
+        
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #aaa;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state p {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .challenges-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>🎯 Challenges</h1>
+            </div>
+            <div class="header-right">
+                <a href="/dashboard" class="btn btn-back">← Back to Dashboard</a>
+                <a href="/logout" class="btn btn-logout">Logout</a>
+            </div>
+        </header>
+
+        <div id="challengesContainer" class="challenges-grid">
+            <div class="empty-state">
+                <p>Loading challenges...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadChallenges() {
+            try {
+                const resp = await fetch('/api/challenges');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const container = document.getElementById('challengesContainer');
+
+                    if (data.challenges && data.challenges.length) {
+                        container.innerHTML = data.challenges.map(ch => {
+                            const isLocked = !ch.is_unlocked;
+                            const isCompleted = ch.is_completed;
+                            
+                            let actionHtml = '';
+                            if (isCompleted) {
+                                actionHtml = '<div class="challenge-status">✅ Completed</div>';
+                            } else if (isLocked) {
+                                actionHtml = '<button class="request-btn" onclick="requestUnlock(\'' + ch.id + '\')">🔒 Request Unlock</button>';
+                            } else {
+                                actionHtml = '<button class="complete-btn" onclick="completeChallenge(\'' + ch.id + '\')">Complete</button>';
+                            }
+
+                            return `
+                                <div class="challenge-card">
+                                    <div class="challenge-header">
+                                        <div class="challenge-name">${ch.name}</div>
+                                    </div>
+                                    <div class="challenge-description">${ch.description}</div>
+                                    <div class="challenge-reward">
+                                        🎮 +${ch.reward_minutes} game time minutes
+                                    </div>
+                                    <div class="challenge-action">
+                                        ${actionHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        container.innerHTML = '<div class="empty-state"><p>No challenges available yet.</p></div>';
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load challenges:', err);
+                document.getElementById('challengesContainer').innerHTML = '<div class="empty-state"><p>Error loading challenges</p></div>';
+            }
+        }
+
+        async function requestUnlock(challengeId) {
+            try {
+                const resp = await fetch('/api/request-challenge-unlock', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challenge_id: challengeId })
+                });
+
+                if (resp.ok) {
+                    alert('Unlock request sent! Your parent will review it.');
+                    loadChallenges();
+                } else {
+                    const err = await resp.json();
+                    alert('Error: ' + (err.error || 'Failed to send request'));
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error sending request');
+            }
+        }
+
+        async function completeChallenge(challengeId) {
+            try {
+                const resp = await fetch('/api/complete-challenge', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challenge_id: challengeId })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    alert('🎉 Challenge completed! You earned ' + data.reward_minutes + ' game time minutes!');
+                    loadChallenges();
+                } else {
+                    const err = await resp.json();
+                    alert('Error: ' + (err.error || 'Failed to complete challenge'));
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error completing challenge');
+            }
+        }
+
+        // Load on page load
+        loadChallenges();
+        // Refresh every 8 seconds
+        setInterval(loadChallenges, 8000);
+    </script>
+</body>
+</html>

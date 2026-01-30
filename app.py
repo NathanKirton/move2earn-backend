@@ -358,6 +358,22 @@ def callback():
         return f"<h1>Error</h1><p>{str(e)}</p><p><a href='/dashboard'>Back to dashboard</a></p>"
 
 
+@app.route('/friends')
+def friends_page():
+    """Display friends page"""
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('friends.html')
+
+
+@app.route('/challenges')
+def challenges_page():
+    """Display challenges page"""
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('challenges.html')
+
+
 @app.route('/dashboard')
 def dashboard():
     """Display dashboard based on user account type"""
@@ -614,6 +630,33 @@ def api_parent_children():
 @app.route('/api/add-child', methods=['POST'])
 def api_add_child():
     """API endpoint to add a child"""
+    logger.debug(f"Add child request - session: {dict(session)}")
+    logger.debug(f"user_id in session: {'user_id' in session}")
+    logger.debug(f"account_type in session: {'account_type' in session}")
+    logger.debug(f"account_type value: {session.get('account_type')}")
+    logger.debug(f"Request cookies on add-child: {request.cookies}")
+    
+    if 'user_id' not in session:
+        logger.error("No user_id in session")
+        return jsonify({'error': 'Unauthorized - no user_id'}), 401
+    
+    if session.get('account_type') != 'parent':
+        logger.error(f"User is not parent: {session.get('account_type')}")
+        return jsonify({'error': 'Unauthorized - not parent'}), 401
+    
+    data = request.get_json()
+    child_name = data.get('child_name')
+    child_email = data.get('child_email')
+    child_password = data.get('child_password')
+    
+    if not all([child_name, child_email, child_password]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    success, result = UserDB.add_child(session['user_id'], child_email, child_password, child_name)
+    if success:
+        return jsonify({'success': True, 'child_id': result}), 201
+    else:
+        return jsonify({'error': result}), 400
 
 
 # ------------------------
@@ -956,35 +999,6 @@ def api_get_friends():
     outgoing_fmt = [{'to_email': r.get('to_email'), 'id': str(r['_id'])} for r in outgoing]
 
     return jsonify({'friends': friends, 'outgoing_requests': outgoing_fmt}), 200
-
-
-    logger.debug(f"Add child request - session: {dict(session)}")
-    logger.debug(f"user_id in session: {'user_id' in session}")
-    logger.debug(f"account_type in session: {'account_type' in session}")
-    logger.debug(f"account_type value: {session.get('account_type')}")
-    logger.debug(f"Request cookies on add-child: {request.cookies}")
-    
-    if 'user_id' not in session:
-        logger.error("No user_id in session")
-        return jsonify({'error': 'Unauthorized - no user_id'}), 401
-    
-    if session.get('account_type') != 'parent':
-        logger.error(f"User is not parent: {session.get('account_type')}")
-        return jsonify({'error': 'Unauthorized - not parent'}), 401
-    
-    data = request.get_json()
-    child_name = data.get('child_name')
-    child_email = data.get('child_email')
-    child_password = data.get('child_password')
-    
-    if not all([child_name, child_email, child_password]):
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    success, result = UserDB.add_child(session['user_id'], child_email, child_password, child_name)
-    if success:
-        return jsonify({'success': True, 'child_id': result}), 201
-    else:
-        return jsonify({'error': result}), 400
 
 
 @app.route('/api/delete-child/<child_id>', methods=['POST'])
