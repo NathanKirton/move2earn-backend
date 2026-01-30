@@ -1106,5 +1106,41 @@
         // Load settings on page load
         loadStreakSettings();
     </script>
+    <script>
+        // Poll parent children every 8 seconds to reflect live changes (earned time updates)
+        async function refreshChildren() {
+            try {
+                const resp = await fetch('/api/parent-children');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (!data.children) return;
+
+                data.children.forEach(child => {
+                    const card = document.querySelector(`.child-card[data-child-id="${child.id}"]`);
+                    if (!card) return;
+                    // Update daily limit
+                    const dailyEl = card.querySelector('.daily-limit-display');
+                    if (dailyEl) dailyEl.textContent = child.daily_screen_time_limit;
+                    // Update used time
+                    const usedEl = card.querySelector('.time-box:nth-child(2) .time-value');
+                    if (usedEl) usedEl.textContent = child.used_game_time;
+                    // Update balance bar
+                    const fill = card.querySelector('.balance-fill');
+                    if (fill && child.daily_screen_time_limit > 0) {
+                        const pct = Math.min(100, Math.round((child.used_game_time / child.daily_screen_time_limit) * 100));
+                        fill.style.width = pct + '%';
+                    }
+                    // Update balance text
+                    const balanceText = card.querySelector('.balance-text');
+                    if (balanceText) balanceText.textContent = 'Balance: ' + (child.daily_screen_time_limit - child.used_game_time) + ' minutes';
+                });
+            } catch (err) {
+                console.error('Failed to refresh children:', err);
+            }
+        }
+
+        // Start polling
+        setInterval(refreshChildren, 8000);
+    </script>
 </body>
 </html>
