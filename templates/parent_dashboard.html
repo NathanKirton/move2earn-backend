@@ -645,6 +645,7 @@
                 <p>Welcome back, {{ parent_name }}!</p>
             </div>
             <div class="header-right">
+                <button class="btn btn-primary" onclick="openAccountModal()">Account Settings</button>
                 <a href="/logout" class="btn btn-logout">Logout</a>
             </div>
         </header>
@@ -1105,6 +1106,93 @@
 
         // Load settings on page load
         loadStreakSettings();
+    </script>
+    <!-- Account Settings Modal -->
+    <div class="modal" id="account-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1200; justify-content:center; align-items:center;">
+        <div style="background:#0f1724; padding:20px; border-radius:10px; width:420px; border:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;color:#fff;">Account Settings</h3>
+                <button onclick="closeAccountModal()" style="background:none;border:none;color:#999;font-size:20px;cursor:pointer;">×</button>
+            </div>
+            <div id="accountMessage" style="display:none;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;"></div>
+            <form id="accountForm">
+                <div style="display:grid;gap:10px;">
+                    <input type="text" id="acct_name" placeholder="Your name" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
+                    <input type="email" id="acct_email" placeholder="Email address" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
+                    <input type="password" id="acct_password" placeholder="New password (leave blank to keep)" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                        <button type="button" onclick="closeAccountModal()" style="padding:8px 12px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;">Cancel</button>
+                        <button type="submit" id="saveAccountBtn" style="padding:8px 12px;border-radius:6px;background:linear-gradient(135deg,#00d4ff 0%,#00ff88 100%);border:none;color:#000;font-weight:600;">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAccountModal() {
+            document.getElementById('account-modal').style.display = 'flex';
+            // Pre-fill with current session values if available
+            try {
+                const nameEl = document.getElementById('acct_name');
+                const emailEl = document.getElementById('acct_email');
+                if (nameEl) nameEl.value = '{{ parent_name }}' || '';
+                if (emailEl) emailEl.value = '{{ parent_email or '' }}';
+                document.getElementById('accountMessage').style.display = 'none';
+            } catch (e) { }
+        }
+
+        function closeAccountModal() {
+            document.getElementById('account-modal').style.display = 'none';
+        }
+
+        document.getElementById('accountForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveAccountBtn');
+            btn.disabled = true;
+            const msg = document.getElementById('accountMessage');
+            msg.style.display = 'none';
+
+            const payload = {
+                name: document.getElementById('acct_name').value,
+                email: document.getElementById('acct_email').value,
+                password: document.getElementById('acct_password').value
+            };
+
+            try {
+                const resp = await fetch('/api/update-account', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const j = await resp.json();
+                if (resp.ok) {
+                    msg.style.display = 'block';
+                    msg.style.background = 'rgba(0,255,136,0.06)';
+                    msg.style.border = '1px solid rgba(0,255,136,0.12)';
+                    msg.style.color = '#00ff88';
+                    msg.textContent = 'Account updated';
+                    // Update welcome text
+                    try { document.querySelector('.header-left p').textContent = 'Welcome back, ' + payload.name + '!'; } catch(e){}
+                    setTimeout(() => { closeAccountModal(); }, 900);
+                } else {
+                    msg.style.display = 'block';
+                    msg.style.background = 'rgba(255,107,107,0.08)';
+                    msg.style.border = '1px solid rgba(255,107,107,0.18)';
+                    msg.style.color = '#ff6b6b';
+                    msg.textContent = j.error || 'Failed to update account';
+                }
+            } catch (err) {
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(255,107,107,0.08)';
+                msg.style.border = '1px solid rgba(255,107,107,0.18)';
+                msg.style.color = '#ff6b6b';
+                msg.textContent = 'Error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        });
     </script>
     <script>
         // Poll parent children every 8 seconds to reflect live changes (earned time updates)

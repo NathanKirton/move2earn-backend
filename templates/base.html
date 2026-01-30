@@ -180,10 +180,10 @@
                 </div>
                 {% if strava_connected %}
                 <button class="btn btn-secondary" onclick="openUploadModal()">Manual Upload</button>
-                <a href="/logout" class="btn btn-logout">Logout</a>
                 {% else %}
                 <a href="/strava-auth" class="btn btn-primary">Connect Strava</a>
                 {% endif %}
+                <a href="/logout" class="btn btn-logout">Logout</a>
                 {% endblock %}
             </div>
         </header>

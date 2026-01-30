@@ -1714,6 +1714,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         progressOverlay.style.display = 'none';
                         closeUploadModal();
                         loadActivities();
+                        // Refresh game time immediately so totals update without reload
+                        try { loadGameTime(); } catch (e) { console.error('loadGameTime error:', e); }
                     }, 500);
                 } else {
                     progressOverlay.style.display = 'none';
@@ -1833,6 +1835,18 @@ if (simulateForm) {
                     progressOverlay.style.display = 'none';
                     closeSimulateModal();
                     loadActivities();
+                    // Refresh game time immediately so totals update without reload
+                    try { loadGameTime(); } catch (e) { console.error('loadGameTime error:', e); }
+                    // If server returned credited minutes, show a quick message
+                    if (data && data.credited_minutes) {
+                        const msg = document.getElementById('simulateMessage');
+                        msg.style.display = 'block';
+                        msg.style.background = 'rgba(56, 142, 60, 0.08)';
+                        msg.style.borderColor = 'rgba(56, 142, 60, 0.2)';
+                        msg.style.color = '#388e3c';
+                        msg.textContent = '✓ Credited ' + data.credited_minutes + ' minutes to today\'s balance';
+                        setTimeout(() => { msg.style.display = 'none'; }, 4000);
+                    }
                 }, 500);
             } else {
                 progressOverlay.style.display = 'none';

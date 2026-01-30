@@ -9,7 +9,7 @@ import json
 import logging
 import math
 import random
-from database import UserDB
+from database import UserDB, hash_password
 from werkzeug.utils import secure_filename
 
 import pathlib
@@ -597,6 +597,7 @@ def parent_dashboard():
     children = UserDB.get_parent_children(session['user_id'])
     return render_template('parent_dashboard.html', 
                           parent_name=session.get('name'),
+                          parent_email=session.get('email'),
                           children=children)
 
 
@@ -1371,29 +1372,53 @@ def api_simulate_activities():
     
     activities_collection = db['activities']
     created_count = 0
-    
+    credited_today = 0
+
     for i in range(count):
         # Generate random data
         activity_type = random.choice(activity_types)
         intensity = random.choice(intensities)
         distance = round(random.uniform(2, 15), 1)  # 2-15 km
-        duration_minutes = random.randint(15, 120)  # 15-120 minutes
-        
+
+        # Choose a realistic pace/duration based on activity type
+        if activity_type == 'Run':
+            # pace between 4.0 and 6.5 min/km
+            pace_min_per_km = round(random.uniform(4.0, 6.5), 2)
+            duration_minutes = int(max(1, round(distance * pace_min_per_km)))
+        elif activity_type == 'Walk':
+            # pace between 8.0 and 12.0 min/km
+            pace_min_per_km = round(random.uniform(8.0, 12.0), 2)
+            duration_minutes = int(max(1, round(distance * pace_min_per_km)))
+        elif activity_type == 'Hiking':
+            # slower: 10-18 min/km
+            pace_min_per_km = round(random.uniform(10.0, 18.0), 2)
+            duration_minutes = int(max(1, round(distance * pace_min_per_km)))
+        elif activity_type == 'Ride':
+            # speed between 15 and 35 km/h
+            speed_kmh = round(random.uniform(15, 35), 1)
+            duration_minutes = int(max(1, round((distance / speed_kmh) * 60)))
+            pace_min_per_km = round((60.0 / speed_kmh), 2)
+        elif activity_type == 'Swim':
+            # very slow per km (minutes per km), e.g., 20-40 min/km
+            pace_min_per_km = round(random.uniform(20.0, 40.0), 2)
+            duration_minutes = int(max(1, round(distance * pace_min_per_km)))
+        else:
+            duration_minutes = random.randint(15, 120)
+
         # Calculate earned minutes based on distance and duration
-        pace = duration_minutes / distance if distance > 0 else 999
         base_earned = distance * 2  # 2 minutes per km
-        
+
         # Intensity multiplier
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
-        
+
         # Ensure first activity is always today, others random in last 30 days
         if i == 0:
             activity_date = datetime.utcnow().strftime('%Y-%m-%d')
         else:
             days_ago = random.randint(1, 30)
             activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
-        
+
         activity_doc = {
             'user_id': session['user_id'],
             'source': 'simulated',
@@ -1406,7 +1431,7 @@ def api_simulate_activities():
             'date': activity_date,
             'created_at': datetime.utcnow()
         }
-        
+
         try:
             activities_collection.insert_one(activity_doc)
             created_count += 1
@@ -1418,6 +1443,7 @@ def api_simulate_activities():
                     # Increase earned_game_time and daily_screen_time_limit for today's activity
                     try:
                         UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+                        credited_today += int(earned_minutes)
                     except Exception as e:
                         logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
 
@@ -1435,8 +1461,64 @@ def api_simulate_activities():
             logger.error(f"Error creating simulated activity: {e}")
             continue
     
-    logger.info(f"Created {created_count} simulated activities for user {session['user_id']}")
-    return jsonify({'success': True, 'count': created_count}), 201
+    logger.info(f"Created {created_count} simulated activities for user {session['user_id']}; credited_today={credited_today}")
+    return jsonify({'success': True, 'count': created_count, 'credited_minutes': credited_today}), 201
+
+
+@app.route('/api/update-account', methods=['POST'])
+def api_update_account():
+    """Update current user's account (name, email, password)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    users = db['users']
+    try:
+        # If email provided, ensure uniqueness
+        if email:
+            existing = users.find_one({'email': email})
+            if existing and str(existing.get('_id')) != str(session['user_id']):
+                return jsonify({'error': 'Email already in use'}), 400
+
+        update = {}
+        if name:
+            update['name'] = name
+        if email:
+            update['email'] = email
+        if password:
+            # Hash password before storing
+            try:
+                hp = hash_password(password)
+                update['password'] = hp
+            except Exception as e:
+                logger.exception('Failed to hash password: %s', e)
+                return jsonify({'error': 'Failed to update password'}), 500
+
+        if not update:
+            return jsonify({'success': True, 'message': 'Nothing to update'}), 200
+
+        from bson import ObjectId
+        res = users.update_one({'_id': ObjectId(session['user_id'])}, {'$set': update})
+        if res.matched_count:
+            # Reflect name/email changes in session
+            if 'name' in update:
+                session['user_name'] = update['name']
+            if 'email' in update:
+                session['user_email'] = update['email']
+            session.modified = True
+            return jsonify({'success': True}), 200
+        return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        logger.exception('Error updating account: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
 
 @app.route('/upload-activity', methods=['GET', 'POST'])
