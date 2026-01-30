@@ -817,7 +817,10 @@
     <!-- Recent Activities Section -->
     <div class="activities-header">
         ☰ Recent Activity
-        <button onclick="openUploadModal()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; margin-left: auto;">+ Manual Upload</button>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+            <button onclick="openSimulateModal()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">⚡ Simulate</button>
+            <button onclick="openUploadModal()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">+ Manual Upload</button>
+        </div>
     </div>
     <div id="activities-list">
         <div class="no-data">
@@ -831,7 +834,10 @@
     <div style="font-size: 48px; margin-bottom: 20px;">🔌</div>
     <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
     <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
-    <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
+        <button onclick="skipStrava()" class="btn btn-secondary" style="display: inline-block; padding: 15px 40px; font-size: 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; cursor: pointer; border-radius: 6px;">Continue Without Strava</button>
+    </div>
 </div>
 {% endif %}
 
@@ -899,6 +905,30 @@
                 </div>
             </div>
             <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Log Activity</button>
+        </form>
+    </div>
+</div>
+
+<!-- Simulate Activities Modal -->
+<div class="modal" id="simulate-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid rgba(100, 100, 150, 0.3);">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
+            <h2 style="color: #fff; margin: 0;">⚡ Simulate Activities</h2>
+            <button class="close-btn" onclick="closeSimulateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
+        </div>
+        <div id="simulateMessage" class="simulate-message" style="background: rgba(156, 39, 176, 0.1); border: 1px solid rgba(156, 39, 176, 0.3); color: #9c27b0; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
+        <form id="simulateForm" style="display: grid; gap: 15px;">
+            <div>
+                <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Number of Activities</label>
+                <input type="number" name="count" min="1" max="100" value="5" required style="width: 100%; padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 14px; margin-top: 5px;">
+                <p style="color: #999; font-size: 12px; margin-top: 5px;">Generate random activities to test your dashboard (1-100)</p>
+            </div>
+            <div style="background: rgba(156, 39, 176, 0.05); border: 1px solid rgba(156, 39, 176, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 5px;">
+                <p style="color: #aaa; font-size: 12px; margin: 0; line-height: 1.5;">
+                    <strong style="color: #9c27b0;">ℹ️ Info:</strong> This will create random activities with varying distances, durations, and intensities for testing purposes.
+                </p>
+            </div>
+            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Generate Activities</button>
         </form>
     </div>
 </div>
@@ -1601,7 +1631,79 @@ window.addEventListener('click', function(event) {
     if (event.target === uploadModal) {
         closeUploadModal();
     }
+    const simulateModal = document.getElementById('simulate-modal');
+    if (event.target === simulateModal) {
+        closeSimulateModal();
+    }
 });
+
+function openSimulateModal() {
+    document.getElementById('simulate-modal').style.display = 'flex';
+    document.getElementById('simulateForm').reset();
+    document.getElementById('simulateMessage').style.display = 'none';
+}
+
+function closeSimulateModal() {
+    document.getElementById('simulate-modal').style.display = 'none';
+}
+
+function skipStrava() {
+    // Redirect to dashboard to continue without Strava
+    window.location.href = '/dashboard';
+}
+
+// Handle simulate form submission
+const simulateForm = document.getElementById('simulateForm');
+if (simulateForm) {
+    simulateForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const count = parseInt(this.querySelector('[name="count"]').value);
+        
+        if (count < 1 || count > 100) {
+            alert('Please enter a number between 1 and 100');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/simulate-activities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ count: count })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                const msg = document.getElementById('simulateMessage');
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(156, 39, 176, 0.1)';
+                msg.style.borderColor = 'rgba(156, 39, 176, 0.3)';
+                msg.style.color = '#9c27b0';
+                msg.textContent = `✓ Generated ${data.count} activities successfully!`;
+                
+                setTimeout(() => {
+                    closeSimulateModal();
+                    loadActivities();
+                }, 1500);
+            } else {
+                const msg = document.getElementById('simulateMessage');
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(255, 107, 107, 0.1)';
+                msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+                msg.style.color = '#ff6b6b';
+                msg.textContent = '✗ ' + (data.error || 'Failed to generate activities');
+            }
+        } catch (err) {
+            const msg = document.getElementById('simulateMessage');
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(255, 107, 107, 0.1)';
+            msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+            msg.style.color = '#ff6b6b';
+            msg.textContent = '✗ Error: ' + err.message;
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', loadActivities);
 {% endblock %}

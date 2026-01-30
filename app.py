@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import json
 import logging
 import math
+import random
 from database import UserDB
 from werkzeug.utils import secure_filename
 import pathlib
@@ -1301,6 +1302,80 @@ def api_get_manual_activities():
     logger.debug(f"Returning {len(activities)} manual activities for user_id={session.get('user_id')}")
     
     return jsonify({'activities': activities}), 200
+
+
+@app.route('/api/simulate-activities', methods=['POST'])
+def api_simulate_activities():
+    """API endpoint to generate simulated activities for testing"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    count = data.get('count', 5)
+    
+    # Validate count
+    try:
+        count = int(count)
+        if count < 1 or count > 100:
+            return jsonify({'error': 'Count must be between 1 and 100'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid count value'}), 400
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    # Activity types and distances
+    activity_types = ['Run', 'Ride', 'Swim', 'Walk', 'Hiking']
+    intensities = ['Easy', 'Medium', 'Hard']
+    
+    activities_collection = db['activities']
+    created_count = 0
+    
+    for i in range(count):
+        # Generate random data
+        activity_type = random.choice(activity_types)
+        intensity = random.choice(intensities)
+        distance = round(random.uniform(2, 15), 1)  # 2-15 km
+        duration_minutes = random.randint(15, 120)  # 15-120 minutes
+        
+        # Calculate earned minutes based on distance and duration
+        pace = duration_minutes / distance if distance > 0 else 999
+        base_earned = distance * 2  # 2 minutes per km
+        
+        # Intensity multiplier
+        intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
+        earned_minutes = int(base_earned * intensity_multiplier)
+        
+        # Random date in the last 30 days
+        days_ago = random.randint(0, 30)
+        activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+        
+        activity_doc = {
+            'user_id': session['user_id'],
+            'source': 'simulated',
+            'title': f'{activity_type} #{i+1}',
+            'type': activity_type,
+            'distance': distance,
+            'time_minutes': duration_minutes,
+            'intensity': intensity,
+            'earned_minutes': earned_minutes,
+            'date': activity_date,
+            'created_at': datetime.utcnow()
+        }
+        
+        try:
+            activities_collection.insert_one(activity_doc)
+            created_count += 1
+            
+            # Add earned time to user
+            UserDB.add_earned_game_time(session['user_id'], earned_minutes)
+        except Exception as e:
+            logger.error(f"Error creating simulated activity: {e}")
+            continue
+    
+    logger.info(f"Created {created_count} simulated activities for user {session['user_id']}")
+    return jsonify({'success': True, 'count': created_count}), 201
 
 
 @app.route('/upload-activity', methods=['GET', 'POST'])
