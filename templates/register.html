@@ -292,9 +292,21 @@
 </head>
 <body>
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-container">
-            <div class="spinner"></div>
-            <div class="spinner-text">Creating your account...</div>
+        <div class="loading-with-progress">
+            <div class="circular-progress">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="progress-circle" cx="60" cy="60" r="54"></circle>
+                    <circle class="progress-ring" cx="60" cy="60" r="54" stroke-width="8" stroke-dasharray="339.29" stroke-dashoffset="339.29"></circle>
+                </svg>
+                <div class="progress-percentage"><span id="progressPercent">0</span>%</div>
+            </div>
+            <div class="progress-text">Creating your account...</div>
         </div>
     </div>
 
@@ -349,33 +361,34 @@
     </div>
     
     <script>
-        // Loading overlay and progress bar
+        // Circular progress bar
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
+        const progressRing = document.querySelector('.progress-ring');
+        const progressPercent = document.getElementById('progressPercent');
         const registerForm = document.getElementById('registerForm');
         const submitBtn = document.getElementById('submitBtn');
         
-        // Simulate progress bar
-        function startProgressBar() {
-            progressContainer.classList.add('show');
+        const circumference = 2 * Math.PI * 54; // radius is 54
+        progressRing.style.strokeDasharray = circumference;
+        progressRing.style.strokeDashoffset = circumference;
+        
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100) * circumference;
+            progressRing.style.strokeDashoffset = offset;
+            progressPercent.textContent = Math.round(percent);
+        }
+        
+        function startProgress() {
             let progress = 0;
             const interval = setInterval(() => {
-                progress += Math.random() * 30;
-                if (progress > 90) progress = 90;
-                progressBar.style.width = progress + '%';
-            }, 200);
-            return interval;
-        }
-
-        // Stop progress bar
-        function stopProgressBar(intervalId) {
-            progressBar.style.width = '100%';
-            clearInterval(intervalId);
-            setTimeout(() => {
-                progressContainer.classList.remove('show');
-                progressBar.style.width = '0%';
-            }, 500);
+                progress += Math.random() * 20;
+                if (progress > 85) progress = 85;
+                setProgress(progress);
+            }, 300);
+            return { interval, setFinal: () => {
+                clearInterval(interval);
+                setProgress(100);
+            }};
         }
         
         // Password strength indicator
@@ -425,17 +438,15 @@
                 return false;
             }
 
-            // Show loading overlay and progress bar on submit
-            const progressInterval = startProgressBar();
+            // Show loading overlay and progress on submit
             loadingOverlay.classList.add('show');
             submitBtn.disabled = true;
+            const progressControl = startProgress();
             
-            // Simulate stopping progress when response comes back
+            // Complete progress when response comes back
             setTimeout(() => {
-                stopProgressBar(progressInterval);
-                loadingOverlay.classList.remove('show');
-                submitBtn.disabled = false;
-            }, 3000);
+                progressControl.setFinal();
+            }, 2500);
         });
     </script>
 </body>

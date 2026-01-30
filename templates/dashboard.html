@@ -406,6 +406,57 @@
         font-size: 13px;
     }
 
+    /* Circular Progress Bar */
+    .circular-progress {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .circular-progress svg {
+        transform: rotate(-90deg);
+    }
+
+    .progress-ring {
+        transition: stroke-dashoffset 0.5s ease;
+        stroke: url(#progressGradient);
+    }
+
+    .progress-circle {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-percentage {
+        position: absolute;
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        text-align: center;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-with-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .progress-text {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+    }
+
     /* Mobile Responsiveness */
     @media (max-width: 768px) {
         .container {
@@ -859,7 +910,27 @@
 
 <!-- Manual Activity Upload Modal -->
 <div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(100, 100, 150, 0.3);">
+    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(100, 100, 150, 0.3); position: relative;">
+        <!-- Progress Overlay -->
+        <div id="uploadProgressOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); border-radius: 12px; z-index: 10; flex-direction: column; justify-content: center; align-items: center;">
+            <div class="circular-progress" style="margin-bottom: 20px;">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <circle class="progress-circle" cx="70" cy="70" r="63" style="fill: none; stroke: rgba(0, 255, 136, 0.2); stroke-width: 8;"></circle>
+                    <circle class="progress-ring" cx="70" cy="70" r="63" style="fill: none; stroke: url(#progressGradient); stroke-width: 8; stroke-dasharray: 395.84; stroke-dashoffset: 395.84; transition: stroke-dashoffset 0.3s ease; transform: rotate(-90deg); transform-origin: 70px 70px;"></circle>
+                    <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color: #00ff88; stop-opacity: 1;"></stop>
+                            <stop offset="100%" style="stop-color: #00d4ff; stop-opacity: 1;"></stop>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                    <div style="font-size: 32px; font-weight: 700; color: #00ff88;"><span id="uploadProgressPercent">0</span>%</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">Uploading...</div>
+                </div>
+            </div>
+        </div>
+        
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
             <h2 id="modal-title" style="color: #fff; margin: 0;">📝 Log Activity</h2>
             <button class="close-btn" onclick="closeUploadModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
@@ -911,7 +982,27 @@
 
 <!-- Simulate Activities Modal -->
 <div class="modal" id="simulate-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid rgba(100, 100, 150, 0.3);">
+    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid rgba(100, 100, 150, 0.3); position: relative;">
+        <!-- Progress Overlay -->
+        <div id="simulateProgressOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); border-radius: 12px; z-index: 10; flex-direction: column; justify-content: center; align-items: center;">
+            <div class="circular-progress" style="margin-bottom: 20px;">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <circle class="progress-circle" cx="70" cy="70" r="63" style="fill: none; stroke: rgba(156, 39, 176, 0.2); stroke-width: 8;"></circle>
+                    <circle class="progress-ring" cx="70" cy="70" r="63" style="fill: none; stroke: url(#simulateProgressGradient); stroke-width: 8; stroke-dasharray: 395.84; stroke-dashoffset: 395.84; transition: stroke-dashoffset 0.3s ease; transform: rotate(-90deg); transform-origin: 70px 70px;"></circle>
+                    <defs>
+                        <linearGradient id="simulateProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color: #9c27b0; stop-opacity: 1;"></stop>
+                            <stop offset="100%" style="stop-color: #673ab7; stop-opacity: 1;"></stop>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                    <div style="font-size: 32px; font-weight: 700; color: #9c27b0;"><span id="simulateProgressPercent">0</span>%</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">Generating...</div>
+                </div>
+            </div>
+        </div>
+        
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
             <h2 style="color: #fff; margin: 0;">⚡ Simulate Activities</h2>
             <button class="close-btn" onclick="closeSimulateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
@@ -973,6 +1064,19 @@
 {% endblock %}
 
 {% block extra_js %}
+// Check if user skipped Strava and show dashboard
+if (sessionStorage.getItem('skipStrava') === 'true') {
+    const straElement = document.querySelector('[style*="Connect Your Strava"]')?.parentElement;
+    if (straElement) {
+        straElement.style.display = 'none';
+    }
+    const dashElement = document.querySelector('.dashboard-container');
+    if (dashElement) {
+        dashElement.style.display = 'flex';
+    }
+    sessionStorage.removeItem('skipStrava');
+}
+
 function calculateIntensity(avgHR, maxHR) {
     // Prefer absolute HR thresholds if available
     if (avgHR) {
@@ -1573,6 +1677,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const seconds = parseInt(parts[2] || 0);
             const totalMinutes = hours * 60 + minutes + (seconds > 0 ? 1 : 0);
             
+            // Show progress overlay
+            const progressOverlay = document.getElementById('uploadProgressOverlay');
+            progressOverlay.style.display = 'flex';
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 25;
+                if (progress > 85) progress = 85;
+                updateUploadProgress(progress);
+            }, 200);
+            
             try {
                 const response = await fetch('/upload-activity', {
                     method: 'POST',
@@ -1588,21 +1702,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                 });
                 
+                clearInterval(progressInterval);
+                updateUploadProgress(100);
+                
                 const data = await response.json();
                 
                 if (response.ok) {
-                    const msg = document.getElementById('uploadMessage');
-                    msg.style.display = 'block';
-                    msg.style.background = 'rgba(0, 255, 136, 0.1)';
-                    msg.style.borderColor = 'rgba(0, 255, 136, 0.3)';
-                    msg.style.color = '#00ff88';
-                    msg.textContent = `✓ ${data.message}`;
-                    
                     setTimeout(() => {
+                        progressOverlay.style.display = 'none';
                         closeUploadModal();
                         loadActivities();
-                    }, 1500);
+                    }, 500);
                 } else {
+                    progressOverlay.style.display = 'none';
                     const msg = document.getElementById('uploadMessage');
                     msg.style.display = 'block';
                     msg.style.background = 'rgba(255, 107, 107, 0.1)';
@@ -1611,6 +1723,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     msg.textContent = '✗ ' + (data.error || 'Failed to upload activity');
                 }
             } catch (err) {
+                clearInterval(progressInterval);
+                progressOverlay.style.display = 'none';
                 const msg = document.getElementById('uploadMessage');
                 msg.style.display = 'block';
                 msg.style.background = 'rgba(255, 107, 107, 0.1)';
@@ -1648,7 +1762,9 @@ function closeSimulateModal() {
 }
 
 function skipStrava() {
-    // Redirect to dashboard to continue without Strava
+    // Mark user as having skipped Strava setup and redirect to main dashboard
+    // The dashboard will show manual upload options instead of Strava prompt
+    sessionStorage.setItem('skipStrava', 'true');
     window.location.href = '/dashboard';
 }
 
@@ -1665,6 +1781,16 @@ if (simulateForm) {
             return;
         }
         
+        // Show progress overlay
+        const progressOverlay = document.getElementById('simulateProgressOverlay');
+        progressOverlay.style.display = 'flex';
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 25;
+            if (progress > 85) progress = 85;
+            updateSimulateProgress(progress);
+        }, 200);
+        
         try {
             const response = await fetch('/api/simulate-activities', {
                 method: 'POST',
@@ -1672,21 +1798,19 @@ if (simulateForm) {
                 body: JSON.stringify({ count: count })
             });
             
+            clearInterval(progressInterval);
+            updateSimulateProgress(100);
+            
             const data = await response.json();
             
             if (response.ok) {
-                const msg = document.getElementById('simulateMessage');
-                msg.style.display = 'block';
-                msg.style.background = 'rgba(156, 39, 176, 0.1)';
-                msg.style.borderColor = 'rgba(156, 39, 176, 0.3)';
-                msg.style.color = '#9c27b0';
-                msg.textContent = `✓ Generated ${data.count} activities successfully!`;
-                
                 setTimeout(() => {
+                    progressOverlay.style.display = 'none';
                     closeSimulateModal();
                     loadActivities();
-                }, 1500);
+                }, 500);
             } else {
+                progressOverlay.style.display = 'none';
                 const msg = document.getElementById('simulateMessage');
                 msg.style.display = 'block';
                 msg.style.background = 'rgba(255, 107, 107, 0.1)';
@@ -1695,6 +1819,8 @@ if (simulateForm) {
                 msg.textContent = '✗ ' + (data.error || 'Failed to generate activities');
             }
         } catch (err) {
+            clearInterval(progressInterval);
+            progressOverlay.style.display = 'none';
             const msg = document.getElementById('simulateMessage');
             msg.style.display = 'block';
             msg.style.background = 'rgba(255, 107, 107, 0.1)';
@@ -1706,4 +1832,32 @@ if (simulateForm) {
 }
 
 document.addEventListener('DOMContentLoaded', loadActivities);
+
+// Progress bar functions for upload modal
+function updateUploadProgress(percent) {
+    const circumference = 2 * Math.PI * 63; // radius is 63
+    const offset = circumference - (percent / 100) * circumference;
+    const progressRing = document.querySelector('#uploadProgressOverlay .progress-ring');
+    if (progressRing) {
+        progressRing.style.strokeDashoffset = offset;
+    }
+    const percentSpan = document.getElementById('uploadProgressPercent');
+    if (percentSpan) {
+        percentSpan.textContent = Math.round(percent);
+    }
+}
+
+// Progress bar functions for simulate modal
+function updateSimulateProgress(percent) {
+    const circumference = 2 * Math.PI * 63; // radius is 63
+    const offset = circumference - (percent / 100) * circumference;
+    const progressRing = document.querySelector('#simulateProgressOverlay .progress-ring');
+    if (progressRing) {
+        progressRing.style.strokeDashoffset = offset;
+    }
+    const percentSpan = document.getElementById('simulateProgressPercent');
+    if (percentSpan) {
+        percentSpan.textContent = Math.round(percent);
+    }
+}
 {% endblock %}

@@ -1268,7 +1268,7 @@ def api_upload():
 
 @app.route('/api/manual-activities', methods=['GET'])
 def api_get_manual_activities():
-    """API endpoint to get manual activities for the current user"""
+    """API endpoint to get manual and simulated activities for the current user"""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -1277,8 +1277,9 @@ def api_get_manual_activities():
         return jsonify({'error': 'Database connection failed'}), 500
     
     activities_collection = db['activities']
+    # Get both manual and simulated activities
     activities = list(activities_collection.find(
-        {'user_id': session['user_id'], 'source': 'manual'}
+        {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
     ).sort('created_at', -1).limit(20))
     
     # Convert ObjectId to string
