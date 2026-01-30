@@ -282,6 +282,9 @@
                                     <div class="friend-name">${f.name || 'Unknown'}</div>
                                     <div class="friend-email">${f.email}</div>
                                 </div>
+                                <div style="margin-left:12px;">
+                                    <button class="btn" onclick="removeFriend('${f.id}', null)">Remove</button>
+                                </div>
                             </div>
                         `).join('');
                     } else {
@@ -342,6 +345,15 @@
         loadFriends();
         // Refresh every 8 seconds
         setInterval(loadFriends, 8000);
+
+        async function removeFriend(friendId, childId) {
+            try {
+                const body = { friend_id: friendId };
+                if (childId) body.child_id = childId;
+                const resp = await fetch('/api/remove-friend', { method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                if (resp.ok) { alert('Friend removed'); loadFriends(); } else { const j = await resp.json(); alert('Error: '+(j.error||'Failed')); }
+            } catch (err) { console.error(err); alert('Error removing friend'); }
+        }
     </script>
 </body>
 </html>

@@ -363,7 +363,7 @@ def friends_page():
     """Display friends page"""
     if 'user_id' not in session:
         return redirect('/login')
-    return render_template('friends.html')
+    return render_template('friends.html', account_type=session.get('account_type'))
 
 
 @app.route('/challenges')
@@ -371,7 +371,7 @@ def challenges_page():
     """Display challenges page"""
     if 'user_id' not in session:
         return redirect('/login')
-    return render_template('challenges.html')
+    return render_template('challenges.html', account_type=session.get('account_type'))
 
 
 @app.route('/leaderboard')
@@ -905,20 +905,39 @@ def api_get_challenges():
     all_ch = list(challenges.find().sort('created_at', -1))
     out = []
     user_id = session.get('user_id')
+    acct = session.get('account_type')
+
     for ch in all_ch:
         ch_id = str(ch['_id'])
+        # determine visibility to children
+        visible = bool(ch.get('visible_to_children', False))
+        assigned = ch.get('assigned_children', []) or []
+
+        # If child, only include if visible and either unassigned (global) or assigned to this child
+        if acct == 'child':
+            if not visible:
+                continue
+            if assigned and user_id not in assigned:
+                continue
+
+        # For parent and others, include all
         unlocked = False
         try:
             if user_id:
                 unlocked = unlocks.find_one({'user_id': user_id, 'challenge_id': ch_id}) is not None
         except Exception:
             unlocked = False
+
         out.append({
             'id': ch_id,
-            'title': ch.get('title'),
+            'name': ch.get('name') or ch.get('title'),
             'description': ch.get('description'),
             'reward_minutes': int(ch.get('reward_minutes', 0)),
-            'locked': not unlocked
+            'image_url': ch.get('image_url'),
+            'task': ch.get('task', {}),
+            'is_unlocked': unlocked,
+            'assigned_children': [str(x) for x in (ch.get('assigned_children') or [])],
+            'visible_to_children': bool(ch.get('visible_to_children', False))
         })
     return jsonify({'challenges': out}), 200
 
@@ -947,6 +966,192 @@ def api_request_challenge_unlock():
     }
     res = reqs.insert_one(doc)
     return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
+
+
+@app.route('/api/activate-challenge', methods=['POST'])
+def api_activate_challenge():
+    """Child activates an assigned challenge for themselves (no parent approval)."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    challenge_id = data.get('challenge_id')
+    if not challenge_id:
+        return jsonify({'error': 'challenge_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    active = db['active_challenges']
+    # create active record if not exists
+    try:
+        existing = active.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+        if existing:
+            return jsonify({'success': True, 'message': 'Already active'}), 200
+        active.insert_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'activated_at': datetime.utcnow(), 'status': 'active'})
+        return jsonify({'success': True}), 201
+    except Exception as e:
+        logger.exception('Error activating challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/admin/challenges', methods=['POST'])
+def api_admin_create_challenge():
+    """Parent creates a new challenge template (not visible to children until assigned)."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    name = data.get('name')
+    description = data.get('description')
+    reward = int(data.get('reward_minutes', 0))
+    image_url = data.get('image_url')
+    task = data.get('task') or {}
+
+    if not name:
+        return jsonify({'error': 'name required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    challenges = db['challenges']
+    doc = {
+        'name': name,
+        'description': description,
+        'reward_minutes': reward,
+        'image_url': image_url,
+        'task': task,
+        'visible_to_children': False,
+        'assigned_children': [],
+        'created_by': session['user_id'],
+        'created_at': datetime.utcnow()
+    }
+    try:
+        res = challenges.insert_one(doc)
+        return jsonify({'success': True, 'challenge_id': str(res.inserted_id)}), 201
+    except Exception as e:
+        logger.exception('Error creating challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/admin/challenges/<challenge_id>/assign', methods=['POST'])
+def api_admin_assign_challenge(challenge_id):
+    """Assign a challenge to one or more child IDs and optionally make it visible."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    children = data.get('children', [])
+    make_visible = bool(data.get('visible', True))
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    challenges = db['challenges']
+    try:
+        challenges.update_one({'_id': ObjectId(challenge_id)}, {'$set': {'visible_to_children': make_visible}, '$addToSet': {'assigned_children': {'$each': children}}})
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.exception('Error assigning challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/admin/challenges/<challenge_id>/update', methods=['POST'])
+def api_admin_update_challenge(challenge_id):
+    """Update challenge metadata such as reward or description."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    updates = {}
+    if 'reward_minutes' in data:
+        updates['reward_minutes'] = int(data.get('reward_minutes', 0))
+    if 'description' in data:
+        updates['description'] = data.get('description')
+    if 'name' in data:
+        updates['name'] = data.get('name')
+
+    if not updates:
+        return jsonify({'error': 'Nothing to update'}), 400
+
+    db = get_db()
+    challenges = db['challenges']
+    try:
+        challenges.update_one({'_id': ObjectId(challenge_id)}, {'$set': updates})
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.exception('Error updating challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/challenges/<challenge_id>/upload-image', methods=['POST'])
+def api_challenge_upload_image(challenge_id):
+    """Upload an image file for a challenge. Stores in static/uploads and sets image_url."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    f = request.files['file']
+    if f.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    from werkzeug.utils import secure_filename
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = secure_filename(f.filename)
+    dest = os.path.join(upload_dir, filename)
+    try:
+        f.save(dest)
+        url_path = f'/static/uploads/{filename}'
+        db = get_db()
+        challenges = db['challenges']
+        challenges.update_one({'_id': ObjectId(challenge_id)}, {'$set': {'image_url': url_path}})
+        return jsonify({'success': True, 'image_url': url_path}), 200
+    except Exception as e:
+        logger.exception('Error saving uploaded image: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/remove-friend', methods=['POST'])
+def api_remove_friend():
+    """Remove a friendship. Child can remove their own friend; parent can remove friendship for their child by providing child_id."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    friend_id = data.get('friend_id')
+    child_id = data.get('child_id')
+
+    if not friend_id:
+        return jsonify({'error': 'friend_id required'}), 400
+
+    db = get_db()
+    users = db['users']
+
+    try:
+        if session.get('account_type') == 'parent' and child_id:
+            # verify parent owns child
+            parent = users.find_one({'_id': ObjectId(session['user_id'])})
+            children = [str(c) for c in parent.get('children', [])]
+            if child_id not in children:
+                return jsonify({'error': 'Not authorized for this child'}), 403
+            # remove friend relationship between child and friend_id
+            users.update_one({'_id': ObjectId(child_id)}, {'$pull': {'friends': ObjectId(friend_id)}})
+            users.update_one({'_id': ObjectId(friend_id)}, {'$pull': {'friends': ObjectId(child_id)}})
+            return jsonify({'success': True}), 200
+        else:
+            # child removing their own friend
+            uid = session['user_id']
+            users.update_one({'_id': ObjectId(uid)}, {'$pull': {'friends': ObjectId(friend_id)}})
+            users.update_one({'_id': ObjectId(friend_id)}, {'$pull': {'friends': ObjectId(uid)}})
+            return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.exception('Error removing friend: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
 
 @app.route('/api/parent-challenge-approvals')
@@ -1103,6 +1308,9 @@ def api_delete_child(child_id):
         return jsonify({'success': True, 'message': 'Child account deleted'}), 200
     else:
         return jsonify({'error': 'Failed to delete child'}), 500
+
+
+
 
 
 @app.route('/api/update-child-limits/<child_id>', methods=['POST'])

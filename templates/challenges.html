@@ -236,11 +236,45 @@
             </div>
         </header>
 
+        {% if account_type == 'parent' %}
+        <div style="margin-bottom:18px; display:flex; gap:12px; align-items:flex-start;">
+            <div style="flex:1;">
+                <div class="card" style="padding:16px; margin-bottom:12px;">
+                    <h2 style="margin-bottom:8px;">Create New Challenge</h2>
+                    <div style="display:grid; gap:10px;">
+                        <input id="chName" placeholder="Challenge name (e.g. Monday Madness)" />
+                        <input id="chReward" placeholder="Reward minutes (e.g. 15)" />
+                        <input id="chImageUrl" placeholder="Image URL (optional)" />
+                        <textarea id="chDesc" placeholder="Short description"></textarea>
+                        <select id="chTaskType">
+                            <option value="single_day">Complete activity on a specific day</option>
+                            <option value="minutes_total">Accumulate minutes across days</option>
+                            <option value="activity_type">Complete a specific activity type</option>
+                        </select>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="createChallenge()">Create Challenge</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 style="margin-bottom:8px;">Your Challenges</h2>
+                    <div id="adminChallengesList">Loading...</div>
+                </div>
+            </div>
+            <div style="width:320px;">
+                <div class="card">
+                    <h3>Assign to Children</h3>
+                    <div id="childrenList">Loading children...</div>
+                </div>
+            </div>
+        </div>
+        {% else %}
         <div id="challengesContainer" class="challenges-grid">
             <div class="empty-state">
                 <p>Loading challenges...</p>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <script>
@@ -251,38 +285,63 @@
                     const data = await resp.json();
                     const container = document.getElementById('challengesContainer');
 
-                    if (data.challenges && data.challenges.length) {
-                        container.innerHTML = data.challenges.map(ch => {
-                            const isLocked = !ch.is_unlocked;
-                            const isCompleted = ch.is_completed;
-                            
-                            let actionHtml = '';
-                            if (isCompleted) {
-                                actionHtml = '<div class="challenge-status">✅ Completed</div>';
-                            } else if (isLocked) {
-                                actionHtml = '<button class="request-btn" onclick="requestUnlock(\'' + ch.id + '\')">🔒 Request Unlock</button>';
-                            } else {
-                                actionHtml = '<button class="complete-btn" onclick="completeChallenge(\'' + ch.id + '\')">Complete</button>';
-                            }
+                            if (data.challenges && data.challenges.length) {
+                                // Parent view handled separately
+                                const container = document.getElementById('challengesContainer');
+                                const accountType = '{{ account_type }}';
+                                if (accountType === 'parent') {
+                                    // populate admin list
+                                    const adminList = document.getElementById('adminChallengesList');
+                                    adminList.innerHTML = data.challenges.map(ch => `
+                                        <div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center;">
+                                            <div>
+                                                <div style="font-weight:700;color:#ffc107;">${ch.name}</div>
+                                                <div style="font-size:12px;color:#aaa;">${ch.description}</div>
+                                                <div style="font-size:12px;color:#00ff88;margin-top:6px;">Reward: ${ch.reward_minutes} min</div>
+                                            </div>
+                                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                                <button onclick="openAssignModal('${ch.id}')" class="btn">Assign</button>
+                                                <button onclick="editReward('${ch.id}', ${ch.reward_minutes})" class="btn">Edit Reward</button>
+                                            </div>
+                                        </div>
+                                    `).join('');
+                                } else {
+                                    // child view: show cards
+                                    container.innerHTML = data.challenges.map(ch => {
+                                        const isLocked = !ch.is_unlocked;
+                                        let actionHtml = '';
+                                        if (isLocked) {
+                                            actionHtml = '<button class="request-btn" onclick="requestUnlock(\'' + ch.id + '\')">🔒 Request Unlock</button>';
+                                        } else {
+                                            actionHtml = '<button class="complete-btn" onclick="completeChallenge(\'' + ch.id + '\')">Complete</button>';
+                                        }
 
-                            return `
-                                <div class="challenge-card">
-                                    <div class="challenge-header">
-                                        <div class="challenge-name">${ch.name}</div>
-                                    </div>
-                                    <div class="challenge-description">${ch.description}</div>
-                                    <div class="challenge-reward">
-                                        🎮 +${ch.reward_minutes} game time minutes
-                                    </div>
-                                    <div class="challenge-action">
-                                        ${actionHtml}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('');
-                    } else {
-                        container.innerHTML = '<div class="empty-state"><p>No challenges available yet.</p></div>';
-                    }
+                                        const img = ch.image_url ? `<img src="${ch.image_url}" alt="${ch.name}" style="width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:8px;">` : '';
+
+                                        return `
+                                            <div class="challenge-card">
+                                                ${img}
+                                                <div class="challenge-header">
+                                                    <div class="challenge-name">${ch.name}</div>
+                                                </div>
+                                                <div class="challenge-description">${ch.description}</div>
+                                                <div class="challenge-reward">
+                                                    🎮 +${ch.reward_minutes} game time minutes
+                                                </div>
+                                                <div class="challenge-action">
+                                                    ${actionHtml}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('');
+                                }
+                            } else {
+                                if ('{{ account_type }}' === 'parent') {
+                                    document.getElementById('adminChallengesList').innerHTML = '<div class="empty-state"><p>No challenges yet.</p></div>';
+                                } else {
+                                    container.innerHTML = '<div class="empty-state"><p>No challenges available yet.</p></div>';
+                                }
+                            }
                 }
             } catch (err) {
                 console.error('Failed to load challenges:', err);
@@ -335,8 +394,73 @@
             }
         }
 
+            // Parent: create challenge
+            async function createChallenge() {
+                const name = document.getElementById('chName').value.trim();
+                const desc = document.getElementById('chDesc').value.trim();
+                const reward = parseInt(document.getElementById('chReward').value || '0', 10);
+                const image_url = document.getElementById('chImageUrl').value.trim();
+                if (!name) { alert('Please provide a name'); return; }
+                try {
+                    const resp = await fetch('/api/admin/challenges', {
+                        method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ name, description: desc, reward_minutes: reward, image_url })
+                    });
+                    if (resp.ok) { alert('Challenge created'); loadChallenges(); loadChildren(); }
+                    else { const j = await resp.json(); alert('Error: ' + (j.error||'Failed')); }
+                } catch (err) { console.error(err); alert('Error creating challenge'); }
+            }
+
+            // Parent: load children for assignment
+            async function loadChildren() {
+                try {
+                    const resp = await fetch('/api/parent-children');
+                    if (!resp.ok) return;
+                    const j = await resp.json();
+                    const el = document.getElementById('childrenList');
+                    if (j.children && j.children.length) {
+                        el.innerHTML = j.children.map(c => `<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);">` +
+                            `<label><input type="checkbox" data-child-id="${c.id}" /> ${c.name || c.email}</label></div>`).join('');
+                    } else {
+                        el.innerHTML = '<div class="empty-state"><p>No children found.</p></div>';
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            // Parent: open assign modal (simple prompt flow)
+            function openAssignModal(chId) {
+                // collect checked children from childrenList
+                const boxes = Array.from(document.querySelectorAll('#childrenList input[type=checkbox]'));
+                const selected = boxes.filter(b => b.checked).map(b => b.getAttribute('data-child-id'));
+                if (!selected.length) { alert('Select one or more children to assign to'); return; }
+                assignChallenge(chId, selected, true);
+            }
+
+            async function assignChallenge(chId, children, visible) {
+                try {
+                    const resp = await fetch('/api/admin/challenges/' + chId + '/assign', {
+                        method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ children, visible })
+                    });
+                    if (resp.ok) { alert('Assigned'); loadChallenges(); }
+                    else { const j = await resp.json(); alert('Error: ' + (j.error||'Failed')); }
+                } catch (err) { console.error(err); alert('Error assigning challenge'); }
+            }
+
+            function editReward(chId, current) {
+                const v = prompt('Enter new reward minutes', String(current||0));
+                if (v === null) return;
+                const nv = parseInt(v,10) || 0;
+                fetch('/api/admin/challenges/' + chId + '/update', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ reward_minutes: nv}) })
+                    .then(r => { if (r.ok) { alert('Updated'); loadChallenges(); } else r.json().then(j=>alert('Error: '+(j.error||'Failed'))); })
+                    .catch(e=>{console.error(e); alert('Error');});
+            }
+
         // Load on page load
         loadChallenges();
+            {% if account_type == 'parent' %}
+            loadChildren();
+            {% endif %}
         // Refresh every 8 seconds
         setInterval(loadChallenges, 8000);
     </script>
