@@ -821,8 +821,19 @@
 {% endblock %}
 
 {% block content %}
-{% if strava_connected %}
-<div class="dashboard-container">
+<!-- Strava Connection Prompt -->
+<div id="strava-prompt" style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+    <div style="font-size: 48px; margin-bottom: 20px;">🔌</div>
+    <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
+    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
+        <button onclick="skipStrava()" class="btn btn-secondary" style="display: inline-block; padding: 15px 40px; font-size: 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; cursor: pointer; border-radius: 6px;">Continue Without Strava</button>
+    </div>
+</div>
+
+<!-- Dashboard Container -->
+<div class="dashboard-container" style="display: none;">
     <!-- Greeting Section -->
     <div class="greeting-section">
         <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
@@ -880,17 +891,6 @@
         </div>
     </div>
 </div>
-{% else %}
-<div style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-    <div style="font-size: 48px; margin-bottom: 20px;">🔌</div>
-    <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
-    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
-    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-        <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
-        <button onclick="skipStrava()" class="btn btn-secondary" style="display: inline-block; padding: 15px 40px; font-size: 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; cursor: pointer; border-radius: 6px;">Continue Without Strava</button>
-    </div>
-</div>
-{% endif %}
 
 <!-- Activity Detail Modal -->
 <div class="modal" id="activity-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
@@ -1064,6 +1064,21 @@
 {% endblock %}
 
 {% block extra_js %}
+// Initialize dashboard visibility based on strava_connected status
+(function() {
+    const stravaConnected = {{ 'true' if strava_connected else 'false' }};
+    const straPrompt = document.getElementById('strava-prompt');
+    const dashContainer = document.querySelector('.dashboard-container');
+    
+    if (stravaConnected) {
+        straPrompt.style.display = 'none';
+        dashContainer.style.display = 'flex';
+    } else {
+        straPrompt.style.display = 'block';
+        dashContainer.style.display = 'none';
+    }
+})();
+
 function calculateIntensity(avgHR, maxHR) {
     // Prefer absolute HR thresholds if available
     if (avgHR) {
@@ -1756,7 +1771,7 @@ function skipStrava() {
     }).then(response => {
         if (response.ok) {
             // Hide the Strava connection prompt
-            const straPrompt = document.querySelector('[style*="Connect Your Strava"]')?.parentElement;
+            const straPrompt = document.getElementById('strava-prompt');
             if (straPrompt) {
                 straPrompt.style.display = 'none';
             }
@@ -1767,6 +1782,10 @@ function skipStrava() {
             }
             // Load activities
             loadActivities();
+            // Load game time
+            loadGameTime();
+        } else {
+            alert('Failed to skip Strava connection');
         }
     }).catch(err => {
         console.error('Error skipping Strava:', err);
