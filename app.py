@@ -374,6 +374,14 @@ def challenges_page():
     return render_template('challenges.html')
 
 
+@app.route('/leaderboard')
+def leaderboard_page():
+    """Display leaderboard page"""
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('leaderboard.html')
+
+
 @app.route('/dashboard')
 def dashboard():
     """Display dashboard based on user account type"""
@@ -684,12 +692,40 @@ def api_friend_request():
     to_user = users.find_one({'email': to_email})
     to_user_id = str(to_user['_id']) if to_user else None
 
+    # Determine which parent accounts need to approve this request
+    parent_ids = []
+    try:
+        # parents of sender
+        if session.get('user_id'):
+            try:
+                parents_from = users.find({'account_type': 'parent', 'children': ObjectId(session['user_id'])})
+                for p in parents_from:
+                    parent_ids.append(str(p.get('_id')))
+            except Exception:
+                pass
+
+        # parents of recipient (if known)
+        if to_user_id:
+            try:
+                parents_to = users.find({'account_type': 'parent', 'children': ObjectId(to_user_id)})
+                for p in parents_to:
+                    parent_ids.append(str(p.get('_id')))
+            except Exception:
+                pass
+    except Exception:
+        parent_ids = []
+
+    # Deduplicate parent ids
+    parent_ids = list(dict.fromkeys(parent_ids))
+
     req_doc = {
         'from_user_id': session['user_id'],
         'to_user_id': to_user_id,
         'to_email': to_email,
         'status': 'pending',
-        'created_at': datetime.utcnow()
+        'created_at': datetime.utcnow(),
+        'approvals': [],
+        'required_approvals': parent_ids
     }
     res = friend_requests.insert_one(req_doc)
 
@@ -717,16 +753,39 @@ def api_parent_friend_approvals():
     # Find requests where either from_user_id or to_user_id is one of these children and status pending
     pending = list(friend_requests.find({'status': 'pending', '$or': [{'from_user_id': {'$in': child_ids}}, {'to_user_id': {'$in': child_ids}}]}))
 
-    # Normalize
+    # Normalize and resolve child names
     out = []
     for p in pending:
-        p['id'] = str(p['_id'])
-        p['from_user_id'] = p.get('from_user_id')
-        p['to_user_id'] = p.get('to_user_id')
-        p['to_email'] = p.get('to_email')
-        p['created_at'] = p.get('created_at').isoformat() if p.get('created_at') else None
-        del p['_id']
-        out.append(p)
+        item = {}
+        item['id'] = str(p.get('_id'))
+        item['from_user_id'] = p.get('from_user_id')
+        item['to_user_id'] = p.get('to_user_id')
+        item['to_email'] = p.get('to_email')
+        item['created_at'] = p.get('created_at').isoformat() if p.get('created_at') else None
+        # resolve names when possible
+        try:
+            if p.get('from_user_id'):
+                fu = users.find_one({'_id': ObjectId(p.get('from_user_id'))})
+                item['from_name'] = fu.get('name') if fu else None
+            else:
+                item['from_name'] = None
+        except Exception:
+            item['from_name'] = None
+
+        try:
+            if p.get('to_user_id'):
+                tu = users.find_one({'_id': ObjectId(p.get('to_user_id'))})
+                item['to_name'] = tu.get('name') if tu else None
+            else:
+                item['to_name'] = None
+        except Exception:
+            item['to_name'] = None
+
+        # approvals tracking info
+        item['approvals'] = p.get('approvals', [])
+        item['required_approvals'] = p.get('required_approvals', [])
+
+        out.append(item)
 
     return jsonify({'requests': out}), 200
 
@@ -765,17 +824,42 @@ def api_respond_friend_request():
             friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
             return jsonify({'success': True}), 200
 
-        # Approve: set status and add friends to both users (if both exist)
-        friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
-        from_id = fr.get('from_user_id')
-        to_id = fr.get('to_user_id')
+        # Approve: record this parent's approval and only finalize when all required parents have approved
+        parent_id = str(session['user_id'])
+        # Add this parent's approval
+        friend_requests.update_one({'_id': ObjectId(req_id)}, {'$addToSet': {'approvals': parent_id}})
+        # Reload request
+        fr_updated = friend_requests.find_one({'_id': ObjectId(req_id)})
+        approvals = fr_updated.get('approvals', [])
+        required = fr_updated.get('required_approvals', [])
 
-        # If to_user_id is unknown (email-only) we do nothing further until that user registers
-        if from_id and to_id:
-            users.update_one({'_id': ObjectId(from_id)}, {'$addToSet': {'friends': ObjectId(to_id)}})
-            users.update_one({'_id': ObjectId(to_id)}, {'$addToSet': {'friends': ObjectId(from_id)}})
+        # If no required approvals were recorded, fall back to immediate approval (legacy behavior)
+        if not required:
+            # finalize
+            friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+            from_id = fr_updated.get('from_user_id')
+            to_id = fr_updated.get('to_user_id')
+            if from_id and to_id:
+                users.update_one({'_id': ObjectId(from_id)}, {'$addToSet': {'friends': ObjectId(to_id)}})
+                users.update_one({'_id': ObjectId(to_id)}, {'$addToSet': {'friends': ObjectId(from_id)}})
+            return jsonify({'success': True}), 200
 
-        return jsonify({'success': True}), 200
+        # Check if all required parents have approved
+        try:
+            if set(approvals) >= set(required):
+                # finalize
+                friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+                from_id = fr_updated.get('from_user_id')
+                to_id = fr_updated.get('to_user_id')
+                if from_id and to_id:
+                    users.update_one({'_id': ObjectId(from_id)}, {'$addToSet': {'friends': ObjectId(to_id)}})
+                    users.update_one({'_id': ObjectId(to_id)}, {'$addToSet': {'friends': ObjectId(from_id)}})
+                return jsonify({'success': True, 'finalized': True}), 200
+            else:
+                # still pending other parents
+                return jsonify({'success': True, 'finalized': False, 'approvals': approvals, 'required_approvals': required}), 200
+        except Exception:
+            return jsonify({'error': 'Server error during approval processing'}), 500
     except Exception as e:
         logger.exception('Error responding to friend request: %s', e)
         return jsonify({'error': 'Server error'}), 500

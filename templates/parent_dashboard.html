@@ -1382,11 +1382,12 @@
                                 row.style.borderRadius = '6px';
                                 row.style.marginBottom = '6px';
                                 
-                                // Show who sent the request (or to email)
-                                const fromDisplay = r.from_user_id ? `Child ${r.from_user_id.substring(0, 8)}` : r.to_email || 'Unknown';
-                                const toDisplay = r.to_user_id ? `to ${r.to_user_id.substring(0, 8)}` : `to ${r.to_email}`;
-                                
-                                row.innerHTML = `<div style="font-size:13px;color:#00ff88;">👥 ${fromDisplay} <span style="color:#aaa;">${toDisplay}</span></div>`;
+                                // Show who sent the request (use resolved names when available)
+                                const fromName = r.from_name || (r.from_user_id ? `Child ${r.from_user_id.substring(0,8)}` : null);
+                                const toName = r.to_name || (r.to_user_id ? `Child ${r.to_user_id.substring(0,8)}` : r.to_email || 'Unknown');
+                                const statusNote = (r.required_approvals && r.required_approvals.length > (r.approvals||[]).length) ? ' (awaiting other parent approvals)' : '';
+
+                                row.innerHTML = `<div style="font-size:13px;color:#00ff88;">👥 ${fromName} <span style="color:#aaa;">to ${toName}</span><span style="color:#ffc107; margin-left:8px; font-size:12px;">${statusNote}</span></div>`;
                                 const btns = document.createElement('div');
                                 const approve = document.createElement('button');
                                 approve.textContent = '✅ Approve';
