@@ -34,17 +34,21 @@ def clear_all_users():
         print("Operation cancelled.")
         return
     
-    db = get_db()
-    if db is None:
-        print("ERROR: Could not connect to database")
+    client = get_mongo_connection()
+    if client is None:
+        print("ERROR: Could not connect to MongoDB")
         return
     
     try:
+        # Connect to Move2EarnProject database
+        db = client['Move2EarnProject']
         users_collection = db['users']
         result = users_collection.delete_many({})
-        print(f"✓ Deleted {result.deleted_count} user accounts")
+        print(f"✓ Deleted {result.deleted_count} user accounts from Move2EarnProject")
     except Exception as e:
         print(f"ERROR: {e}")
+    finally:
+        client.close()
 
 
 def clear_all_activities():

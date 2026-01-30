@@ -25,6 +25,38 @@ Session(app)
 # Allow CORS for API endpoints (adjust origins in production)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+
+# Global error handlers
+@app.errorhandler(502)
+def bad_gateway(error):
+    """Handle 502 Bad Gateway errors"""
+    logger.error(f"502 Bad Gateway error: {str(error)}")
+    return render_template('register.html', error='Server error. Please try again later.'), 502
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 Internal Server errors"""
+    logger.exception(f"500 Internal Server error: {str(error)}")
+    return render_template('register.html', error='Server error. Please try again later.'), 500
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Catch all uncaught exceptions"""
+    logger.exception(f"Unhandled exception: {str(e)}")
+    return render_template('register.html', error='An unexpected error occurred. Please try again.'), 500
+
+
+# Before request hook to ensure proper content types
+@app.before_request
+def set_content_type():
+    """Ensure proper content types for HTML responses"""
+    if request.path.startswith('/register') or request.path.startswith('/login') or request.path.startswith('/dashboard'):
+        # These routes should always return HTML
+        pass
+
+
 STRAVA_CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 STRAVA_CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 STRAVA_REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
@@ -202,33 +234,48 @@ def register():
         return render_template('register.html')
     
     # POST request - handle registration
-    name = request.form.get('name')
-    email = request.form.get('email')
-    password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
-    # All new users are created as parents (children are created via parent dashboard)
-    is_parent = True
+    try:
+        logger.info(f"Registration POST request from {request.remote_addr}")
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        # All new users are created as parents (children are created via parent dashboard)
+        is_parent = True
+        
+        logger.info(f"Registration attempt for email: {email}")
+        
+        # Validation
+        if not all([name, email, password, confirm_password]):
+            logger.warning("Registration validation failed: missing fields")
+            return render_template('register.html', error='All fields are required')
+        
+        if password != confirm_password:
+            logger.warning(f"Registration validation failed for {email}: passwords do not match")
+            return render_template('register.html', error='Passwords do not match')
+        
+        if len(password) < 8:
+            logger.warning(f"Registration validation failed for {email}: password too short")
+            return render_template('register.html', error='Password must be at least 8 characters')
+        
+        # Check if email already exists
+        if UserDB.get_user_by_email(email):
+            logger.warning(f"Registration failed for {email}: email already registered")
+            return render_template('register.html', error='Email already registered')
+        
+        logger.info(f"Creating new user: {email}")
+        # Create new user (always as parent)
+        success, result = UserDB.create_user(email, password, name, is_parent=is_parent)
+        if success:
+            logger.info(f"User created successfully: {email}")
+            return render_template('register.html', success='Account created successfully! You can now login.')
+        
+        logger.error(f"User creation failed for {email}: {result}")
+        return render_template('register.html', error=result)
     
-    # Validation
-    if not all([name, email, password, confirm_password]):
-        return render_template('register.html', error='All fields are required')
-    
-    if password != confirm_password:
-        return render_template('register.html', error='Passwords do not match')
-    
-    if len(password) < 8:
-        return render_template('register.html', error='Password must be at least 8 characters')
-    
-    # Check if email already exists
-    if UserDB.get_user_by_email(email):
-        return render_template('register.html', error='Email already registered')
-    
-    # Create new user (always as parent)
-    success, result = UserDB.create_user(email, password, name, is_parent=is_parent)
-    if success:
-        return render_template('register.html', success='Account created successfully! You can now login.')
-    
-    return render_template('register.html', error=result)
+    except Exception as e:
+        logger.exception(f"Error during registration: {str(e)}")
+        return render_template('register.html', error=f'An error occurred: {str(e)}'), 500
 
 
 @app.route('/strava-auth')

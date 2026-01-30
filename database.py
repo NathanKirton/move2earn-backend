@@ -28,15 +28,32 @@ def get_db():
     try:
         client = MongoClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=30000,
-            connectTimeoutMS=30000,
-            socketTimeoutMS=30000,
-            retryWrites=True
+            serverSelectionTimeoutMS=10000,  # 10 second timeout for server selection
+            connectTimeoutMS=10000,           # 10 second timeout for initial connection
+            socketTimeoutMS=30000,            # 30 second timeout for socket operations
+            retryWrites=True,
+            maxPoolSize=10,                   # Limit connection pool size
+            minPoolSize=2                     # Maintain minimum connections
         )
         # Verify connection
         client.admin.command('ping')
         db = client[MONGODB_DB_NAME]
         logger.info("Connected to MongoDB")
+        
+        # Create indexes for better performance
+        try:
+            users_collection = db['users']
+            # Create unique index on email for fast lookups and email uniqueness
+            users_collection.create_index('email', unique=True)
+            logger.info("Created email index on users collection")
+            
+            activities_collection = db['activities']
+            # Create index on user_id for faster queries
+            activities_collection.create_index('user_id')
+            logger.info("Created user_id index on activities collection")
+        except Exception as e:
+            logger.warning(f"Index creation failed (may already exist): {e}")
+        
         return db
     except ConnectionFailure as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
