@@ -1411,20 +1411,26 @@ def api_simulate_activities():
             activities_collection.insert_one(activity_doc)
             created_count += 1
 
-            # Credit earned minutes to the user and increase daily limit so it's usable
-            try:
-                # Increase earned_game_time and daily_screen_time_limit
-                UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
-            except Exception as e:
-                logger.exception("Failed to credit earned minutes for simulated activity: %s", e)
-
-            # If this activity is for today, record it for streaks/rewards
+            # Only credit earned minutes and increase today's daily limit if activity is for today
             try:
                 today_str = datetime.utcnow().strftime('%Y-%m-%d')
                 if activity_doc.get('date') == today_str:
-                    UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
+                    # Increase earned_game_time and daily_screen_time_limit for today's activity
+                    try:
+                        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+                    except Exception as e:
+                        logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
+
+                    # Record daily activity for streaks/rewards (will not double-credit earned from activity)
+                    try:
+                        UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
+                    except Exception:
+                        pass
+                else:
+                    # For past activities, just insert the record without crediting earned time
+                    pass
             except Exception:
-                pass
+                logger.exception('Error determining activity date for simulated credit')
         except Exception as e:
             logger.error(f"Error creating simulated activity: {e}")
             continue
