@@ -635,9 +635,83 @@
                 gap: 12px;
             }
         }
+
+        /* Notification Popup */
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            color: #000;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.4);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        .notification-popup.closing {
+            animation: slideOut 0.4s ease-in;
+        }
+
+        .notification-popup h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .notification-popup p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .notification-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border: none;
+            color: #000;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .notification-popup .close-btn:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
     </style>
 </head>
 <body>
+    <div id="notifications-container"></div>
     <div class="container">
         <header>
             <div class="header-left">
@@ -1245,6 +1319,38 @@
         // Start polling
         setInterval(refreshChildren, 8000);
 
+        // Notification popup helper
+        let lastFriendRequestCount = 0;
+        let lastChallengeRequestCount = 0;
+
+        function showNotification(title, message, autoClose = 4000) {
+            const container = document.getElementById('notifications-container');
+            const popup = document.createElement('div');
+            popup.className = 'notification-popup';
+            popup.innerHTML = `
+                <button class="close-btn">✕</button>
+                <h3>${title}</h3>
+                <p>${message}</p>
+            `;
+            
+            const closeBtn = popup.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => {
+                popup.classList.add('closing');
+                setTimeout(() => popup.remove(), 400);
+            });
+
+            container.appendChild(popup);
+
+            if (autoClose) {
+                setTimeout(() => {
+                    if (popup.parentElement) {
+                        popup.classList.add('closing');
+                        setTimeout(() => popup.remove(), 400);
+                    }
+                }, autoClose);
+            }
+        }
+
         // Load approvals for friend requests and challenges
         async function loadApprovals() {
             try {
@@ -1253,6 +1359,16 @@
                     const j = await resp.json();
                     const el = document.getElementById('friendApprovalsList');
                     if (el) {
+                        // Check if new friend requests arrived
+                        const currentCount = j.requests ? j.requests.length : 0;
+                        if (currentCount > lastFriendRequestCount && lastFriendRequestCount > 0) {
+                            const newCount = currentCount - lastFriendRequestCount;
+                            showNotification(
+                                '👥 New Friend Request' + (newCount > 1 ? 's' : ''),
+                                newCount + ' new friend request' + (newCount > 1 ? 's' : '') + ' waiting for approval!'
+                            );
+                        }
+                        lastFriendRequestCount = currentCount;
                         if (j.requests && j.requests.length) {
                             el.innerHTML = '';
                             j.requests.forEach(r => {
@@ -1302,6 +1418,16 @@
                     const j2 = await resp2.json();
                     const el2 = document.getElementById('challengeApprovalsList');
                     if (el2) {
+                        // Check if new challenge requests arrived
+                        const currentCount = j2.requests ? j2.requests.length : 0;
+                        if (currentCount > lastChallengeRequestCount && lastChallengeRequestCount > 0) {
+                            const newCount = currentCount - lastChallengeRequestCount;
+                            showNotification(
+                                '🎯 New Challenge Request' + (newCount > 1 ? 's' : ''),
+                                newCount + ' child' + (newCount > 1 ? 'ren' : '') + ' want' + (newCount > 1 ? '' : 's') + ' to unlock a challenge!'
+                            );
+                        }
+                        lastChallengeRequestCount = currentCount;
                         if (j2.requests && j2.requests.length) {
                             el2.innerHTML = '';
                             j2.requests.forEach(r => {

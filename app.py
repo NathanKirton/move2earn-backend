@@ -9,9 +9,6 @@ import json
 import logging
 import math
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from database import UserDB, hash_password
 from werkzeug.utils import secure_filename
 
@@ -159,66 +156,6 @@ def get_user_strava_headers(user_id):
         return {'Authorization': f'Bearer {access_token}'}
 
     return None
-
-
-def send_email(recipient_email, subject, html_body):
-    """
-    Send an email via SendGrid or SMTP. 
-    Uses SENDGRID_API_KEY if available, otherwise falls back to SMTP configuration.
-    Returns (success: bool, message: str)
-    """
-    try:
-        # Try SendGrid API first
-        sendgrid_key = os.getenv('SENDGRID_API_KEY')
-        if sendgrid_key:
-            import requests as req
-            headers = {
-                'Authorization': f'Bearer {sendgrid_key}',
-                'Content-Type': 'application/json'
-            }
-            payload = {
-                'personalizations': [{'to': [{'email': recipient_email}]}],
-                'from': {'email': os.getenv('EMAIL_FROM', 'noreply@move2earn.app')},
-                'subject': subject,
-                'content': [{'type': 'text/html', 'value': html_body}]
-            }
-            resp = req.post('https://api.sendgrid.com/v3/mail/send', json=payload, headers=headers)
-            if resp.status_code in (200, 201, 202):
-                return True, 'Email sent successfully'
-            else:
-                logger.warning(f'SendGrid API error: {resp.status_code} {resp.text}')
-                return False, f'SendGrid error: {resp.status_code}'
-        
-        # Fallback to SMTP
-        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-        smtp_port = int(os.getenv('SMTP_PORT', 587))
-        smtp_user = os.getenv('SMTP_USER')
-        smtp_pass = os.getenv('SMTP_PASSWORD')
-        email_from = os.getenv('EMAIL_FROM', smtp_user or 'noreply@move2earn.app')
-        
-        if not smtp_user or not smtp_pass:
-            logger.warning('No email configuration (SendGrid API key or SMTP credentials) found')
-            return False, 'Email service not configured'
-        
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = email_from
-        msg['To'] = recipient_email
-        
-        # Attach HTML body
-        msg.attach(MIMEText(html_body, 'html'))
-        
-        # Send via SMTP
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(email_from, recipient_email, msg.as_string())
-        
-        return True, 'Email sent successfully'
-    
-    except Exception as e:
-        logger.exception(f'Error sending email to {recipient_email}: {str(e)}')
-        return False, f'Error sending email: {str(e)}'
 
 
 @app.route('/')
@@ -700,10 +637,6 @@ def api_friend_request():
     users = db['users']
     friend_requests = db['friend_requests']
 
-    # Get from_user info
-    from_user = users.find_one({'_id': ObjectId(session['user_id'])})
-    from_name = from_user.get('name', 'A friend') if from_user else 'A friend'
-
     # Try to resolve to_user_id if exists
     to_user = users.find_one({'email': to_email})
     to_user_id = str(to_user['_id']) if to_user else None
@@ -716,22 +649,6 @@ def api_friend_request():
         'created_at': datetime.utcnow()
     }
     res = friend_requests.insert_one(req_doc)
-
-    # Send notification email to recipient
-    email_subject = f'{from_name} sent you a friend request on Move2Earn!'
-    email_body = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; color: #333;">
-            <h2>You have a new friend request!</h2>
-            <p><strong>{from_name}</strong> sent you a friend request on Move2Earn.</p>
-            <p>Your parent will review and approve this request. You'll be notified once they decide.</p>
-            <p>Keep earning game time! 🎮</p>
-            <hr>
-            <p><em>Move2Earn - Earn game time through physical activity</em></p>
-        </body>
-    </html>
-    """
-    send_email(to_email, email_subject, email_body)
 
     return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
 
@@ -801,93 +718,19 @@ def api_respond_friend_request():
         if not (fr.get('from_user_id') in children or (fr.get('to_user_id') and fr.get('to_user_id') in children)):
             return jsonify({'error': 'Not authorized for this request'}), 403
 
-        from_user_id = fr.get('from_user_id')
-        from_user = users.find_one({'_id': ObjectId(from_user_id)}) if from_user_id else None
-        from_name = from_user.get('name', 'A friend') if from_user else 'A friend'
-        
-        to_email = fr.get('to_email')
-        to_user_id = fr.get('to_user_id')
-        to_user = users.find_one({'_id': ObjectId(to_user_id)}) if to_user_id else None
-
         if action == 'reject':
             friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
-            
-            # Send rejection email to from_user if they have an email
-            if from_user and from_user.get('email'):
-                email_subject = f'Friend request rejected'
-                email_body = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; color: #333;">
-                        <h2>Friend request decision</h2>
-                        <p>Your parent has reviewed your friend request and decided not to approve it at this time.</p>
-                        <p>You can try again later. Keep earning! 🏃</p>
-                        <hr>
-                        <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                    </body>
-                </html>
-                """
-                send_email(from_user.get('email'), email_subject, email_body)
-            
             return jsonify({'success': True}), 200
 
         # Approve: set status and add friends to both users (if both exist)
         friend_requests.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
-        
-        # If to_user_id is unknown (email-only) we do nothing further until that user registers
-        if from_user_id and to_user_id:
-            users.update_one({'_id': ObjectId(from_user_id)}, {'$addToSet': {'friends': ObjectId(to_user_id)}})
-            users.update_one({'_id': ObjectId(to_user_id)}, {'$addToSet': {'friends': ObjectId(from_user_id)}})
+        from_id = fr.get('from_user_id')
+        to_id = fr.get('to_user_id')
 
-        # Send approval emails to both parties
-        if from_user and from_user.get('email'):
-            email_subject = f'Friend request approved! 🎉'
-            to_name = to_user.get('name', 'Your friend') if to_user else 'Your friend'
-            email_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>Friend request approved!</h2>
-                    <p>Your parent approved your friend request! You're now friends with {to_name}.</p>
-                    <p>You can now compete on the leaderboard together and take on challenges. 🏆</p>
-                    <hr>
-                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                </body>
-            </html>
-            """
-            send_email(from_user.get('email'), email_subject, email_body)
-        
-        # If to_user exists and has email, send notification
-        if to_user and to_user.get('email'):
-            email_subject = f'Friend request approved! 🎉'
-            from_name_display = from_user.get('name', 'A friend') if from_user else 'A friend'
-            email_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>Friend request approved!</h2>
-                    <p>Your friend request from {from_name_display} has been approved by their parent!</p>
-                    <p>You're now friends and can compete on the leaderboard together. 🏆</p>
-                    <hr>
-                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                </body>
-            </html>
-            """
-            send_email(to_user.get('email'), email_subject, email_body)
-        
-        # If to_user doesn't exist yet (invited by email), send them an approval email
-        if not to_user and to_email:
-            email_subject = f'{from_name} wants to be your friend on Move2Earn!'
-            email_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>You have a new friend!</h2>
-                    <p><strong>{from_name}</strong> sent you a friend request on Move2Earn and their parent approved it!</p>
-                    <p>Sign up to join and start competing with your friends. 🎮</p>
-                    <a href="{os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:5000')}/register" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Sign Up</a>
-                    <hr>
-                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                </body>
-            </html>
-            """
-            send_email(to_email, email_subject, email_body)
+        # If to_user_id is unknown (email-only) we do nothing further until that user registers
+        if from_id and to_id:
+            users.update_one({'_id': ObjectId(from_id)}, {'$addToSet': {'friends': ObjectId(to_id)}})
+            users.update_one({'_id': ObjectId(to_id)}, {'$addToSet': {'friends': ObjectId(from_id)}})
 
         return jsonify({'success': True}), 200
     except Exception as e:
@@ -969,21 +812,6 @@ def api_request_challenge_unlock():
         return jsonify({'error': 'Database unavailable'}), 500
 
     reqs = db['challenge_unlock_requests']
-    challenges = db['challenges']
-    users = db['users']
-
-    # Get child name and parent email
-    child = users.find_one({'_id': ObjectId(session['user_id'])})
-    child_name = child.get('name', 'Your child') if child else 'Your child'
-
-    # Get parent info
-    parent = users.find_one({'children': ObjectId(session['user_id'])})
-    parent_email = parent.get('email') if parent else None
-
-    # Get challenge info
-    challenge = challenges.find_one({'_id': ObjectId(challenge_id)})
-    challenge_name = challenge.get('name', 'a challenge') if challenge else 'a challenge'
-
     doc = {
         'user_id': session['user_id'],
         'challenge_id': challenge_id,
@@ -991,23 +819,6 @@ def api_request_challenge_unlock():
         'created_at': datetime.utcnow()
     }
     res = reqs.insert_one(doc)
-
-    # Send email to parent
-    if parent_email:
-        email_subject = f'{child_name} wants to unlock a challenge!'
-        email_body = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; color: #333;">
-                <h2>Challenge unlock request</h2>
-                <p><strong>{child_name}</strong> wants to unlock the challenge: <strong>{challenge_name}</strong></p>
-                <p>Review this request in the Approvals section of your parent dashboard and approve or reject it.</p>
-                <hr>
-                <p><em>Move2Earn - Earn game time through physical activity</em></p>
-            </body>
-        </html>
-        """
-        send_email(parent_email, email_subject, email_body)
-
     return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
 
 
@@ -1066,55 +877,13 @@ def api_respond_challenge_unlock():
         if r.get('user_id') not in children:
             return jsonify({'error': 'Not authorized'}), 403
 
-        # Get child and challenge info
-        child = users.find_one({'_id': ObjectId(r.get('user_id'))})
-        child_name = child.get('name', 'Your child') if child else 'Your child'
-        child_email = child.get('email') if child else None
-
-        challenge = challenges.find_one({'_id': ObjectId(r.get('challenge_id'))})
-        challenge_name = challenge.get('name', 'the challenge') if challenge else 'the challenge'
-
         if action == 'reject':
             reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
-            
-            # Send rejection email to child
-            if child_email:
-                email_subject = f'Challenge unlock request denied'
-                email_body = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; color: #333;">
-                        <h2>Challenge request decision</h2>
-                        <p>Your parent decided not to unlock the challenge: <strong>{challenge_name}</strong></p>
-                        <p>You can try again later. Keep earning! 🏃</p>
-                        <hr>
-                        <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                    </body>
-                </html>
-                """
-                send_email(child_email, email_subject, email_body)
-            
             return jsonify({'success': True}), 200
 
         # Approve: create unlock record and mark request approved
         reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
         unlocks.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'unlocked_at': datetime.utcnow()})
-        
-        # Send approval email to child
-        if child_email:
-            email_subject = f'Challenge unlocked! 🎉 {challenge_name}'
-            email_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>Challenge unlocked!</h2>
-                    <p>Your parent approved your request! The challenge <strong>{challenge_name}</strong> is now unlocked.</p>
-                    <p>Complete it to earn the reward. Good luck! 🚀</p>
-                    <hr>
-                    <p><em>Move2Earn - Earn game time through physical activity</em></p>
-                </body>
-            </html>
-            """
-            send_email(child_email, email_subject, email_body)
-        
         return jsonify({'success': True}), 200
     except Exception as e:
         logger.exception('Error responding to challenge unlock: %s', e)
@@ -1139,7 +908,6 @@ def api_complete_challenge():
     unlocks = db['challenge_unlocks']
     challenges = db['challenges']
     user_ch = db['user_challenges']
-    users = db['users']
 
     # Check unlock
     unlocked = unlocks.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
@@ -1156,27 +924,6 @@ def api_complete_challenge():
 
     # Credit reward minutes
     UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
-
-    # Send completion congratulations email
-    child = users.find_one({'_id': ObjectId(session['user_id'])})
-    child_email = child.get('email') if child else None
-    challenge_name = ch.get('name', 'the challenge') if ch else 'the challenge'
-
-    if child_email:
-        email_subject = f'Challenge completed! You earned {reward} minutes! 🎊'
-        email_body = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; color: #333;">
-                <h2>Congratulations! 🎉</h2>
-                <p>You completed <strong>{challenge_name}</strong>!</p>
-                <p>You earned <strong>{reward} game time minutes</strong>. Great work!</p>
-                <p>Check the leaderboard to see how you compare to your friends.</p>
-                <hr>
-                <p><em>Move2Earn - Earn game time through physical activity</em></p>
-            </body>
-        </html>
-        """
-        send_email(child_email, email_subject, email_body)
 
     return jsonify({'success': True, 'reward_minutes': reward}), 200
 
