@@ -259,7 +259,8 @@ def register():
             return render_template('register.html', error='Password must be at least 8 characters')
         
         # Check if email already exists
-        if UserDB.get_user_by_email(email):
+        existing_user = UserDB.get_user_by_email(email)
+        if existing_user:
             logger.warning(f"Registration failed for {email}: email already registered")
             return render_template('register.html', error='Email already registered')
         
@@ -275,7 +276,10 @@ def register():
     
     except Exception as e:
         logger.exception(f"Error during registration: {str(e)}")
-        return render_template('register.html', error=f'An error occurred: {str(e)}'), 500
+        error_msg = 'Server error: Unable to process registration. Please try again later.'
+        if 'MONGODB_URI' in str(e) or 'connection' in str(e).lower():
+            error_msg = 'Database connection error. Please check that the server is properly configured and try again.'
+        return render_template('register.html', error=error_msg), 500
 
 
 @app.route('/strava-auth')

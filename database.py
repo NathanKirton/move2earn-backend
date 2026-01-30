@@ -25,7 +25,13 @@ def get_db():
     if db is not None:
         return db
     
+    # Check if MongoDB URI is configured
+    if not MONGODB_URI:
+        logger.error("MONGODB_URI environment variable is not set")
+        return None
+    
     try:
+        logger.info(f"Attempting to connect to MongoDB database: {MONGODB_DB_NAME}")
         client = MongoClient(
             MONGODB_URI,
             serverSelectionTimeoutMS=10000,  # 10 second timeout for server selection
@@ -38,28 +44,30 @@ def get_db():
         # Verify connection
         client.admin.command('ping')
         db = client[MONGODB_DB_NAME]
-        logger.info("Connected to MongoDB")
+        logger.info(f"✓ Connected to MongoDB database: {MONGODB_DB_NAME}")
         
         # Create indexes for better performance
         try:
             users_collection = db['users']
             # Create unique index on email for fast lookups and email uniqueness
             users_collection.create_index('email', unique=True)
-            logger.info("Created email index on users collection")
+            logger.info("✓ Created email index on users collection")
             
             activities_collection = db['activities']
             # Create index on user_id for faster queries
             activities_collection.create_index('user_id')
-            logger.info("Created user_id index on activities collection")
+            logger.info("✓ Created user_id index on activities collection")
         except Exception as e:
-            logger.warning(f"Index creation failed (may already exist): {e}")
+            logger.warning(f"Index creation warning (may already exist): {e}")
         
         return db
     except ConnectionFailure as e:
-        logger.error(f"Failed to connect to MongoDB: {e}")
+        logger.error(f"✗ Failed to connect to MongoDB: {str(e)}")
+        logger.error(f"  - Check MONGODB_URI environment variable is set correctly")
+        logger.error(f"  - Check MongoDB Atlas IP whitelist includes this server")
         return None
     except Exception as e:
-        logger.exception(f"MongoDB Connection Error: {e}")
+        logger.exception(f"✗ MongoDB Connection Error: {str(e)}")
         return None
 
 
