@@ -1488,5 +1488,118 @@
         loadApprovals();
         setInterval(loadApprovals, 8000);
     </script>
+
+        // Challenge Management Scripts
+        async function loadChallengesDropdown() {
+            try {
+                const resp = await fetch('/api/challenges'); // Use public GET for list (filters by user, but parent sees all usually?)
+                // Actually parent sees all they created? api_get_challenges logic: 
+                // "For parent and others, include all" (lines 923). So /api/challenges works for parents.
+                const data = await resp.json();
+                const sel = document.getElementById('ch_select');
+                if (data.challenges && data.challenges.length) {
+                    sel.innerHTML = '<option value="">-- Select Challenge --</option>';
+                    data.challenges.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = `${c.name} (${c.reward_minutes} min)`;
+                        sel.appendChild(opt);
+                    });
+                } else {
+                    sel.innerHTML = '<option value="">No challenges found</option>';
+                }
+            } catch (e) { console.error('Load challenges failed', e); }
+        }
+
+        document.getElementById('createChallengeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button');
+            const msg = document.getElementById('challengeMsg');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            
+            try {
+                const payload = {
+                    name: document.getElementById('ch_name').value,
+                    description: document.getElementById('ch_desc').value,
+                    reward_minutes: parseInt(document.getElementById('ch_reward').value),
+                    visible_to_children: false // Hidden until assigned implicitly? Logic says created not visible.
+                };
+
+                const resp = await fetch('/api/admin/challenges', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (resp.ok) {
+                    msg.textContent = '✓ Challenge Created!';
+                    msg.style.color = '#00ff88';
+                    this.reset();
+                    loadChallengesDropdown(); // Refresh list
+                } else {
+                    msg.textContent = 'Failed to create challenge';
+                    msg.style.color = '#ff6b6b';
+                }
+            } catch (err) {
+                msg.textContent = 'Error: ' + err.message;
+                msg.style.color = '#ff6b6b';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Challenge';
+                setTimeout(() => msg.textContent = '', 3000);
+            }
+        });
+
+        document.getElementById('assignChallengeBtn').addEventListener('click', async function() {
+            const chId = document.getElementById('ch_select').value;
+            const msg = document.getElementById('assignMsg');
+            
+            if (!chId) {
+                alert('Please select a challenge');
+                return;
+            }
+
+            const childIds = Array.from(document.querySelectorAll('.child-select:checked')).map(cb => cb.value);
+            if (!childIds.length) {
+                alert('Select at least one child');
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = 'Assigning...';
+
+            try {
+                const resp = await fetch(`/api/admin/challenges/${chId}/assign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        children: childIds,
+                        visible: true
+                    })
+                });
+
+                if (resp.ok) {
+                    msg.textContent = '✓ Assigned successfully!';
+                    msg.style.color = '#00ff88';
+                    // Uncheck boxes
+                    document.querySelectorAll('.child-select:checked').forEach(cb => cb.checked = false);
+                } else {
+                    msg.textContent = 'Failed to assign';
+                    msg.style.color = '#ff6b6b';
+                }
+            } catch (err) {
+                msg.textContent = 'Error: ' + err.message;
+                msg.style.color = '#ff6b6b';
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Assign Selected';
+                setTimeout(() => msg.textContent = '', 3000);
+            }
+        });
+
+        // Load challenges on init
+        loadChallengesDropdown();
+    </script>
 </body>
 </html>
