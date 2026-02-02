@@ -496,6 +496,14 @@
             <p style="color:#aaa; margin-bottom:20px;">Choose a fun template or create your own custom challenge to motivate your kids!</p>
             
             <h3 style="margin-bottom:15px; font-size:16px; color:#00ff88;">✨ Wacky Templates</h3>
+            
+            <div style="background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.2); border-radius:10px; padding:15px; margin-bottom:25px; font-size:13px;">
+                <h4 style="margin:0 0 10px 0; color:#00d4ff; font-size:14px;">💡 How Rewards Work</h4>
+                <ul style="margin:0; padding-left:20px; line-height:1.6; color:#ddd;">
+                    <li><strong>Fixed Minutes:</strong> A specific amount of screen time (e.g., 30 min) added to the child's daily limit once they complete the challenge.</li>
+                    <li><strong>% Boost:</strong> A percentage-based reward calculated from their <em>existing daily limit</em>. For example, if their limit is 180 min, a 10% boost grants 18 extra minutes. This is great for scaling rewards to the child's typical usage!</li>
+                </ul>
+            </div>
             <div id="templates-list" class="templates-grid">
                 <!-- Loaded via JS -->
                 Loading templates...
@@ -509,8 +517,14 @@
                         <input type="text" id="cust_name" placeholder="e.g. Clean Room" required>
                     </div>
                     <div class="form-group">
-                        <label>Reward Minutes</label>
-                        <input type="number" id="cust_reward" value="30" required>
+                        <label>Reward Value</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="number" id="cust_reward" value="30" style="flex:1;" required>
+                            <select id="cust_reward_type" style="width:120px; color:#000; border-radius:4px;">
+                                <option value="fixed">Minutes</option>
+                                <option value="percentage">% Boost</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Description</label>
@@ -735,16 +749,34 @@
         e.preventDefault();
         const name = document.getElementById('cust_name').value;
         const reward = document.getElementById('cust_reward').value;
+        const rType = document.getElementById('cust_reward_type').value;
         const desc = document.getElementById('cust_desc').value;
         const children = Array.from(document.querySelectorAll('.assign-checkbox:checked')).map(c => c.value);
 
         if(children.length === 0) { alert('Select children'); return; }
 
+        const payload = {
+            name,
+            description: desc,
+            image_url: '',
+            task: {}
+        };
+
+        if (rType === 'percentage') {
+            payload.reward_minutes = 0;
+            payload.reward_type = 'percentage';
+            payload.reward_value = parseInt(reward);
+        } else {
+            payload.reward_minutes = parseInt(reward);
+            payload.reward_type = 'fixed';
+            payload.reward_value = 0;
+        }
+
         try {
             const resp = await fetch('/api/admin/challenges', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, description: desc, reward_minutes: reward })
+                body: JSON.stringify(payload)
             });
             const d = await resp.json();
             if(resp.ok) {
