@@ -570,11 +570,11 @@
             <input type="hidden" id="tpl_id_meta">
             <div class="form-group" style="margin-bottom:15px;">
                 <label>Customize Reward</label>
-                <div style="display:flex; gap:10px;">
+    <div style="display:flex; gap:10px;">
                     <input type="number" id="tpl_reward_val" style="flex:1;" required>
-                    <select id="tpl_reward_type" style="width:120px;">
+                    <select id="tpl_reward_type" style="width:120px; color:#000;">
                         <option value="fixed">Minutes</option>
-                        <!-- Backend needs update to support percentage fully, showing fixed for now as primary -->
+                        <option value="percentage">% Boost</option>
                     </select>
                 </div>
                 <small style="color:#666; font-size:11px; margin-top:5px;">Adjust the reward amount before activating.</small>
@@ -685,18 +685,31 @@
 
         if(children.length === 0) { alert('Select at least one child!'); return; }
 
+        const rType = document.getElementById('tpl_reward_type').value;
+        
+        const payload = {
+            name: baseTpl.name,
+            description: baseTpl.description,
+            image_url: '',
+            task: {}
+        };
+
+        if (rType === 'percentage') {
+            payload.reward_minutes = 0;
+            payload.reward_type = 'percentage';
+            payload.reward_value = parseInt(rewardVal);
+        } else {
+            payload.reward_minutes = parseInt(rewardVal);
+            payload.reward_type = 'fixed';
+            payload.reward_value = 0;
+        }
+
         // 1. Create Challenge (Duplicate)
         try {
             const createResp = await fetch('/api/admin/challenges', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    name: baseTpl.name,
-                    description: baseTpl.description,
-                    reward_minutes: parseInt(rewardVal), // Simplified for now
-                    image_url: '', // Todo: handle icons
-                    task: {} 
-                })
+                body: JSON.stringify(payload)
             });
             const createData = await createResp.json();
             
@@ -797,7 +810,7 @@
             if(cr.requests && cr.requests.length) {
                 crBox.innerHTML = cr.requests.map(r => `
                      <div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; border-radius:4px; font-size:12px;">
-                        <span style="color:#ffc107;">Child ${r.user_id.substr(0,5)}...</span> wants to unlock challenge.
+                        <span style="color:#ffc107;">${r.child_name || 'Child'}</span> wants to unlock challenge.
                         <div style="margin-top:5px; display:flex; gap:5px;">
                             <button class="bonus-btn" style="padding:2px 8px;" onclick="respondChal('${r.id}', 'approve')">Approve</button>
                             <button class="bonus-btn" style="background:#ff6b6b; padding:2px 8px;" onclick="respondChal('${r.id}', 'reject')">Reject</button>

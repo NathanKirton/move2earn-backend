@@ -1241,7 +1241,22 @@ def api_parent_challenge_approvals():
     pending = list(reqs.find({'status': 'pending', 'user_id': {'$in': children}}))
     out = []
     for p in pending:
-        out.append({'id': str(p['_id']), 'user_id': p['user_id'], 'challenge_id': p['challenge_id'], 'created_at': p.get('created_at').isoformat()})
+        # Resolve child name
+        child_name = 'Unknown Child'
+        try:
+            c_user = users.find_one({'_id': ObjectId(p['user_id'])})
+            if c_user:
+                child_name = c_user.get('name', 'Unknown')
+        except Exception:
+            pass
+            
+        out.append({
+            'id': str(p['_id']),
+            'user_id': p['user_id'],
+            'child_name': child_name,
+            'challenge_id': p['challenge_id'],
+            'created_at': p.get('created_at').isoformat()
+        })
     return jsonify({'requests': out}), 200
 
 
@@ -1308,6 +1323,11 @@ def api_complete_challenge():
     unlocks = db['challenge_unlocks']
     challenges = db['challenges']
     user_ch = db['user_challenges']
+
+    # 1. Check if already completed
+    existing_completion = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+    if existing_completion:
+        return jsonify({'error': 'Challenge already completed'}), 400
 
     # Check unlock
     unlocked = unlocks.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
