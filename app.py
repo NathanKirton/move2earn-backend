@@ -870,14 +870,32 @@ def api_respond_friend_request():
 # ------------------------
 @app.route('/api/leaderboard')
 def api_leaderboard():
-    """Return top children across the app by earned game time."""
+    """Return top children across the app or among friends by earned game time."""
     db = get_db()
     if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
     users = db['users']
+    scope = request.args.get('scope', 'global')
+    
+    query = {'account_type': 'child'}
+    
+    if scope == 'friends':
+        if 'user_id' not in session:
+             return jsonify({'error': 'Unauthorized'}), 401
+        
+        current_user = users.find_one({'_id': ObjectId(session['user_id'])})
+        if not current_user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        # Get friend IDs
+        friend_ids = current_user.get('friends', [])
+        # Add current user to list (so they see themselves vs friends)
+        friend_ids.append(ObjectId(session['user_id']))
+        query['_id'] = {'$in': friend_ids}
+
     # Select children accounts
-    top = list(users.find({'account_type': 'child'}).sort('earned_game_time', -1).limit(10))
+    top = list(users.find(query).sort('earned_game_time', -1).limit(20))
     out = []
     for u in top:
         out.append({
@@ -892,6 +910,54 @@ def api_leaderboard():
 # ------------------------
 # Challenges
 # ------------------------
+@app.route('/api/challenge-templates', methods=['GET'])
+def api_get_challenge_templates():
+    """Return a list of wacky template challenges."""
+    templates = [
+        {
+            'id': 'tpl_weekend_madness',
+            'name': 'Weekend Madness',
+            'description': 'Complete 2 runs (one Sat, one Sun) to boost next week\'s time!',
+            'reward_minutes': 60,
+            'reward_type': 'percentage',
+            'reward_value': 10,  # 10% increase
+            'icon': '🤪'
+        },
+        {
+            'id': 'tpl_wild_wednesday',
+            'name': 'Wild Wednesday',
+            'description': 'Log a 5km run on a Wednesday.',
+            'reward_minutes': 45,
+            'reward_type': 'fixed',
+            'icon': '🐪'
+        },
+        {
+            'id': 'tpl_marathon_month',
+            'name': 'Marathon Month',
+            'description': 'Accumulate 42km total distance this month.',
+            'reward_minutes': 120,
+            'reward_type': 'fixed',
+            'icon': '🏃'
+        },
+        {
+            'id': 'tpl_early_bird',
+            'name': 'Early Bird',
+            'description': 'Complete an activity before 8 AM.',
+            'reward_minutes': 30,
+            'reward_type': 'fixed',
+            'icon': '🌅'
+        },
+        {
+            'id': 'tpl_family_feat',
+            'name': 'Family Feat',
+            'description': 'Go for a walk/run with a parent.',
+            'reward_minutes': 45,
+            'reward_type': 'fixed',
+            'icon': '👨‍👩‍👧‍👦'
+        }
+    ]
+    return jsonify({'templates': templates}), 200
+
 @app.route('/api/challenges', methods=['GET'])
 def api_get_challenges():
     """Return list of challenges; include whether current user has unlocked each."""
@@ -1021,6 +1087,8 @@ def api_admin_create_challenge():
         'name': name,
         'description': description,
         'reward_minutes': reward,
+        'reward_type': data.get('reward_type', 'fixed'),
+        'reward_value': int(data.get('reward_value', 0)),
         'image_url': image_url,
         'task': task,
         'visible_to_children': False,
@@ -1250,7 +1318,19 @@ def api_complete_challenge():
     if not ch:
         return jsonify({'error': 'Challenge not found'}), 404
 
+
     reward = int(ch.get('reward_minutes', 0))
+    reward_type = ch.get('reward_type', 'fixed')
+    reward_val = int(ch.get('reward_value', 0))
+    
+    # Calculate actual minutes if percentage
+    if reward_type == 'percentage' and reward_val > 0:
+        # e.g. 10% of daily limit
+        user = UserDB.get_user_by_id(session['user_id'])
+        limit = user.get('daily_screen_time_limit', 180)
+        calc_reward = int((reward_val / 100.0) * limit)
+        reward = max(reward, calc_reward) # Use max of fixed base or calculated
+
     # Record completion
     user_ch.insert_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'completed_at': datetime.utcnow()})
 

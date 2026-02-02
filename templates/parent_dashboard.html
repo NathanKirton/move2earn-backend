@@ -33,11 +33,11 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
         .header-left h1 {
-            font-size: 28px;
+            font-size: 24px;
             margin-bottom: 5px;
         }
         
@@ -83,6 +83,55 @@
         .btn-logout:hover {
             background: #ee5a52;
         }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #aaa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         
         .dashboard-grid {
             display: grid;
@@ -96,6 +145,7 @@
             border-radius: 12px;
             padding: 25px;
             backdrop-filter: blur(10px);
+            margin-bottom: 20px;
         }
         
         .card h2 {
@@ -104,8 +154,10 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            color: #fff;
         }
         
+        /* Add Child Form */
         .add-child-form {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -129,7 +181,7 @@
             letter-spacing: 0.5px;
         }
         
-        .form-group input {
+        .form-group input, .form-group select, .form-group textarea {
             padding: 10px 12px;
             background: rgba(100, 100, 120, 0.4);
             border: 1px solid rgba(150, 150, 180, 0.3);
@@ -137,13 +189,10 @@
             color: #fff;
             font-size: 13px;
             transition: all 0.3s ease;
+            width: 100%;
         }
         
-        .form-group input::placeholder {
-            color: #777;
-        }
-        
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
             border-color: #00d4ff;
             background: rgba(100, 100, 120, 0.6);
@@ -161,12 +210,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
-        .add-child-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
-        }
-        
+
+        /* Child Cards */
         .children-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -181,165 +226,72 @@
             transition: all 0.3s ease;
         }
         
-        .child-card:hover {
-            border-color: rgba(0, 212, 255, 0.6);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
-        }
-        
         .child-name {
             font-size: 18px;
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             color: #00d4ff;
         }
         
         .child-email {
             font-size: 12px;
             color: #999;
-            margin-bottom: 20px;
-        }
-        
-        .game-time-section {
-            margin-bottom: 20px;
-        }
-        
-        .game-time-label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-        
-        .game-time-display {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
             margin-bottom: 15px;
         }
-        
-        .time-box {
-            background: rgba(100, 100, 150, 0.3);
-            border-radius: 6px;
-            padding: 12px;
-            text-align: center;
+
+        /* Template Grid */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
         }
-        
-        .time-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #00d4ff;
-        }
-        
-        .time-label {
-            font-size: 11px;
-            color: #999;
-            margin-top: 4px;
-        }
-        
-        .balance-bar {
-            height: 8px;
-            background: rgba(100, 100, 150, 0.3);
-            border-radius: 4px;
+
+        .template-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
             overflow: hidden;
-            margin-bottom: 10px;
         }
-        
-        .balance-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
-            width: 75%;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-        
-        .balance-text {
-            font-size: 11px;
-            color: #999;
-        }
-        
-        .limits-section {
-            margin-bottom: 20px;
-        }
-        
-        .limits-label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-        
-        .limit-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        
-        .limit-input-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .limit-input-group label {
-            font-size: 11px;
-            color: #999;
-            margin-bottom: 4px;
-        }
-        
-        .limit-input-group input {
-            padding: 8px;
-            background: rgba(100, 100, 120, 0.4);
-            border: 1px solid rgba(150, 150, 180, 0.3);
-            border-radius: 4px;
-            color: #fff;
-            font-size: 12px;
-        }
-        
-        .limit-input-group input:focus {
-            outline: none;
+
+        .template-card:hover {
             border-color: #00d4ff;
-            background: rgba(100, 100, 120, 0.6);
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateY(-2px);
         }
-        
-        .bonus-section {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(100, 100, 150, 0.3);
+
+        .template-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
         }
-        
-        .bonus-label {
+
+        .template-name {
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .template-desc {
             font-size: 12px;
             color: #aaa;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+            margin-bottom: 10px;
+            line-height: 1.4;
         }
-        
-        .bonus-input-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        
-        .bonus-input-group input {
-            padding: 8px;
-            background: rgba(100, 100, 120, 0.4);
-            border: 1px solid rgba(150, 150, 180, 0.3);
-            border-radius: 4px;
-            color: #fff;
+
+        .template-reward {
             font-size: 12px;
+            font-weight: 600;
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
         }
-        
-        .bonus-input-group input:focus {
-            outline: none;
-            border-color: #00ff88;
-            background: rgba(100, 100, 120, 0.6);
-        }
-        
+
         .bonus-btn {
             padding: 8px 12px;
             background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
@@ -350,293 +302,48 @@
             font-size: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 8px;
-            grid-column: 1 / -1;
         }
-        
-        .bonus-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+
+        .bonus-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-        
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-        
-        .success-message {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            color: #00ff88;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 13px;
+
+        /* Modal */
+        .modal {
             display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
         
-        .success-message.show {
-            display: block;
-        }
-        
-        .error-message {
-            background: rgba(255, 107, 107, 0.1);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 13px;
-            display: none;
-        }
-        
-        .error-message.show {
-            display: block;
+        .modal-content {
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            padding: 25px;
+            position: relative;
         }
 
-        .streak-settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            align-items: end;
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 24px;
+            cursor: pointer;
         }
 
-        .streak-settings-grid > div[style*="grid-column"] {
-            grid-column: 1 / -1;
-        }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .container {
-                padding: 12px;
-            }
-
-            header {
-                flex-direction: column;
-                gap: 15px;
-                padding: 15px 20px;
-                text-align: center;
-            }
-
-            .header-left h1 {
-                font-size: 22px;
-            }
-
-            .header-right {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .add-child-form {
-                grid-template-columns: 1fr;
-                gap: 12px;
-                padding: 15px;
-            }
-
-            .children-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .child-card {
-                padding: 15px;
-            }
-
-            .game-time-display {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .time-value {
-                font-size: 20px;
-            }
-
-            .time-label {
-                font-size: 10px;
-            }
-
-            .limit-inputs {
-                grid-template-columns: 1fr;
-            }
-
-            .bonus-input-group {
-                grid-template-columns: 1fr;
-            }
-
-            .bonus-section {
-                margin-top: 15px;
-                padding-top: 12px;
-            }
-
-            .game-time-section {
-                margin-bottom: 15px;
-            }
-
-            .limits-section {
-                margin-bottom: 15px;
-            }
-
-            .child-card > div {
-                display: flex !important;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .child-card > div[style*="display:flex"] {
-                flex-direction: column !important;
-            }
-
-            .btn {
-                padding: 8px 16px;
-                font-size: 13px;
-            }
-
-            .btn-primary {
-                width: 100%;
-            }
-
-            .bonus-btn, .update-limits, .timer-btn, .delete-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-
-            .card h2 {
-                font-size: 18px;
-            }
-
-            .child-name {
-                font-size: 16px;
-            }
-
-            .child-email {
-                font-size: 11px;
-            }
-
-            textarea.bonus-message {
-                min-height: 50px !important;
-            }
-
-            .form-group label {
-                font-size: 11px;
-            }
-
-            .form-group input {
-                font-size: 12px;
-                padding: 8px;
-            }
-
-            /* Streak Settings on mobile */
-            div[style*="grid-template-columns:1fr 1fr 1fr"],
-            .streak-settings-grid {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 12px !important;
-            }
-
-            div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
-            .streak-settings-grid > div {
-                width: 100% !important;
-            }
-
-            div[style*="grid-template-columns:1fr 1fr 1fr"] > button,
-            div[style*="grid-template-columns:1fr 1fr 1fr"] > div[style*="grid-column"],
-            .streak-settings-grid > button,
-            .streak-settings-grid > div[style*="grid-column"] {
-                grid-column: auto !important;
-                width: 100% !important;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 8px;
-            }
-
-            header {
-                padding: 12px 15px;
-                margin-bottom: 15px;
-            }
-
-            .header-left h1 {
-                font-size: 18px;
-            }
-
-            .header-left p {
-                font-size: 12px;
-            }
-
-            .btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .card {
-                padding: 15px;
-                margin-bottom: 12px;
-            }
-
-            .card h2 {
-                font-size: 16px;
-                margin-bottom: 15px;
-            }
-
-            .game-time-display {
-                gap: 8px;
-            }
-
-            .time-box {
-                padding: 10px;
-            }
-
-            .time-value {
-                font-size: 18px;
-            }
-
-            .child-card {
-                padding: 12px;
-            }
-
-            .child-name {
-                font-size: 15px;
-            }
-
-            .bonus-btn, .update-limits, .timer-btn, .delete-btn {
-                padding: 6px 10px;
-                font-size: 11px;
-                white-space: nowrap;
-            }
-
-            .bonus-input-group input {
-                font-size: 11px;
-                padding: 6px;
-            }
-
-            textarea.bonus-message {
-                font-size: 11px !important;
-                min-height: 45px !important;
-                padding: 6px !important;
-            }
-
-            .add-child-form {
-                padding: 12px;
-            }
-
-            .form-group input {
-                font-size: 11px;
-                padding: 6px;
-            }
-
-            .dashboard-grid {
-                gap: 12px;
-            }
-        }
-
-        /* Notification Popup */
+        /* Notification */
         .notification-popup {
             position: fixed;
             top: 20px;
@@ -645,960 +352,591 @@
             color: #000;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.4);
-            z-index: 10000;
-            max-width: 400px;
-            animation: slideIn 0.4s ease-out;
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification-popup.show {
+            transform: translateX(0);
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(450px);
-                opacity: 0;
+        /* Mobile */
+        @media (max-width: 768px) {
+            .add-child-form {
+                grid-template-columns: 1fr;
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
             }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
+            .header-right {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
             }
-            to {
-                transform: translateX(450px);
-                opacity: 0;
-            }
-        }
-
-        .notification-popup.closing {
-            animation: slideOut 0.4s ease-in;
-        }
-
-        .notification-popup h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .notification-popup p {
-            margin: 0;
-            font-size: 14px;
-            opacity: 0.95;
-        }
-
-        .notification-popup .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border: none;
-            color: #000;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-        }
-
-        .notification-popup .close-btn:hover {
-            background: rgba(0, 0, 0, 0.4);
         }
     </style>
 </head>
 <body>
-    <div id="notifications-container"></div>
-    <div class="container">
-        <header>
-            <div class="header-left">
-                <h1>👨‍👩‍👧‍👦 Parent Dashboard</h1>
-                <p>Welcome back, {{ parent_name }}!</p>
-            </div>
-            <div class="header-right">
-                <button class="btn btn-primary" onclick="openAccountModal()">Account Settings</button>
-                <a href="/logout" class="btn btn-logout">Logout</a>
-            </div>
-        </header>
-        
+
+<div class="container">
+    <header>
+        <div class="header-left">
+            <h1>👨‍👩‍👧‍👦 Parent Dashboard</h1>
+            <p>Welcome back, {{ parent_name }}!</p>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-primary" onclick="openAccountModal()">Account</button>
+            <a href="/logout" class="btn btn-logout">Logout</a>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('children')">Children & Overview</button>
+        <button class="tab-btn" onclick="switchTab('challenges')">🏆 Challenges & Rewards</button>
+        <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
+    </div>
+
+    <!-- TAB 1: Children Overview -->
+    <div id="tab-children" class="tab-content active">
         <div class="dashboard-grid">
-            <!-- (Streak Reward Settings moved to bottom of page) -->
-            <!-- Add Child Section -->
-            <div class="card">
-                <h2>➕ Add a Child</h2>
-                <div id="successMessage" class="success-message"></div>
-                <div id="errorMessage" class="error-message"></div>
-                <form class="add-child-form" id="addChildForm">
-                    <div class="form-group">
-                        <label for="child_name">Child's Name</label>
-                        <input type="text" id="child_name" placeholder="e.g., Emma" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="child_email">Email Address</label>
-                        <input type="email" id="child_email" placeholder="emma@example.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="child_password">Password</label>
-                        <input type="password" id="child_password" placeholder="••••••••" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="child_confirm_password">Confirm Password</label>
-                        <input type="password" id="child_confirm_password" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="add-child-submit">Create Child Account</button>
-                </form>
-            </div>
             
-            <!-- Children Management Section -->
+            <!-- Pending Requests (Notifications) -->
+            <div class="card" id="approvals-card">
+                <h2>🔔 Approvals & Requests</h2>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:15px;">
+                    <div>
+                        <h4 style="margin-bottom:10px; color:#aaa;">Friend Requests</h4>
+                        <div id="friendApprovalsList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px;">
+                            Loading...
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom:10px; color:#aaa;">Challenge Unlocks</h4>
+                        <div id="challengeApprovalsList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px;">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Children List -->
             <div class="card">
-                <h2>👥 Manage Your Children</h2>
-                
+                <h2>👥 Your Children</h2>
                 {% if children|length > 0 %}
                 <div class="children-grid">
                     {% for child in children %}
                     <div class="child-card" data-child-id="{{ child.id }}">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
                                 <div class="child-name">{{ child.name }}</div>
                                 <div class="child-email">{{ child.email }}</div>
                             </div>
-                            <button class="bonus-btn delete-btn" style="background:#ff6b6b;padding:8px 16px;font-size:13px;">Delete</button>
+                            <button class="bonus-btn" style="background:#ff6b6b; padding:4px 8px; font-size:11px;" onclick="deleteChild('{{child.id}}', '{{child.name}}')">Remove</button>
                         </div>
                         
-                        <!-- Game Time Display -->
-                        <div class="game-time-section">
-                            <div class="game-time-label">📱 Game Time</div>
-                            <div class="game-time-display">
-                                <div class="time-box">
-                                    <div class="time-value daily-limit-display">{{ child.daily_screen_time_limit }}</div>
-                                    <div class="time-label">Total Available (min)</div>
-                                </div>
-                                <div class="time-box">
-                                    <div class="time-value">{{ child.used_game_time }}</div>
-                                    <div class="time-label">Used (min)</div>
-                                </div>
-                            </div>
-                            <div class="balance-bar">
-                                <div class="balance-fill" style="width: {% if child.daily_screen_time_limit > 0 %}{{ (child.used_game_time / child.daily_screen_time_limit * 100)|int }}{% else %}0{% endif %}%;"></div>
-                            </div>
-                            <div class="balance-text">Balance: {{ child.daily_screen_time_limit - child.used_game_time }} minutes</div>
-                        </div>
-                        
-                        <!-- Screen Time Limits -->
-                        <div class="limits-section">
-                            <div class="limits-label">⏰ Daily Limit</div>
-                            <div class="limit-inputs">
-                                <div class="limit-input-group">
-                                    <label>Minutes/Day</label>
-                                    <input type="number" class="daily-limit" value="{{ child.daily_screen_time_limit }}" min="0" max="1440">
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:8px;align-items:center;margin-top:10px;grid-column:1 / -1;">
-                                <button class="bonus-btn update-limits">Update Limits</button>
-                                <button class="bonus-btn timer-btn">{% if child.timer_running %}Stop Timer{% else %}Start Timer{% endif %}</button>
-                                <div class="timer-status" style="font-size:12px;color:#ddd;">{% if child.timer_running %}Running{% else %}Stopped{% endif %}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Add Bonus Time -->
                         <div class="bonus-section">
-                            <div class="bonus-label">🎁 Grant Bonus Time</div>
-                            <div class="bonus-input-group">
-                                <input type="number" class="bonus-minutes" placeholder="Minutes" min="0" max="1440">
-                                <button class="bonus-btn add-bonus">Add Time</button>
-                            </div>
-                            <div style="margin-top: 10px;">
-                                <textarea class="bonus-message" placeholder="Optional: Add a message (e.g., 'Great job this week!')" style="width: 100%; padding: 8px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 4px; color: #fff; font-size: 12px; font-family: inherit; resize: vertical; min-height: 60px; margin-top: 8px;" maxlength="200"></textarea>
+                            <div style="font-size:12px; color:#aaa; margin-bottom:5px;">DAILY LIMIT</div>
+                            <div style="display:flex; gap:10px;">
+                                <input type="number" class="daily-limit" value="{{ child.daily_screen_time_limit }}" style="width:80px; padding:6px; border-radius:4px; border:none;">
+                                <button class="bonus-btn update-limits">Update</button>
                             </div>
                         </div>
-                        
-                        <!-- View Streak (read-only) -->
+
                         <div class="bonus-section">
-                            <div class="bonus-label">🔥 Streak</div>
-                            <div style="display:flex;gap:12px;align-items:center;">
-                                <div style="flex:1;">
-                                    <div style="font-size:13px;color:#fff;font-weight:700;">{{ child.streak_count }} day(s)</div>
-                                    <div style="font-size:12px;color:#aaa;margin-top:4px;">Increments on consecutive days of activity</div>
-                                </div>
+                            <div style="font-size:12px; color:#aaa; margin-bottom:5px;">GRANT BONUS TIME</div>
+                            <div style="display:flex; gap:10px; margin-bottom:5px;">
+                                <input type="number" class="bonus-minutes" placeholder="Min" style="width:80px; padding:6px; border-radius:4px; border:none;">
+                                <button class="bonus-btn add-bonus">Send</button>
                             </div>
+                            <textarea class="bonus-message" placeholder="Message..." style="width:100%; height:40px; padding:5px; font-size:12px; border-radius:4px; border:none;"></textarea>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">👶</div>
-                    <p>No children added yet. Create a child account above to get started!</p>
-                </div>
+                <div style="text-align:center; padding:30px; color:#aaa;">No children added yet.</div>
                 {% endif %}
             </div>
-            <!-- Approvals & Requests -->
-            <div class="card">
-                <h2>✅ Approvals & Requests</h2>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div>
-                        <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px;">Friend Requests</div>
-                        <div id="friendApprovalsList" style="max-height:220px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;">No pending requests</div>
-                    </div>
-                    <div>
-                        <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:8px;">Challenge Unlock Requests</div>
-                        <div id="challengeApprovalsList" style="max-height:220px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;">No pending requests</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Streak Reward Settings (moved to bottom) -->
+            <!-- Add Child -->
             <div class="card">
-                <h2>🔥 Streak Reward Settings</h2>
-                <div class="streak-settings-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+                <h2>➕ Add a Child Account</h2>
+                <div id="addChildMsg" style="margin-bottom:10px;"></div>
+                <form class="add-child-form" id="addChildForm">
                     <div class="form-group">
-                        <label for="streak_base">Base Minutes</label>
-                        <input type="number" id="streak_base" value="5" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="streak_increment">Increment per Day</label>
-                        <input type="number" id="streak_increment" value="2" min="0">
+                        <label>Name</label>
+                        <input type="text" id="c_name" required>
                     </div>
                     <div class="form-group">
-                        <label for="streak_cap">Cap Minutes</label>
-                        <input type="number" id="streak_cap" value="60" min="0">
+                        <label>Email</label>
+                        <input type="email" id="c_email" required>
                     </div>
-                    <div style="grid-column:1 / -1;margin-top:8px;">
-                        <button id="saveStreakSettings" class="bonus-btn">Save Streak Settings</button>
-                        <span id="streakSaveMsg" style="margin-left:12px;color:#aaa;font-size:13px;"></span>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="c_pass" required>
                     </div>
-                </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="c_pass2" required>
+                    </div>
+                    <button type="submit" class="add-child-submit">Create Account</button>
+                </form>
             </div>
         </div>
     </div>
-    
-    <script>
-        // Add Child Form Submission
-        document.getElementById('addChildForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+
+    <!-- TAB 2: Challenges -->
+    <div id="tab-challenges" class="tab-content">
+        <div class="card">
+            <h2>🏆 Create Challenges</h2>
+            <p style="color:#aaa; margin-bottom:20px;">Choose a fun template or create your own custom challenge to motivate your kids!</p>
             
-            const name = document.getElementById('child_name').value;
-            const email = document.getElementById('child_email').value;
-            const password = document.getElementById('child_password').value;
-            const confirmPassword = document.getElementById('child_confirm_password').value;
-            
-            const successMsg = document.getElementById('successMessage');
-            const errorMsg = document.getElementById('errorMessage');
-            
-            successMsg.classList.remove('show');
-            errorMsg.classList.remove('show');
-            
-            if (password !== confirmPassword) {
-                errorMsg.textContent = 'Passwords do not match';
-                errorMsg.classList.add('show');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/add-child', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        child_name: name,
-                        child_email: email,
-                        child_password: password
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    successMsg.textContent = `Successfully created account for ${name}! Reload the page to see the new child.`;
-                    successMsg.classList.add('show');
-                    document.getElementById('addChildForm').reset();
-                    
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    errorMsg.textContent = data.error || 'Failed to create child account';
-                    errorMsg.classList.add('show');
-                }
-            } catch (err) {
-                errorMsg.textContent = 'Error: ' + err.message;
-                errorMsg.classList.add('show');
-            }
-        });
-        
-        // Update Limits Button
-        document.querySelectorAll('.update-limits').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const dailyLimit = parseInt(card.querySelector('.daily-limit').value);
-                
-                try {
-                    const response = await fetch(`/api/update-child-limits/${childId}`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            daily_limit: dailyLimit
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
-                        this.textContent = '✓ Updated!';
-                        setTimeout(() => {
-                            this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
-                            this.textContent = 'Update Limits';
-                        }, 2000);
-                    }
-                } catch (err) {
-                    console.error('Error updating limits:', err);
-                }
-            });
-        });
-        
-        // Timer Start/Stop Button
-        document.querySelectorAll('.timer-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const statusEl = card.querySelector('.timer-status');
-                const action = this.textContent.trim().toLowerCase().startsWith('start') ? 'start' : 'stop';
-
-                try {
-                    this.disabled = true;
-                    this.textContent = action === 'start' ? '⏳ Starting...' : '⏳ Stopping...';
-
-                    const response = await fetch(`/api/control-timer/${childId}`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action })
-                    });
-
-                    const data = await response.json();
-                    if (response.ok) {
-                        if (action === 'start') {
-                            this.textContent = 'Stop Timer';
-                            statusEl.textContent = 'Running';
-                        } else {
-                            this.textContent = 'Start Timer';
-                            statusEl.textContent = 'Stopped';
-                            if (data && data.minutes_recorded !== undefined) {
-                                alert(`Timer stopped - ${data.minutes_recorded} minutes recorded for the child.`);
-                            }
-                        }
-                    } else {
-                        alert('Error: ' + (data.error || 'Failed to control timer'));
-                    }
-                } catch (err) {
-                    console.error('Error controlling timer:', err);
-                    alert('Error: ' + err.message);
-                } finally {
-                    this.disabled = false;
-                }
-            });
-        });
-
-        // Add Bonus Time Button
-        document.querySelectorAll('.add-bonus').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const minutes = parseInt(card.querySelector('.bonus-minutes').value);
-                const message = card.querySelector('.bonus-message').value.trim();
-                const originalText = this.textContent;
-                const originalBg = this.style.background;
-                
-                if (isNaN(minutes) || minutes <= 0) {
-                    alert('Please enter a valid number of minutes');
-                    return;
-                }
-                
-                try {
-                    // Disable button during request
-                    this.disabled = true;
-                    this.textContent = '⏳ Sending...';
-                    
-                    const response = await fetch(`/api/add-earned-time/${childId}`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            minutes,
-                            message
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        // Show success feedback
-                        this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
-                        this.textContent = '✓ Sent!';
-                        
-                        // Update the total available display on the card (which is the daily limit)
-                        const totalAvailableBox = card.querySelector('.daily-limit-display');
-                        const balanceText = card.querySelector('.balance-text');
-                        const dailyLimitInput = card.querySelector('.daily-limit');
-                        
-                        if (totalAvailableBox) {
-                            totalAvailableBox.textContent = data.limit;
-                        }
-                        if (balanceText) {
-                            const balance = data.limit - data.used;
-                            balanceText.textContent = `Balance: ${balance} minutes`;
-                        }
-                        
-                        // Update the daily limit input field to match
-                        if (dailyLimitInput) {
-                            dailyLimitInput.value = data.limit;
-                        }
-                        
-                        // Update balance bar
-                        const balanceFill = card.querySelector('.balance-fill');
-                        if (balanceFill && data.limit > 0) {
-                            const percentage = (data.used / data.limit * 100);
-                            balanceFill.style.width = percentage + '%';
-                        }
-                        
-                        // Clear inputs
-                        card.querySelector('.bonus-minutes').value = '';
-                        card.querySelector('.bonus-message').value = '';
-                        
-                        setTimeout(() => {
-                            // Reset button
-                            this.style.background = 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)';
-                            this.textContent = 'Add Time';
-                        }, 2000);
-                    } else {
-                        // Show error
-                        alert('Error: ' + (data.error || 'Failed to add bonus time'));
-                        this.disabled = false;
-                        this.textContent = originalText;
-                        this.style.background = originalBg;
-                    }
-                } catch (err) {
-                    console.error('Error adding bonus time:', err);
-                    alert('Error: ' + err.message);
-                    this.disabled = false;
-                    this.textContent = originalText;
-                    this.style.background = originalBg;
-                }
-            });
-        });
-
-        // Delete Child Button
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const card = this.closest('.child-card');
-                const childId = card.dataset.childId;
-                const childName = card.querySelector('.child-name').textContent;
-                
-                if (!confirm(`Are you sure you want to delete ${childName}'s account? This cannot be undone.`)) {
-                    return;
-                }
-                
-                this.disabled = true;
-                const originalText = this.textContent;
-                this.textContent = 'Deleting...';
-                
-                try {
-                    const response = await fetch(`/api/delete-child/${childId}`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        // Remove the card from the DOM
-                        card.style.opacity = '0';
-                        card.style.transition = 'opacity 0.3s ease';
-                        setTimeout(() => card.remove(), 300);
-                        alert(`${childName}'s account has been deleted.`);
-                    } else {
-                        alert('Error: ' + (data.error || 'Failed to delete child'));
-                        this.disabled = false;
-                        this.textContent = originalText;
-                    }
-                } catch (err) {
-                    console.error('Error deleting child:', err);
-                    alert('Error: ' + err.message);
-                    this.disabled = false;
-                    this.textContent = originalText;
-                }
-            });
-        });
-
-        
-
-        // Streak buttons removed - streaks now only increment automatically on consecutive days
-
-        // Reset Streak removed - streaks now only reset automatically when a day is skipped
-
-        
-
-        // Load current streak settings and wire up save
-        async function loadStreakSettings() {
-            try {
-                const resp = await fetch('/api/get-streak-settings', { credentials: 'same-origin' });
-                if (!resp.ok) return;
-                const j = await resp.json();
-                if (j && j.settings) {
-                    document.getElementById('streak_base').value = j.settings.base_minutes || 5;
-                    document.getElementById('streak_increment').value = j.settings.increment_minutes || 2;
-                    document.getElementById('streak_cap').value = j.settings.cap_minutes || 60;
-                }
-            } catch (err) {
-                console.error('Failed to load streak settings', err);
-            }
-        }
-
-        document.getElementById('saveStreakSettings').addEventListener('click', async function() {
-            const base = parseInt(document.getElementById('streak_base').value) || 5;
-            const inc = parseInt(document.getElementById('streak_increment').value) || 2;
-            const cap = parseInt(document.getElementById('streak_cap').value) || 60;
-            const msgEl = document.getElementById('streakSaveMsg');
-            
-            // Validate
-            if (base < 0 || inc < 0 || cap < 0) {
-                msgEl.textContent = 'Values must be non-negative';
-                return;
-            }
-            
-            this.disabled = true;
-            msgEl.textContent = 'Saving...';
-            try {
-                const resp = await fetch('/api/set-streak-settings', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ base_minutes: base, increment_minutes: inc, cap_minutes: cap })
-                });
-                if (resp.ok) {
-                    msgEl.textContent = '✓ Saved';
-                    setTimeout(() => msgEl.textContent = '', 2000);
-                } else {
-                    const j = await resp.json();
-                    msgEl.textContent = 'Error: ' + (j.error || 'failed');
-                }
-            } catch (err) {
-                msgEl.textContent = 'Error';
-            } finally {
-                this.disabled = false;
-            }
-        });
-
-        // Load settings on page load
-        loadStreakSettings();
-    </script>
-    <!-- Account Settings Modal -->
-    <div class="modal" id="account-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1200; justify-content:center; align-items:center;">
-        <div style="background:#0f1724; padding:20px; border-radius:10px; width:420px; border:1px solid rgba(255,255,255,0.06);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <h3 style="margin:0;color:#fff;">Account Settings</h3>
-                <button onclick="closeAccountModal()" style="background:none;border:none;color:#999;font-size:20px;cursor:pointer;">×</button>
+            <h3 style="margin-bottom:15px; font-size:16px; color:#00ff88;">✨ Wacky Templates</h3>
+            <div id="templates-list" class="templates-grid">
+                <!-- Loaded via JS -->
+                Loading templates...
             </div>
-            <div id="accountMessage" style="display:none;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;"></div>
-            <form id="accountForm">
-                <div style="display:grid;gap:10px;">
-                    <input type="text" id="acct_name" placeholder="Your name" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
-                    <input type="email" id="acct_email" placeholder="Email address" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
-                    <input type="password" id="acct_password" placeholder="New password (leave blank to keep)" style="padding:10px;border-radius:6px;border:1px solid rgba(150,150,180,0.2);background:rgba(255,255,255,0.02);color:#fff;">
-                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                        <button type="button" onclick="closeAccountModal()" style="padding:8px 12px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;">Cancel</button>
-                        <button type="submit" id="saveAccountBtn" style="padding:8px 12px;border-radius:6px;background:linear-gradient(135deg,#00d4ff 0%,#00ff88 100%);border:none;color:#000;font-weight:600;">Save</button>
+
+            <h3 style="margin-bottom:15px; font-size:16px; color:#00d4ff;">🛠️ Custom Challenge</h3>
+            <form id="customChallengeForm" style="background:rgba(0,0,0,0.2); padding:20px; border-radius:10px;">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                    <div class="form-group">
+                        <label>Challenge Name</label>
+                        <input type="text" id="cust_name" placeholder="e.g. Clean Room" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Reward Minutes</label>
+                        <input type="number" id="cust_reward" value="30" required>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Description</label>
+                        <input type="text" id="cust_desc" placeholder="What needs to be done?" required>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Assign To</label>
+                        <div id="cust_children_select" style="display:flex; gap:10px; flex-wrap:wrap;">
+                            {% for child in children %}
+                            <label style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:20px; cursor:pointer;">
+                                <input type="checkbox" value="{{child.id}}" class="assign-checkbox"> {{child.name}}
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
+                <button type="submit" class="bonus-btn" style="margin-top:15px; width:100%;">Create & Assign Challenge</button>
+                <div id="custMsg" style="margin-top:10px;"></div>
             </form>
         </div>
     </div>
 
-    <script>
-        function openAccountModal() {
-            document.getElementById('account-modal').style.display = 'flex';
-            // Pre-fill with current session values if available
-            try {
-                const nameEl = document.getElementById('acct_name');
-                const emailEl = document.getElementById('acct_email');
-                if (nameEl) nameEl.value = '{{ parent_name }}' || '';
-                if (emailEl) emailEl.value = '{{ parent_email or '' }}';
-                document.getElementById('accountMessage').style.display = 'none';
-            } catch (e) { }
-        }
+    <!-- TAB 3: Settings -->
+    <div id="tab-settings" class="tab-content">
+        <div class="card">
+            <h2>🔥 Streak Settings</h2>
+            <p style="color:#aaa; margin-bottom:20px;">Configure how much bonus time children earn for daily activity streaks.</p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <div class="form-group">
+                    <label>Base Bonus (Minutes)</label>
+                    <input type="number" id="stk_base" value="5">
+                </div>
+                <div class="form-group">
+                    <label>Daily Increment (Minutes)</label>
+                    <input type="number" id="stk_inc" value="2">
+                </div>
+                <div class="form-group">
+                    <label>Max Daily Cap (Minutes)</label>
+                    <input type="number" id="stk_cap" value="60">
+                </div>
+            </div>
+            <button id="saveStreakBtn" class="bonus-btn" style="margin-top:20px;">Save Changes</button>
+            <div id="streakMsg" style="margin-top:10px;"></div>
+        </div>
+    </div>
 
-        function closeAccountModal() {
-            document.getElementById('account-modal').style.display = 'none';
-        }
+</div>
 
-        document.getElementById('accountForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('saveAccountBtn');
-            btn.disabled = true;
-            const msg = document.getElementById('accountMessage');
-            msg.style.display = 'none';
-
-            const payload = {
-                name: document.getElementById('acct_name').value,
-                email: document.getElementById('acct_email').value,
-                password: document.getElementById('acct_password').value
-            };
-
-            try {
-                const resp = await fetch('/api/update-account', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const j = await resp.json();
-                if (resp.ok) {
-                    msg.style.display = 'block';
-                    msg.style.background = 'rgba(0,255,136,0.06)';
-                    msg.style.border = '1px solid rgba(0,255,136,0.12)';
-                    msg.style.color = '#00ff88';
-                    msg.textContent = 'Account updated';
-                    // Update welcome text
-                    try { document.querySelector('.header-left p').textContent = 'Welcome back, ' + payload.name + '!'; } catch(e){}
-                    setTimeout(() => { closeAccountModal(); }, 900);
-                } else {
-                    msg.style.display = 'block';
-                    msg.style.background = 'rgba(255,107,107,0.08)';
-                    msg.style.border = '1px solid rgba(255,107,107,0.18)';
-                    msg.style.color = '#ff6b6b';
-                    msg.textContent = j.error || 'Failed to update account';
-                }
-            } catch (err) {
-                msg.style.display = 'block';
-                msg.style.background = 'rgba(255,107,107,0.08)';
-                msg.style.border = '1px solid rgba(255,107,107,0.18)';
-                msg.style.color = '#ff6b6b';
-                msg.textContent = 'Error: ' + err.message;
-            } finally {
-                btn.disabled = false;
-            }
-        });
-    </script>
-    <script>
-        // Poll parent children every 8 seconds to reflect live changes (earned time updates)
-        async function refreshChildren() {
-            try {
-                const resp = await fetch('/api/parent-children');
-                if (!resp.ok) return;
-                const data = await resp.json();
-                if (!data.children) return;
-
-                data.children.forEach(child => {
-                    const card = document.querySelector(`.child-card[data-child-id="${child.id}"]`);
-                    if (!card) return;
-                    // Update daily limit
-                    const dailyEl = card.querySelector('.daily-limit-display');
-                    if (dailyEl) dailyEl.textContent = child.daily_screen_time_limit;
-                    // Update used time
-                    const usedEl = card.querySelector('.time-box:nth-child(2) .time-value');
-                    if (usedEl) usedEl.textContent = child.used_game_time;
-                    // Update balance bar
-                    const fill = card.querySelector('.balance-fill');
-                    if (fill && child.daily_screen_time_limit > 0) {
-                        const pct = Math.min(100, Math.round((child.used_game_time / child.daily_screen_time_limit) * 100));
-                        fill.style.width = pct + '%';
-                    }
-                    // Update balance text
-                    const balanceText = card.querySelector('.balance-text');
-                    if (balanceText) balanceText.textContent = 'Balance: ' + (child.daily_screen_time_limit - child.used_game_time) + ' minutes';
-                });
-            } catch (err) {
-                console.error('Failed to refresh children:', err);
-            }
-        }
-
-        // Start polling
-        setInterval(refreshChildren, 8000);
-
-        // Notification popup helper
-        let lastFriendRequestCount = 0;
-        let lastChallengeRequestCount = 0;
-
-        function showNotification(title, message, autoClose = 4000) {
-            const container = document.getElementById('notifications-container');
-            const popup = document.createElement('div');
-            popup.className = 'notification-popup';
-            popup.innerHTML = `
-                <button class="close-btn">✕</button>
-                <h3>${title}</h3>
-                <p>${message}</p>
-            `;
+<!-- Template Activation Modal -->
+<div id="templateModal" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()">×</button>
+        <h2 id="modalTitle" style="margin-bottom:10px;">Activate Challenge</h2>
+        <p id="modalDesc" style="color:#aaa; margin-bottom:20px;"></p>
+        
+        <form id="activateTemplateForm">
+            <input type="hidden" id="tpl_id_meta">
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>Customize Reward</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="tpl_reward_val" style="flex:1;" required>
+                    <select id="tpl_reward_type" style="width:120px;">
+                        <option value="fixed">Minutes</option>
+                        <!-- Backend needs update to support percentage fully, showing fixed for now as primary -->
+                    </select>
+                </div>
+                <small style="color:#666; font-size:11px; margin-top:5px;">Adjust the reward amount before activating.</small>
+            </div>
             
-            const closeBtn = popup.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => {
-                popup.classList.add('closing');
-                setTimeout(() => popup.remove(), 400);
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>Assign To</label>
+                <div id="tpl_children_select" style="display:flex; flex-wrap:wrap; gap:8px;">
+                    {% for child in children %}
+                    <label style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:20px; cursor:pointer;">
+                        <input type="checkbox" value="{{child.id}}" class="tpl-assign-checkbox" checked> {{child.name}}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <button type="submit" class="bonus-btn" style="width:100%; font-size:16px; padding:12px;">🚀 Activate Challenge!</button>
+        </form>
+    </div>
+</div>
+
+<!-- Account Modal (Simple Update) -->
+<div id="accountModal" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('accountModal').style.display='none'">×</button>
+        <h2>Account Settings</h2>
+        <form id="acctForm" style="margin-top:15px;">
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Name</label>
+                <input type="text" id="acc_name" value="{{ parent_name }}">
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Email</label>
+                <input type="email" id="acc_email" value="{{ parent_email }}">
+            </div>
+            <button type="submit" class="bonus-btn" style="width:100%;">Update Profile</button>
+        </form>
+    </div>
+</div>
+
+<!-- Notification Container -->
+<div id="notification-container" style="position:fixed; top:20px; right:20px; z-index:9999;"></div>
+
+<script>
+    // --- Tabs Logic ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Find button by text roughly or index? Better to pass Event.
+        // Simple hack: find button with onclick matching
+        const buttons = document.querySelectorAll('.tab-btn');
+        if(tabId === 'children') buttons[0].classList.add('active');
+        if(tabId === 'challenges') buttons[1].classList.add('active');
+        if(tabId === 'settings') buttons[2].classList.add('active');
+
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // --- Template Logic ---
+    async function loadTemplates() {
+        const container = document.getElementById('templates-list');
+        try {
+            const resp = await fetch('/api/challenge-templates');
+            const data = await resp.json();
+            
+            container.innerHTML = '';
+            data.templates.forEach(t => {
+                const el = document.createElement('div');
+                el.className = 'template-card';
+                el.onclick = () => openTemplateModal(t);
+                el.innerHTML = `
+                    <div class="template-icon">${t.icon}</div>
+                    <div class="template-name">${t.name}</div>
+                    <div class="template-desc">${t.description}</div>
+                    <div class="template-reward">Reward: ${t.reward_value || t.reward_minutes} ${t.reward_type === 'percentage' ? '%' : 'min'}</div>
+                `;
+                container.appendChild(el);
             });
-
-            container.appendChild(popup);
-
-            if (autoClose) {
-                setTimeout(() => {
-                    if (popup.parentElement) {
-                        popup.classList.add('closing');
-                        setTimeout(() => popup.remove(), 400);
-                    }
-                }, autoClose);
-            }
+        } catch (e) {
+            container.innerHTML = 'Failed to load templates.';
         }
+    }
 
-        // Load approvals for friend requests and challenges
-        async function loadApprovals() {
-            try {
-                const resp = await fetch('/api/parent-friend-approvals');
-                if (resp.ok) {
-                    const j = await resp.json();
-                    const el = document.getElementById('friendApprovalsList');
-                    if (el) {
-                        // Check if new friend requests arrived
-                        const currentCount = j.requests ? j.requests.length : 0;
-                        if (currentCount > lastFriendRequestCount && lastFriendRequestCount > 0) {
-                            const newCount = currentCount - lastFriendRequestCount;
-                            showNotification(
-                                '👥 New Friend Request' + (newCount > 1 ? 's' : ''),
-                                newCount + ' new friend request' + (newCount > 1 ? 's' : '') + ' waiting for approval!'
-                            );
-                        }
-                        lastFriendRequestCount = currentCount;
-                        if (j.requests && j.requests.length) {
-                            el.innerHTML = '';
-                            j.requests.forEach(r => {
-                                const row = document.createElement('div');
-                                row.style.display = 'flex';
-                                row.style.justifyContent = 'space-between';
-                                row.style.alignItems = 'center';
-                                row.style.padding = '10px 8px';
-                                row.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
-                                row.style.backgroundColor = 'rgba(0,212,255,0.05)';
-                                row.style.borderRadius = '6px';
-                                row.style.marginBottom = '6px';
-                                
-                                // Show who sent the request (use resolved names when available)
-                                const fromName = r.from_name || (r.from_user_id ? `Child ${r.from_user_id.substring(0,8)}` : null);
-                                const toName = r.to_name || (r.to_user_id ? `Child ${r.to_user_id.substring(0,8)}` : r.to_email || 'Unknown');
-                                const statusNote = (r.required_approvals && r.required_approvals.length > (r.approvals||[]).length) ? ' (awaiting other parent approvals)' : '';
+    function openTemplateModal(t) {
+        const m = document.getElementById('templateModal');
+        document.getElementById('modalTitle').textContent = t.name;
+        document.getElementById('modalDesc').textContent = t.description;
+        
+        // Setup inputs
+        document.getElementById('tpl_id_meta').value = JSON.stringify(t); // Store full obj
+        document.getElementById('tpl_reward_val').value = t.reward_value || t.reward_minutes;
+        
+        m.style.display = 'flex';
+    }
 
-                                row.innerHTML = `<div style="font-size:13px;color:#00ff88;">👥 ${fromName} <span style="color:#aaa;">to ${toName}</span><span style="color:#ffc107; margin-left:8px; font-size:12px;">${statusNote}</span></div>`;
-                                const btns = document.createElement('div');
-                                const approve = document.createElement('button');
-                                approve.textContent = '✅ Approve';
-                                approve.style.marginRight = '6px';
-                                approve.className = 'bonus-btn';
-                                approve.addEventListener('click', async () => {
-                                    await respondFriendRequest(r.id, 'approve');
-                                    loadApprovals();
-                                });
-                                const reject = document.createElement('button');
-                                reject.textContent = '❌ Reject';
-                                reject.className = 'bonus-btn';
-                                reject.style.background = '#ff6b6b';
-                                reject.addEventListener('click', async () => { await respondFriendRequest(r.id, 'reject'); loadApprovals(); });
-                                btns.appendChild(approve); btns.appendChild(reject);
-                                row.appendChild(btns);
-                                el.appendChild(row);
-                            });
-                        } else {
-                            el.innerHTML = '<div style="color:#aaa;padding:8px;">No pending friend requests</div>';
-                        }
-                    }
-                }
-            } catch (err) { console.error('Failed to load friend approvals', err); }
+    function closeModal() {
+        document.getElementById('templateModal').style.display = 'none';
+        document.getElementById('accountModal').style.display = 'none';
+    }
 
-            try {
-                const resp2 = await fetch('/api/parent-challenge-approvals');
-                if (resp2.ok) {
-                    const j2 = await resp2.json();
-                    const el2 = document.getElementById('challengeApprovalsList');
-                    if (el2) {
-                        // Check if new challenge requests arrived
-                        const currentCount = j2.requests ? j2.requests.length : 0;
-                        if (currentCount > lastChallengeRequestCount && lastChallengeRequestCount > 0) {
-                            const newCount = currentCount - lastChallengeRequestCount;
-                            showNotification(
-                                '🎯 New Challenge Request' + (newCount > 1 ? 's' : ''),
-                                newCount + ' child' + (newCount > 1 ? 'ren' : '') + ' want' + (newCount > 1 ? '' : 's') + ' to unlock a challenge!'
-                            );
-                        }
-                        lastChallengeRequestCount = currentCount;
-                        if (j2.requests && j2.requests.length) {
-                            el2.innerHTML = '';
-                            j2.requests.forEach(r => {
-                                const row = document.createElement('div');
-                                row.style.display = 'flex';
-                                row.style.justifyContent = 'space-between';
-                                row.style.alignItems = 'center';
-                                row.style.padding = '10px 8px';
-                                row.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
-                                row.style.backgroundColor = 'rgba(255,193,7,0.05)';
-                                row.style.borderRadius = '6px';
-                                row.style.marginBottom = '6px';
-                                
-                                // Show child name/ID and challenge ID
-                                const childDisplay = r.user_id.substring(0, 8);
-                                const challengeDisplay = r.challenge_id.substring(0, 8);
-                                
-                                row.innerHTML = `<div style="font-size:13px;color:#ffc107;">🎯 Child ${childDisplay} <span style="color:#aaa;">wants to unlock challenge</span> ${challengeDisplay}</div>`;
-                                const btns = document.createElement('div');
-                                const approve = document.createElement('button');
-                                approve.textContent = '✅ Approve';
-                                approve.style.marginRight = '6px';
-                                approve.className = 'bonus-btn';
-                                approve.addEventListener('click', async () => { await respondChallengeUnlock(r.id, 'approve'); loadApprovals(); });
-                                const reject = document.createElement('button');
-                                reject.textContent = '❌ Reject';
-                                reject.className = 'bonus-btn';
-                                reject.style.background = '#ff6b6b';
-                                reject.addEventListener('click', async () => { await respondChallengeUnlock(r.id, 'reject'); loadApprovals(); });
-                                btns.appendChild(approve); btns.appendChild(reject);
-                                row.appendChild(btns);
-                                el2.appendChild(row);
-                            });
-                        } else {
-                            el2.innerHTML = '<div style="color:#aaa;padding:8px;">No pending challenge unlocks</div>';
-                        }
-                    }
-                }
-            } catch (err) { console.error('Failed to load challenge approvals', err); }
-        }
+    // --- Activate Template ---
+    document.getElementById('activateTemplateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const baseTpl = JSON.parse(document.getElementById('tpl_id_meta').value);
+        const rewardVal = document.getElementById('tpl_reward_val').value;
+        const children = Array.from(document.querySelectorAll('.tpl-assign-checkbox:checked')).map(c => c.value);
 
-        async function respondFriendRequest(requestId, action) {
-            try {
-                const resp = await fetch('/api/respond-friend-request', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({request_id: requestId, action})});
-                return resp.ok;
-            } catch (err) { return false; }
-        }
+        if(children.length === 0) { alert('Select at least one child!'); return; }
 
-        async function respondChallengeUnlock(requestId, action) {
-            try {
-                const resp = await fetch('/api/respond-challenge-unlock', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({request_id: requestId, action})});
-                return resp.ok;
-            } catch (err) { return false; }
-        }
-
-        // Start approvals polling
-        loadApprovals();
-        setInterval(loadApprovals, 8000);
-
-        // Challenge Management Scripts
-        async function loadChallengesDropdown() {
-            try {
-                const resp = await fetch('/api/challenges'); // Use public GET for list (filters by user, but parent sees all usually?)
-                // Actually parent sees all they created? api_get_challenges logic: 
-                // "For parent and others, include all" (lines 923). So /api/challenges works for parents.
-                const data = await resp.json();
-                const sel = document.getElementById('ch_select');
-                if (data.challenges && data.challenges.length) {
-                    sel.innerHTML = '<option value="">-- Select Challenge --</option>';
-                    data.challenges.forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c.id;
-                        opt.textContent = `${c.name} (${c.reward_minutes} min)`;
-                        sel.appendChild(opt);
-                    });
-                } else {
-                    sel.innerHTML = '<option value="">No challenges found</option>';
-                }
-            } catch (e) { console.error('Load challenges failed', e); }
-        }
-
-        document.getElementById('createChallengeForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = this.querySelector('button');
-            const msg = document.getElementById('challengeMsg');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
+        // 1. Create Challenge (Duplicate)
+        try {
+            const createResp = await fetch('/api/admin/challenges', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: baseTpl.name,
+                    description: baseTpl.description,
+                    reward_minutes: parseInt(rewardVal), // Simplified for now
+                    image_url: '', // Todo: handle icons
+                    task: {} 
+                })
+            });
+            const createData = await createResp.json();
             
-            try {
-                const payload = {
-                    name: document.getElementById('ch_name').value,
-                    description: document.getElementById('ch_desc').value,
-                    reward_minutes: parseInt(document.getElementById('ch_reward').value),
-                    visible_to_children: false // Hidden until assigned implicitly? Logic says created not visible.
-                };
-
-                const resp = await fetch('/api/admin/challenges', {
+            if(createResp.ok) {
+                const newId = createData.challenge_id;
+                // 2. Assign
+                await fetch(`/api/admin/challenges/${newId}/assign`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ children: children, visible: true })
                 });
                 
-                if (resp.ok) {
-                    msg.textContent = '✓ Challenge Created!';
-                    msg.style.color = '#00ff88';
-                    this.reset();
-                    loadChallengesDropdown(); // Refresh list
-                } else {
-                    msg.textContent = 'Failed to create challenge';
-                    msg.style.color = '#ff6b6b';
-                }
-            } catch (err) {
-                msg.textContent = 'Error: ' + err.message;
-                msg.style.color = '#ff6b6b';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Create Challenge';
-                setTimeout(() => msg.textContent = '', 3000);
+                closeModal();
+                showNotification('Challenge Activated!', 'The challenge has been sent to the selected children.');
             }
-        });
+        } catch(err) {
+            alert('Error activating challenge');
+        }
+    });
 
-        document.getElementById('assignChallengeBtn').addEventListener('click', async function() {
-            const chId = document.getElementById('ch_select').value;
-            const msg = document.getElementById('assignMsg');
-            
-            if (!chId) {
-                alert('Please select a challenge');
-                return;
-            }
+    // --- Custom Challenge ---
+    document.getElementById('customChallengeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('cust_name').value;
+        const reward = document.getElementById('cust_reward').value;
+        const desc = document.getElementById('cust_desc').value;
+        const children = Array.from(document.querySelectorAll('.assign-checkbox:checked')).map(c => c.value);
 
-            const childIds = Array.from(document.querySelectorAll('.child-select:checked')).map(cb => cb.value);
-            if (!childIds.length) {
-                alert('Select at least one child');
-                return;
-            }
+        if(children.length === 0) { alert('Select children'); return; }
 
-            this.disabled = true;
-            this.textContent = 'Assigning...';
-
-            try {
-                const resp = await fetch(`/api/admin/challenges/${chId}/assign`, {
+        try {
+            const resp = await fetch('/api/admin/challenges', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, description: desc, reward_minutes: reward })
+            });
+            const d = await resp.json();
+            if(resp.ok) {
+                await fetch(`/api/admin/challenges/${d.challenge_id}/assign`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        children: childIds,
-                        visible: true
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ children, visible: true })
                 });
-
-                if (resp.ok) {
-                    msg.textContent = '✓ Assigned successfully!';
-                    msg.style.color = '#00ff88';
-                    // Uncheck boxes
-                    document.querySelectorAll('.child-select:checked').forEach(cb => cb.checked = false);
-                } else {
-                    msg.textContent = 'Failed to assign';
-                    msg.style.color = '#ff6b6b';
-                }
-            } catch (err) {
-                msg.textContent = 'Error: ' + err.message;
-                msg.style.color = '#ff6b6b';
-            } finally {
-                this.disabled = false;
-                this.textContent = 'Assign Selected';
-                setTimeout(() => msg.textContent = '', 3000);
+                document.getElementById('customChallengeForm').reset();
+                showNotification('Custom Challenge Created!', 'Sent to children.');
             }
-        });
+        } catch(e) { alert('Error'); }
+    });
 
-        // Load challenges on init
-        loadChallengesDropdown();
-    </script>
+    // --- Common Functions ---
+    function showNotification(title, body) {
+        const c = document.getElementById('notification-container');
+        const n = document.createElement('div');
+        n.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
+        n.style.padding = '15px';
+        n.style.borderRadius = '8px';
+        n.style.marginBottom = '10px';
+        n.style.color = '#000';
+        n.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+        n.innerHTML = `<strong>${title}</strong><br>${body}`;
+        c.appendChild(n);
+        setTimeout(() => n.remove(), 4000);
+    }
+    
+    function deleteChild(id, name) {
+        if(confirm('Delete ' + name + '?')) {
+            fetch('/api/delete-child/' + id, { method: 'POST' })
+            .then(() => location.reload());
+        }
+    }
+
+    function openAccountModal() { document.getElementById('accountModal').style.display='flex'; }
+
+    // --- Poll Approvals ---
+    async function loadApprovals() {
+        // Friend Requests
+        try {
+            const fr = await fetch('/api/parent-friend-approvals').then(r => r.json());
+            const frBox = document.getElementById('friendApprovalsList');
+            if(fr.requests && fr.requests.length) {
+                frBox.innerHTML = fr.requests.map(r => `
+                    <div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; border-radius:4px; font-size:12px;">
+                        <span style="color:#00ff88;">${r.from_name || 'Child'}</span> ➔ 
+                        <span style="color:#00ff88;">${r.to_name || 'Child'}</span>
+                        <div style="margin-top:5px; display:flex; gap:5px;">
+                            <button class="bonus-btn" style="padding:2px 8px;" onclick="respondFriend('${r.id}', 'approve')">Approve</button>
+                            <button class="bonus-btn" style="background:#ff6b6b; padding:2px 8px;" onclick="respondFriend('${r.id}', 'reject')">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else { frBox.innerHTML = '<div style="color:#aaa; font-size:12px;">No pending requests</div>'; }
+        } catch(e){}
+
+        // Challenge Requests
+        try {
+            const cr = await fetch('/api/parent-challenge-approvals').then(r => r.json());
+            const crBox = document.getElementById('challengeApprovalsList');
+            if(cr.requests && cr.requests.length) {
+                crBox.innerHTML = cr.requests.map(r => `
+                     <div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; border-radius:4px; font-size:12px;">
+                        <span style="color:#ffc107;">Child ${r.user_id.substr(0,5)}...</span> wants to unlock challenge.
+                        <div style="margin-top:5px; display:flex; gap:5px;">
+                            <button class="bonus-btn" style="padding:2px 8px;" onclick="respondChal('${r.id}', 'approve')">Approve</button>
+                            <button class="bonus-btn" style="background:#ff6b6b; padding:2px 8px;" onclick="respondChal('${r.id}', 'reject')">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else { crBox.innerHTML = '<div style="color:#aaa; font-size:12px;">No pending requests</div>'; }
+        } catch(e){}
+    }
+
+    async function respondFriend(id, act) {
+        await fetch('/api/respond-friend-request', {
+             method:'POST', headers:{'Content-Type':'application/json'},
+             body: JSON.stringify({request_id: id, action: act})
+        });
+        loadApprovals();
+    }
+
+    async function respondChal(id, act) {
+        await fetch('/api/respond-challenge-unlock', {
+             method:'POST', headers:{'Content-Type':'application/json'},
+             body: JSON.stringify({request_id: id, action: act})
+        });
+        loadApprovals();
+    }
+
+    // --- Init ---
+    loadTemplates();
+    loadApprovals();
+    setInterval(loadApprovals, 10000);
+
+
+    // --- Restored Logic for Core Actions ---
+
+    // 1. Add Child
+    document.getElementById('addChildForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const msg = document.getElementById('addChildMsg');
+        const name = document.getElementById('c_name').value;
+        const email = document.getElementById('c_email').value;
+        const p1 = document.getElementById('c_pass').value;
+        const p2 = document.getElementById('c_pass2').value;
+
+        if(p1 !== p2) { msg.textContent = 'Passwords do not match'; return; }
+
+        try {
+            const resp = await fetch('/api/add-child', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ child_name: name, child_email: email, child_password: p1 })
+            });
+            const d = await resp.json();
+            if(resp.ok) {
+                msg.textContent = 'Success! Reloading...';
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                msg.textContent = d.error || 'Failed';
+            }
+        } catch(err) { msg.textContent = 'Error'; }
+    });
+
+    // 2. Update Limits
+    document.querySelectorAll('.update-limits').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const card = this.closest('.child-card');
+            const id = card.dataset.childId;
+            const val = card.querySelector('.daily-limit').value;
+            try {
+                const resp = await fetch(`/api/update-child-limits/${id}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ daily_limit: parseInt(val) })
+                });
+                if(resp.ok) {
+                    this.textContent = '✓ Saved';
+                    setTimeout(() => this.textContent = 'Update', 2000);
+                }
+            } catch(e) {}
+        });
+    });
+
+    // 3. Add Bonus
+    document.querySelectorAll('.add-bonus').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const card = this.closest('.child-card');
+            const id = card.dataset.childId;
+            const mins = card.querySelector('.bonus-minutes').value;
+            const msg = card.querySelector('.bonus-message').value;
+            
+            if(!mins) return;
+            
+            try {
+                this.textContent = '...';
+                const resp = await fetch(`/api/add-earned-time/${id}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ minutes: parseInt(mins), message: msg })
+                });
+                if(resp.ok) {
+                    this.textContent = '✓ Sent';
+                    card.querySelector('.bonus-minutes').value = '';
+                    card.querySelector('.bonus-message').value = '';
+                    setTimeout(() => this.textContent = 'Send', 2000);
+                }
+            } catch(e) {}
+        });
+    });
+
+    // 4. Save Streak Settings
+    document.getElementById('saveStreakBtn').addEventListener('click', async function() {
+        const base = document.getElementById('stk_base').value;
+        const inc = document.getElementById('stk_inc').value;
+        const cap = document.getElementById('stk_cap').value;
+        const msg = document.getElementById('streakMsg');
+        
+        try {
+            const resp = await fetch('/api/set-streak-settings', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    base_minutes: parseInt(base), 
+                    increment_minutes: parseInt(inc), 
+                    cap_minutes: parseInt(cap) 
+                })
+            });
+            if(resp.ok) msg.textContent = 'Settings saved!';
+            else msg.textContent = 'Error saving settings';
+        } catch(e) { msg.textContent = 'Error'; }
+    });
+    
+    // 5. Account Settings (Simple)
+    document.getElementById('acctForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        // Implement /api/update-account call
+        const name = document.getElementById('acc_name').value;
+        const email = document.getElementById('acc_email').value;
+        await fetch('/api/update-account', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, email })
+        });
+        location.reload();
+    });
+
+</script>
 </body>
 </html>

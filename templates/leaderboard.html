@@ -5,54 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard - Move2Earn</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:#fff; }
-        .container { max-width:900px; margin:40px auto; padding:20px; }
-        .card { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.04); border-radius:10px; padding:20px; }
-        h1 { margin-bottom:12px; }
-        .row { display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.02); }
-        .rank { width:60px; font-weight:700; color:#00ff88; }
-        .name { flex:1; }
-        .time { width:160px; text-align:right; color:#00d4ff; font-weight:700; }
-        .empty { text-align:center; padding:30px; color:#aaa; }
-        a.back { display:inline-block; margin-bottom:12px; color:#fff; text-decoration:none; background: rgba(255,255,255,0.04); padding:8px 14px; border-radius:6px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+            color: #fff; 
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { margin: 0; font-size: 28px; }
+        
+        .toggle-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 4px;
+            display: flex;
+            position: relative;
+        }
+        
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .toggle-btn.active {
+            color: #1a1a2e;
+        }
+        
+        .slider {
+            position: absolute;
+            background: #00ff88;
+            height: 80%;
+            top: 10%;
+            left: 4px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 16px; 
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .list-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 120px;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            font-size: 13px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        .row { 
+            display: grid;
+            grid-template-columns: 60px 1fr 120px;
+            padding: 20px 25px; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .row:last-child { border-bottom: none; }
+        .row:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .rank { 
+            font-weight: 800; 
+            font-size: 18px;
+            color: #00ff88; 
+        }
+        
+        .name { 
+            font-weight: 600; 
+            font-size: 16px;
+        }
+        
+        .time { 
+            text-align: right; 
+            color: #00d4ff; 
+            font-weight: 700; 
+            font-size: 16px;
+        }
+        
+        .empty { 
+            text-align: center; 
+            padding: 50px; 
+            color: #aaa; 
+        }
+        
+        a.back { 
+            display: inline-flex; 
+            align-items: center;
+            margin-bottom: 20px; 
+            color: #aaa; 
+            text-decoration: none; 
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        a.back:hover { color: #fff; }
+
+        /* Crown for #1 */
+        .rank-1::before { content: '👑 '; }
     </style>
 </head>
 <body>
     <div class="container">
         <a class="back" href="/dashboard">← Back to Dashboard</a>
-        <div class="card">
+        
+        <div class="header">
             <h1>🏆 Leaderboard</h1>
+            <div class="toggle-container">
+                <div class="slider" id="slider" style="width: 80px; transform: translateX(0);"></div>
+                <button class="toggle-btn active" onclick="setScope('global')" id="btn-global">Global</button>
+                <button class="toggle-btn" onclick="setScope('friends')" id="btn-friends">Friends</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="list-header">
+                <div>Rank</div>
+                <div>Athlete</div>
+                <div style="text-align:right">Time Earned</div>
+            </div>
             <div id="leaderboardList">
-                <div class="empty">Loading leaderboard...</div>
+                <div class="empty">Loading...</div>
             </div>
         </div>
     </div>
 
     <script>
+        let currentScope = 'global';
+
+        function setScope(scope) {
+            currentScope = scope;
+            
+            // Update UI
+            const slider = document.getElementById('slider');
+            const btnGlobal = document.getElementById('btn-global');
+            const btnFriends = document.getElementById('btn-friends');
+            
+            if (scope === 'global') {
+                slider.style.transform = 'translateX(0)';
+                slider.style.width = btnGlobal.offsetWidth + 'px';
+                btnGlobal.classList.add('active');
+                btnFriends.classList.remove('active');
+            } else {
+                slider.style.transform = `translateX(${btnGlobal.offsetWidth}px)`;
+                slider.style.width = btnFriends.offsetWidth + 'px';
+                btnFriends.classList.add('active');
+                btnGlobal.classList.remove('active');
+            }
+            
+            loadLeaderboard();
+        }
+
         async function loadLeaderboard() {
+            const el = document.getElementById('leaderboardList');
+            el.innerHTML = '<div class="empty">Loading...</div>';
+            
             try {
-                const resp = await fetch('/api/leaderboard');
+                const resp = await fetch(`/api/leaderboard?scope=${currentScope}`);
                 if (!resp.ok) throw new Error('Failed to load');
                 const j = await resp.json();
-                const el = document.getElementById('leaderboardList');
+                
                 if (j.leaderboard && j.leaderboard.length) {
                     el.innerHTML = j.leaderboard.map((u, idx) => `
                         <div class="row">
-                            <div class="rank">#${idx+1}</div>
+                            <div class="rank ${idx === 0 ? 'rank-1' : ''}">#${idx+1}</div>
                             <div class="name">${u.name || 'Unknown'}</div>
                             <div class="time">${u.earned_game_time} min</div>
                         </div>
                     `).join('');
                 } else {
-                    el.innerHTML = '<div class="empty">No leaderboard data</div>';
+                    el.innerHTML = '<div class="empty">No athletes found in this view.</div>';
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('leaderboardList').innerHTML = '<div class="empty">Error loading leaderboard</div>';
+                el.innerHTML = '<div class="empty">Error loading leaderboard</div>';
             }
         }
 
-        loadLeaderboard();
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+             // Set initial slider pos
+             const btnGlobal = document.getElementById('btn-global');
+             document.getElementById('slider').style.width = btnGlobal.offsetWidth + 'px';
+             loadLeaderboard();
+        });
     </script>
 </body>
 </html>
