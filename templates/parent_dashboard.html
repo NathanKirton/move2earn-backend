@@ -1083,7 +1083,9 @@
                 const data = await resp.json();
                 const card = document.querySelector(`[data-child-id="${childId}"]`);
                 const timeUsed = data.time_used || 0;
-                card.querySelector('.time-used-display').textContent = `${Math.round(timeUsed)}m`;
+                // Format to 2 decimal places, but remove trailing zeros for cleaner display
+                const formatted = timeUsed.toFixed(2).replace(/\.?0+$/, '');
+                card.querySelector('.time-used-display').textContent = `${formatted}m`;
             }
         } catch(e) {
             console.error('Failed to load time used:', e);

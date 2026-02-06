@@ -1456,8 +1456,15 @@ def api_update_child_limits(child_id):
 
 @app.route('/api/control-timer/<child_id>', methods=['POST'])
 def api_control_timer(child_id):
-    """Parent can start/stop a child's timer from parent dashboard"""
-    if 'user_id' not in session or session.get('account_type') != 'parent':
+    """Parent or child can start/stop a child's timer"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Allow parent to control child's timer, or child to control their own
+    is_parent = session.get('account_type') == 'parent'
+    is_child = session.get('account_type') == 'child' and session['user_id'] == child_id
+    
+    if not (is_parent or is_child):
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
@@ -1465,33 +1472,39 @@ def api_control_timer(child_id):
     if action not in ('start', 'stop'):
         return jsonify({'error': 'Invalid action'}), 400
 
-    parent = UserDB.get_user_by_id(session['user_id'])
-    parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
     now = datetime.utcnow()
+    
+    # Get who is controlling the timer
+    if is_parent:
+        controller = UserDB.get_user_by_id(session['user_id'])
+        controller_name = controller.get('name', 'Your Parent') if controller else 'Your Parent'
+        controller_type = 'parent'
+    else:
+        controller_name = 'Self'
+        controller_type = 'child'
 
     if action == 'start':
         success = UserDB.set_timer_state(child_id, True, now)
         if success:
-            msg = f"Timer started by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+            msg = f"Timer started by {controller_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            UserDB.add_parent_message(child_id, controller_name, msg, 0)
             return jsonify({'success': True}), 200
         else:
             return jsonify({'error': 'Failed to start timer'}), 500
 
-    # stop
+    # stop action
     child = UserDB.get_user_by_id(child_id)
     started_at = child.get('timer_started_at') if child else None
     if not started_at:
         # Nothing to stop
         UserDB.set_timer_state(child_id, False, None)
-        msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (no running timer found)"
-        UserDB.add_parent_message(child_id, parent_name, msg, 0)
+        msg = f"Timer stopped by {controller_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (no running timer found)"
+        UserDB.add_parent_message(child_id, controller_name, msg, 0)
         return jsonify({'success': True, 'minutes_recorded': 0}), 200
 
-    # calculate elapsed minutes
+    # calculate elapsed time with precision to 0.01 minutes (0.6 seconds)
     try:
         if isinstance(started_at, str):
-            # parse string
             started_dt = datetime.fromisoformat(started_at)
         else:
             started_dt = started_at
@@ -1500,22 +1513,27 @@ def api_control_timer(child_id):
 
     if not started_dt:
         UserDB.set_timer_state(child_id, False, None)
-        msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (invalid start time)"
-        UserDB.add_parent_message(child_id, parent_name, msg, 0)
+        msg = f"Timer stopped by {controller_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')} (invalid start time)"
+        UserDB.add_parent_message(child_id, controller_name, msg, 0)
         return jsonify({'success': True, 'minutes_recorded': 0}), 200
 
     elapsed_seconds = (now - started_dt).total_seconds()
-    # Round to nearest 0.5 minutes (30 seconds)
-    minutes_used = max(0, round(elapsed_seconds / 30.0) * 0.5)
-    seconds_used = max(0, int(elapsed_seconds % 60))
+    # Convert to decimal minutes with precision to 2 decimal places (0.01 minutes = 0.6 seconds)
+    # This captures fractional minutes accurately (e.g., 15 seconds = 0.25 minutes)
+    minutes_used = max(0, round(elapsed_seconds / 60.0, 2))
+    
+    # For display purposes, show minutes and remaining seconds
+    total_seconds = int(elapsed_seconds)
+    display_minutes = total_seconds // 60
+    display_seconds = total_seconds % 60
 
     # Record used time and clear timer
     UserDB.use_game_time(child_id, minutes_used)
     UserDB.set_timer_state(child_id, False, None)
 
-    time_display = f"{minutes_used}m {seconds_used}s" if seconds_used > 0 else f"{minutes_used}m"
-    msg = f"Timer stopped by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}. Recorded {time_display}."
-    UserDB.add_parent_message(child_id, parent_name, msg, 0)
+    time_display = f"{display_minutes}m {display_seconds}s" if display_seconds > 0 else f"{display_minutes}m"
+    msg = f"Timer stopped by {controller_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}. Recorded {time_display} ({minutes_used} min)."
+    UserDB.add_parent_message(child_id, controller_name, msg, 0)
 
     return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
 
@@ -1564,10 +1582,11 @@ def api_add_earned_time(child_id):
 
 @app.route('/api/control-my-timer', methods=['POST'])
 def api_control_my_timer():
-    """Allow a child to start/stop their own timer."""
+    """Allow a child to start/stop their own timer. This is now handled by /api/control-timer."""
     if 'user_id' not in session or session.get('account_type') != 'child':
         return jsonify({'error': 'Unauthorized'}), 401
 
+    # Redirect to the consolidated timer control endpoint
     data = request.get_json()
     action = data.get('action')
     if action not in ('start', 'stop'):
@@ -1579,7 +1598,6 @@ def api_control_my_timer():
     if action == 'start':
         success = UserDB.set_timer_state(child_id, True, now)
         if success:
-            # add a small notification message for audit
             UserDB.add_parent_message(child_id, 'Self', f'Timer started by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}', 0)
             return jsonify({'success': True}), 200
         return jsonify({'error': 'Failed to start timer'}), 500
@@ -1606,15 +1624,19 @@ def api_control_my_timer():
         return jsonify({'success': True, 'minutes_recorded': 0}), 200
 
     elapsed_seconds = (now - started_dt).total_seconds()
-    # Round to nearest 0.5 minutes (30 seconds)
-    minutes_used = max(0, round(elapsed_seconds / 30.0) * 0.5)
-    seconds_used = max(0, int(elapsed_seconds % 60))
+    # Convert to decimal minutes with precision to 2 decimal places (0.01 minutes = 0.6 seconds)
+    minutes_used = max(0, round(elapsed_seconds / 60.0, 2))
+    
+    # For display purposes
+    total_seconds = int(elapsed_seconds)
+    display_minutes = total_seconds // 60
+    display_seconds = total_seconds % 60
 
     UserDB.use_game_time(child_id, minutes_used)
     UserDB.set_timer_state(child_id, False, None)
     
-    time_display = f"{minutes_used}m {seconds_used}s" if seconds_used > 0 else f"{minutes_used}m"
-    UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}. Recorded {time_display}.', 0)
+    time_display = f"{display_minutes}m {display_seconds}s" if display_seconds > 0 else f"{display_minutes}m"
+    UserDB.add_parent_message(child_id, 'Self', f'Timer stopped by child at {now.strftime("%Y-%m-%d %H:%M:%S UTC")}. Recorded {time_display} ({minutes_used} min).', 0)
 
     return jsonify({'success': True, 'minutes_recorded': minutes_used}), 200
 
