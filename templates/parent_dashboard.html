@@ -851,16 +851,42 @@
             const fr = await fetch('/api/parent-friend-approvals').then(r => r.json());
             const frBox = document.getElementById('friendApprovalsList');
             if(fr.requests && fr.requests.length) {
-                frBox.innerHTML = fr.requests.map(r => `
-                    <div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; border-radius:4px; font-size:12px;">
-                        <span style="color:#00ff88;">${r.from_name || 'Child'}</span> ➔ 
-                        <span style="color:#00ff88;">${r.to_name || 'Child'}</span>
-                        <div style="margin-top:5px; display:flex; gap:5px;">
-                            <button class="bonus-btn" style="padding:2px 8px;" onclick="respondFriend('${r.id}', 'approve')">Approve</button>
-                            <button class="bonus-btn" style="background:#ff6b6b; padding:2px 8px;" onclick="respondFriend('${r.id}', 'reject')">Reject</button>
+                frBox.innerHTML = fr.requests.map(r => {
+                    // Build approval status details
+                    let statusClass = 'status-pending';
+                    let statusIcon = '⏳';
+                    if (r.status_text.includes('All parents')) {
+                        statusClass = 'status-approved';
+                        statusIcon = '✓';
+                    }
+                    
+                    // Build parent approval details
+                    let approvalDetails = '';
+                    if (r.required_parents && r.required_parents.length > 0) {
+                        approvalDetails = r.required_parents.map(p => {
+                            const isApproved = r.approved_parents && r.approved_parents.some(ap => ap.id === p.id);
+                            return `<div style="font-size:11px; color:${isApproved ? '#00ff88' : '#ffaa00'}; margin:3px 0;">
+                                ${isApproved ? '✓' : '⏳'} ${p.name}${isApproved ? ' (approved)' : ''}
+                            </div>`;
+                        }).join('');
+                    }
+                    
+                    return `
+                    <div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:8px; border-radius:4px; border-left:3px solid ${statusClass === 'status-approved' ? '#00ff88' : '#ffaa00'};">
+                        <div style="font-weight:bold; margin-bottom:3px;">
+                            <span style="color:#00ff88;">${r.from_name || 'Child'}</span> ➔ 
+                            <span style="color:#00ff88;">${r.to_name || 'Child'}</span>
+                        </div>
+                        <div style="font-size:12px; color:#aaa; margin-bottom:5px;">
+                            ${statusIcon} <span style="color:#ccc;">${r.status_text}</span>
+                        </div>
+                        ${approvalDetails ? `<div style="margin-bottom:5px;">${approvalDetails}</div>` : ''}
+                        <div style="display:flex; gap:5px;">
+                            <button class="bonus-btn" style="padding:2px 8px; font-size:11px;" onclick="respondFriend('${r.id}', 'approve')">Approve</button>
+                            <button class="bonus-btn" style="background:#ff6b6b; padding:2px 8px; font-size:11px;" onclick="respondFriend('${r.id}', 'reject')">Reject</button>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             } else { frBox.innerHTML = '<div style="color:#aaa; font-size:12px;">No pending requests</div>'; }
         } catch(e){}
 

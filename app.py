@@ -734,7 +734,7 @@ def api_friend_request():
 
 @app.route('/api/parent-friend-approvals')
 def api_parent_friend_approvals():
-    """Return pending friend requests involving this parent's children"""
+    """Return pending friend requests involving this parent's children with approval status"""
     if 'user_id' not in session or session.get('account_type') != 'parent':
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -753,7 +753,7 @@ def api_parent_friend_approvals():
     # Find requests where either from_user_id or to_user_id is one of these children and status pending
     pending = list(friend_requests.find({'status': 'pending', '$or': [{'from_user_id': {'$in': child_ids}}, {'to_user_id': {'$in': child_ids}}]}))
 
-    # Normalize and resolve child names
+    # Normalize and resolve child names, and build parent approval info
     out = []
     for p in pending:
         item = {}
@@ -762,7 +762,8 @@ def api_parent_friend_approvals():
         item['to_user_id'] = p.get('to_user_id')
         item['to_email'] = p.get('to_email')
         item['created_at'] = p.get('created_at').isoformat() if p.get('created_at') else None
-        # resolve names when possible
+        
+        # resolve child names when possible
         try:
             if p.get('from_user_id'):
                 fu = users.find_one({'_id': ObjectId(p.get('from_user_id'))})
@@ -781,9 +782,51 @@ def api_parent_friend_approvals():
         except Exception:
             item['to_name'] = None
 
-        # approvals tracking info
-        item['approvals'] = p.get('approvals', [])
-        item['required_approvals'] = p.get('required_approvals', [])
+        # Get approval tracking with parent names
+        required_parent_ids = p.get('required_approvals', [])
+        approved_parent_ids = p.get('approvals', [])
+        
+        # Resolve parent names for display
+        required_parents = []
+        for parent_id in required_parent_ids:
+            try:
+                par = users.find_one({'_id': ObjectId(parent_id)})
+                if par:
+                    required_parents.append({
+                        'id': parent_id,
+                        'name': par.get('name', 'Parent')
+                    })
+            except Exception:
+                pass
+        
+        approved_parents = []
+        for parent_id in approved_parent_ids:
+            try:
+                par = users.find_one({'_id': ObjectId(parent_id)})
+                if par:
+                    approved_parents.append({
+                        'id': parent_id,
+                        'name': par.get('name', 'Parent')
+                    })
+            except Exception:
+                pass
+        
+        item['required_parents'] = required_parents
+        item['approved_parents'] = approved_parents
+        item['approvals'] = approved_parent_ids
+        item['required_approvals'] = required_parent_ids
+        
+        # Build human-readable status
+        if len(required_parents) == 0:
+            item['status_text'] = 'Ready to approve'
+        else:
+            pending_names = [p['name'] for p in required_parents if p['id'] not in approved_parent_ids]
+            if len(pending_names) == 0:
+                item['status_text'] = 'All parents approved ✓'
+            elif len(pending_names) == 1:
+                item['status_text'] = f"Awaiting {pending_names[0]}'s approval"
+            else:
+                item['status_text'] = f"Awaiting {len(pending_names)} parents' approvals"
 
         out.append(item)
 
@@ -1405,7 +1448,7 @@ def api_complete_challenge():
 
 @app.route('/api/friends')
 def api_get_friends():
-    """Return current user's friends and pending requests."""
+    """Return current user's friends and pending requests with approval status."""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     db = get_db()
@@ -1426,9 +1469,60 @@ def api_get_friends():
             except Exception:
                 pass
 
-    # also include outgoing requests
+    # include outgoing requests with approval status
     outgoing = list(friend_requests.find({'from_user_id': session['user_id'], 'status': 'pending'}))
-    outgoing_fmt = [{'to_email': r.get('to_email'), 'id': str(r['_id'])} for r in outgoing]
+    outgoing_fmt = []
+    for r in outgoing:
+        req_info = {
+            'to_email': r.get('to_email'),
+            'id': str(r['_id'])
+        }
+        
+        # Get approval tracking with parent names
+        required_parent_ids = r.get('required_approvals', [])
+        approved_parent_ids = r.get('approvals', [])
+        
+        # Resolve parent names for display
+        required_parents = []
+        for parent_id in required_parent_ids:
+            try:
+                par = users.find_one({'_id': ObjectId(parent_id)})
+                if par:
+                    required_parents.append({
+                        'id': parent_id,
+                        'name': par.get('name', 'Parent')
+                    })
+            except Exception:
+                pass
+        
+        approved_parents = []
+        for parent_id in approved_parent_ids:
+            try:
+                par = users.find_one({'_id': ObjectId(parent_id)})
+                if par:
+                    approved_parents.append({
+                        'id': parent_id,
+                        'name': par.get('name', 'Parent')
+                    })
+            except Exception:
+                pass
+        
+        req_info['required_parents'] = required_parents
+        req_info['approved_parents'] = approved_parents
+        
+        # Build human-readable status
+        if len(required_parents) == 0:
+            req_info['status_text'] = 'Ready for parents to review'
+        else:
+            pending_names = [p['name'] for p in required_parents if p['id'] not in approved_parent_ids]
+            if len(pending_names) == 0:
+                req_info['status_text'] = 'All parents approved ✓'
+            elif len(pending_names) == 1:
+                req_info['status_text'] = f"Awaiting {pending_names[0]}'s approval"
+            else:
+                req_info['status_text'] = f"Awaiting {len(pending_names)} parents' approvals"
+        
+        outgoing_fmt.append(req_info)
 
     return jsonify({'friends': friends, 'outgoing_requests': outgoing_fmt}), 200
 

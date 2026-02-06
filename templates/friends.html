@@ -293,15 +293,37 @@
 
                     // Display outgoing requests
                     if (data.outgoing_requests && data.outgoing_requests.length) {
-                        pendingEl.innerHTML = data.outgoing_requests.map(r => `
-                            <div class="request-item">
+                        pendingEl.innerHTML = data.outgoing_requests.map(r => {
+                            let statusClass = 'status-pending';
+                            let statusIcon = '⏳';
+                            if (r.status_text.includes('All parents')) {
+                                statusClass = 'status-approved';
+                                statusIcon = '✓';
+                            }
+                            
+                            // Build parent approval details
+                            let approvalDetails = '';
+                            if (r.required_parents && r.required_parents.length > 0) {
+                                approvalDetails = r.required_parents.map(p => {
+                                    const isApproved = r.approved_parents && r.approved_parents.some(ap => ap.id === p.id);
+                                    return `<div style="font-size:11px; color:${isApproved ? '#00ff88' : '#ffaa00'}; margin:3px 0;">
+                                        ${isApproved ? '✓' : '⏳'} ${p.name}${isApproved ? ' (approved)' : ''}
+                                    </div>`;
+                                }).join('');
+                            }
+                            
+                            return `
+                            <div class="request-item" style="border-left:3px solid ${statusClass === 'status-approved' ? '#00ff88' : '#ffaa00'}; background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; margin-bottom:8px;">
                                 <div class="friend-info">
                                     <div class="friend-name">Request sent to</div>
                                     <div class="friend-email">${r.to_email}</div>
                                 </div>
-                                <small style="color:#aaa;">⏳ Pending parent approval</small>
+                                <div style="margin:5px 0; font-size:12px; color:#ccc;">
+                                    ${statusIcon} ${r.status_text}
+                                </div>
+                                ${approvalDetails ? `<div style="margin:5px 0;">${approvalDetails}</div>` : ''}
                             </div>
-                        `).join('');
+                        `}).join('');
                     } else {
                         pendingEl.innerHTML = '<div class="empty-state"><p>No pending requests.</p></div>';
                     }
