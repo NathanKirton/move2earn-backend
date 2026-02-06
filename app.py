@@ -1184,6 +1184,49 @@ def api_challenge_upload_image(challenge_id):
         return jsonify({'error': 'Server error'}), 500
 
 
+@app.route('/api/child-friends/<child_id>', methods=['GET'])
+def api_get_child_friends(child_id):
+    """Get a child's friends list. Parent can view their child's friends."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Verify parent owns this child
+    children = UserDB.get_parent_children(session['user_id'])
+    child_ids = [str(c['id']) for c in children]
+    
+    if child_id not in child_ids:
+        return jsonify({'error': 'Not authorized for this child'}), 403
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+    
+    users = db['users']
+    
+    try:
+        child = users.find_one({'_id': ObjectId(child_id)})
+        if not child:
+            return jsonify({'error': 'Child not found'}), 404
+        
+        friends = []
+        for friend_id in child.get('friends', []):
+            try:
+                friend_user = users.find_one({'_id': friend_id})
+                if friend_user:
+                    friends.append({
+                        'id': str(friend_user['_id']),
+                        'name': friend_user.get('name', 'Unknown'),
+                        'email': friend_user.get('email', '')
+                    })
+            except Exception:
+                pass
+        
+        return jsonify({'friends': friends}), 200
+    except Exception as e:
+        logger.exception('Error getting child friends: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
 @app.route('/api/remove-friend', methods=['POST'])
 def api_remove_friend():
     """Remove a friendship. Child can remove their own friend; parent can remove friendship for their child by providing child_id."""
