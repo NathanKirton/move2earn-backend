@@ -1885,6 +1885,13 @@ if (simulateForm) {
 
 document.addEventListener('DOMContentLoaded', loadActivities);
 
+// Auto-refresh child dashboard every 5 seconds to keep data in sync
+setInterval(() => {
+    // Refresh activities list and parent messages
+    loadActivities();
+    loadParentMessages();
+}, 5000);
+
 // Progress bar functions for upload modal
 function updateUploadProgress(percent) {
     const circumference = 2 * Math.PI * 63; // radius is 63

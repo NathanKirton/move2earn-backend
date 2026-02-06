@@ -895,6 +895,16 @@
     loadApprovals();
     setInterval(loadApprovals, 10000);
 
+    // Auto-update child cards every 3 seconds for real-time timer display
+    setInterval(() => {
+        document.querySelectorAll('.child-card').forEach(card => {
+            const childId = card.dataset.childId;
+            if(!activeTimers[childId]) {
+                loadChildTimeUsed(childId);
+            }
+        });
+    }, 3000);
+
 
     // --- Restored Logic for Core Actions ---
 
@@ -1092,13 +1102,38 @@
         }
     }
 
+    // Function to periodically reload all child data from the server
+    async function refreshAllChildrenData() {
+        try {
+            const resp = await fetch('/api/parent-children');
+            if(resp.ok) {
+                const data = await resp.json();
+                const children = data.children || [];
+                
+                // Update existing child cards with fresh data
+                children.forEach(child => {
+                    const card = document.querySelector(`[data-child-id="${child.id}"]`);
+                    if(card) {
+                        // Update daily limit if changed
+                        const limitInput = card.querySelector('.daily-limit');
+                        if(limitInput && limitInput.value != child.daily_screen_time_limit) {
+                            limitInput.value = child.daily_screen_time_limit;
+                        }
+                    }
+                });
+            }
+        } catch(e) {
+            console.error('Failed to refresh children data:', e);
+        }
+    }
+
     // Load time used for all children on page load
     document.querySelectorAll('.child-card').forEach(card => {
         const childId = card.dataset.childId;
         loadChildTimeUsed(childId);
     });
 
-    // Refresh time used every 10 seconds
+    // Refresh time used every 3 seconds for real-time updates
     setInterval(() => {
         document.querySelectorAll('.child-card').forEach(card => {
             const childId = card.dataset.childId;
@@ -1106,7 +1141,12 @@
                 loadChildTimeUsed(childId);
             }
         });
-    }, 10000);
+    }, 3000);
+
+    // Refresh all children data periodically to catch any server-side changes
+    setInterval(() => {
+        refreshAllChildrenData();
+    }, 15000);
 
 </script>
 </body>
