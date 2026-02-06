@@ -1653,6 +1653,31 @@ def api_get_child_balance(child_id):
     }), 200
 
 
+@app.route('/api/child-time-used/<child_id>', methods=['GET'])
+def api_child_time_used(child_id):
+    """API endpoint to get child's time used for parent dashboard display"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Ensure daily used time is reset for the child if needed
+    try:
+        UserDB.reset_daily_used_if_needed(child_id)
+    except Exception:
+        pass
+
+    child = UserDB.get_user_by_id(child_id)
+    if not child:
+        return jsonify({'error': 'Child not found'}), 404
+
+    # Get time used including any running timer
+    time_used = UserDB.get_current_used_including_running(child_id)
+    
+    return jsonify({
+        'time_used': time_used,
+        'daily_limit': child.get('daily_screen_time_limit', 60)
+    }), 200
+
+
 @app.route('/api/get-parent-messages', methods=['GET'])
 def api_get_parent_messages():
     """API endpoint to get parent messages for the logged-in child"""

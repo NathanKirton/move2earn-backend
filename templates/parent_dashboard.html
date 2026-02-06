@@ -438,6 +438,27 @@
                             <button class="bonus-btn" style="background:#ff6b6b; padding:4px 8px; font-size:11px;" onclick="deleteChild('{{child.id}}', '{{child.name}}')">Remove</button>
                         </div>
                         
+                        <!-- Timer Section -->
+                        <div class="bonus-section">
+                            <div style="font-size:12px; color:#aaa; margin-bottom:8px;">⏱️ TIMER</div>
+                            <div style="background:rgba(0,212,255,0.1); padding:12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(0,212,255,0.2);">
+                                <div style="font-size:24px; font-weight:700; color:#00d4ff; text-align:center; margin-bottom:10px; font-family:monospace;" class="timer-display">00:00</div>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="bonus-btn timer-start-btn" style="flex:1; background:linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); padding:6px;" onclick="startTimer('{{child.id}}')">START</button>
+                                    <button class="bonus-btn timer-stop-btn" style="flex:1; background:#ff6b6b; padding:6px; display:none;" onclick="stopTimer('{{child.id}}')">STOP</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Used Display -->
+                        <div class="bonus-section">
+                            <div style="font-size:12px; color:#aaa; margin-bottom:5px;">📊 TIME USED TODAY</div>
+                            <div style="background:rgba(255,200,0,0.1); padding:10px; border-radius:6px; border:1px solid rgba(255,200,0,0.2); text-align:center;">
+                                <div style="font-size:18px; font-weight:700; color:#ffcc00;" class="time-used-display">0m</div>
+                                <div style="font-size:11px; color:#aaa; margin-top:3px;">of {{ child.daily_screen_time_limit }}m daily limit</div>
+                            </div>
+                        </div>
+                        
                         <div class="bonus-section">
                             <div style="font-size:12px; color:#aaa; margin-bottom:5px;">DAILY LIMIT</div>
                             <div style="display:flex; gap:10px;">
@@ -981,6 +1002,109 @@
         });
         location.reload();
     });
+
+    // --- Timer Control Functions ---
+    // Track active timers per child
+    const activeTimers = {};
+    const timerStartTimes = {};
+
+    async function startTimer(childId) {
+        try {
+            const resp = await fetch(`/api/control-timer/${childId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'start' })
+            });
+            if(resp.ok) {
+                // Start local timer display
+                timerStartTimes[childId] = Date.now();
+                activeTimers[childId] = true;
+                updateTimerUI(childId);
+                // Update UI buttons
+                const card = document.querySelector(`[data-child-id="${childId}"]`);
+                card.querySelector('.timer-start-btn').style.display = 'none';
+                card.querySelector('.timer-stop-btn').style.display = 'block';
+            }
+        } catch(e) {
+            console.error('Failed to start timer:', e);
+        }
+    }
+
+    async function stopTimer(childId) {
+        try {
+            const resp = await fetch(`/api/control-timer/${childId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'stop' })
+            });
+            if(resp.ok) {
+                const data = await resp.json();
+                // Stop local timer
+                activeTimers[childId] = false;
+                delete timerStartTimes[childId];
+                
+                // Update UI buttons
+                const card = document.querySelector(`[data-child-id="${childId}"]`);
+                card.querySelector('.timer-start-btn').style.display = 'block';
+                card.querySelector('.timer-stop-btn').style.display = 'none';
+                
+                // Reset timer display
+                card.querySelector('.timer-display').textContent = '00:00';
+                
+                // Reload time used display
+                loadChildTimeUsed(childId);
+            }
+        } catch(e) {
+            console.error('Failed to stop timer:', e);
+        }
+    }
+
+    function updateTimerUI(childId) {
+        const card = document.querySelector(`[data-child-id="${childId}"]`);
+        if(!card || !activeTimers[childId]) return;
+        
+        const startTime = timerStartTimes[childId];
+        const elapsedMs = Date.now() - startTime;
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        
+        const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        card.querySelector('.timer-display').textContent = display;
+        
+        // Continue updating
+        setTimeout(() => updateTimerUI(childId), 1000);
+    }
+
+    async function loadChildTimeUsed(childId) {
+        try {
+            const resp = await fetch(`/api/child-time-used/${childId}`);
+            if(resp.ok) {
+                const data = await resp.json();
+                const card = document.querySelector(`[data-child-id="${childId}"]`);
+                const timeUsed = data.time_used || 0;
+                card.querySelector('.time-used-display').textContent = `${Math.round(timeUsed)}m`;
+            }
+        } catch(e) {
+            console.error('Failed to load time used:', e);
+        }
+    }
+
+    // Load time used for all children on page load
+    document.querySelectorAll('.child-card').forEach(card => {
+        const childId = card.dataset.childId;
+        loadChildTimeUsed(childId);
+    });
+
+    // Refresh time used every 10 seconds
+    setInterval(() => {
+        document.querySelectorAll('.child-card').forEach(card => {
+            const childId = card.dataset.childId;
+            if(!activeTimers[childId]) {
+                loadChildTimeUsed(childId);
+            }
+        });
+    }, 10000);
 
 </script>
 </body>
