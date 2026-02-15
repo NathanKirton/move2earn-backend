@@ -367,84 +367,35 @@
         user-select: none;
     }
     
-    .notifications-header:hover {
-        opacity: 0.9;
-    }
-    
-    .notifications-toggle {
-        display: inline-block;
-        width: 20px;
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .notifications-toggle.collapsed {
-        transform: rotate(-90deg);
-    }
-    
-    .notifications-content {
-        max-height: 1000px;
-        overflow: hidden;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
-        opacity: 1;
-    }
-    
-    .notifications-content.collapsed {
-        max-height: 0;
-        opacity: 0;
-    }
-    
-    .message-text {
-        color: #ddd;
-        line-height: 1.4;
-    }
-    
-    .no-messages {
-        text-align: center;
-        padding: 20px 10px;
-        color: #999;
-        font-size: 13px;
+    {% block extra_js %}
+    <script src="/static/ai_trainer.js"></script>
+    <script>
+    // Existing dashboard visibility logic
+    const straPrompt = document.getElementById('strava-prompt');
+    const dashContainer = document.querySelector('.dashboard-container');
+    if (straPrompt && dashContainer) {
+        if (typeof stravaConnected !== 'undefined' && stravaConnected) {
+            straPrompt.style.display = 'none';
+            dashContainer.style.display = 'flex';
+        } else {
+            straPrompt.style.display = 'block';
+            dashContainer.style.display = 'none';
+        }
     }
 
-    /* Circular Progress Bar */
-    .circular-progress {
-        position: relative;
-        width: 120px;
-        height: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    function calculateIntensity(avgHR, maxHR) {
+        // Prefer absolute HR thresholds if available
+        if (avgHR) {
+            const hr = Number(avgHR);
+            if (hr < 150) return 'easy';
+            if (hr > 170) return 'hard';
+            return 'medium';
+        }
+        // Fallback: use pace if maxHR not available (pace in min/km)
+        return 'medium';
     }
-
-    .circular-progress svg {
-        transform: rotate(-90deg);
-    }
-
-    .progress-ring {
-        transition: stroke-dashoffset 0.5s ease;
-        stroke: url(#progressGradient);
-    }
-
-    .progress-circle {
-        fill: none;
-        stroke: rgba(255, 255, 255, 0.1);
-    }
-
-    .progress-percentage {
-        position: absolute;
-        font-size: 28px;
-        font-weight: 700;
-        color: #fff;
-        text-align: center;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .loading-with-progress {
-        display: flex;
+    // ...existing code (all dashboard JS functions) goes here...
+    </script>
         flex-direction: column;
         align-items: center;
         gap: 20px;
