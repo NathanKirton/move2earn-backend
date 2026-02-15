@@ -422,12 +422,14 @@ def ai_insights(child_id):
     to heuristics when models are not present.
     """
     if 'user_id' not in session:
+        logger.debug('AI insights unauthorized access attempt: cookies=%s headers=%s', dict(request.cookies), dict(request.headers))
         return jsonify({'error': 'Unauthorized'}), 401
 
     # Only allow access if the logged-in user is the child themselves or a parent
     account_type = session.get('account_type')
     if account_type == 'child' and session.get('user_id') != child_id:
         # child user can only fetch their own insights
+        logger.debug('AI insights forbidden: session_user=%s requested_child=%s', session.get('user_id'), child_id)
         return jsonify({'error': 'Forbidden'}), 403
 
     # If parent, allow insights for their child
