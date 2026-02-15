@@ -78,7 +78,7 @@ function toggleAiBox(e) {
 async function fetchInsights(childId) {
   if (!childId) return null;
   try {
-    var resp = await fetch('/ai/insights/' + encodeURIComponent(childId));
+    var resp = await fetch('/ai/insights/' + encodeURIComponent(childId), { credentials: 'same-origin' });
     if (!resp.ok) {
       var txt = '';
       try {
