@@ -16,12 +16,7 @@
     }
     /* ...rest of your CSS... */
 </style>
-{% endblock %}
 
-{# ...all your HTML content here (no blocks, no JS, no CSS)... #}
-
-{% block extra_js %}
-<script src="/static/ai_trainer.js"></script>
 <script>
 // All dashboard JS code goes here, including the code for dashboard logic, event handlers, etc.
 </script>
@@ -1000,7 +995,7 @@
 </style>
     {% endblock %}
 
-{% block extra_js %}
+<!-- removed duplicate extra_js block -->
 <script src="/static/ai_trainer.js"></script>
 // Existing dashboard visibility logic
 const straPrompt = document.getElementById('strava-prompt');
