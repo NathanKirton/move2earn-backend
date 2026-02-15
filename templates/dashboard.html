@@ -820,15 +820,7 @@
 </style>
 {% endblock %}
 
-{% block extra_js %}
-window.M2E_CHILD_ID = "{{ session['user_id'] }}";
-(function(){
-    var s = document.createElement('script');
-    s.src = '/static/ai.js';
-    s.defer = true;
-    document.body.appendChild(s);
-})();
-{% endblock %}
+{# extra_js removed here to avoid duplicate block; ai script is injected into the final extra_js block below #}
 
 {% block content %}
 <!-- Strava Connection Prompt -->
@@ -1093,6 +1085,14 @@ window.M2E_CHILD_ID = "{{ session['user_id'] }}";
 {% endblock %}
 
 {% block extra_js %}
+// Inject AI frontend script and expose child id
+window.M2E_CHILD_ID = "{{ session['user_id'] }}";
+(function(){
+    var s = document.createElement('script');
+    s.src = '/static/ai.js';
+    s.defer = true;
+    document.body.appendChild(s);
+})();
 // Initialize dashboard visibility based on strava_connected status
 (function() {
     const stravaConnected = {{ 'true' if strava_connected else 'false' }};
