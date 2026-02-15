@@ -8,6 +8,383 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Move2Earn Dashboard</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .dashboard-main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .greeting-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .greeting-section h2 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .greeting-section p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .gametime-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+        
+        .gametime-header {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 12px;
+        }
+        
+        .gametime-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .gametime-limit {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 12px;
+        }
+        
+        .gametime-bar {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .gametime-progress {
+            background: #00ff88;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .notifications-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .notifications-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .notifications-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .notifications-toggle {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        
+        .notifications-toggle.collapsed {
+            transform: rotate(180deg);
+        }
+        
+        .notifications-content {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item strong {
+            color: #667eea;
+        }
+        
+        .notification-bonus {
+            color: #00ff88;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        
+        .no-messages {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+        
+        .streak-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            color: white;
+            text-align: center;
+        }
+        
+        .streak-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        
+        .streak-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .streak-count {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .streak-sub {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .streak-days {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .day-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .day-box.active {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        .activities-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            color: #333;
+        }
+        
+        #activities-list {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+        }
+        
+        .activity-card {
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .activity-card:hover {
+            background: #f9f9f9;
+            transform: translateX(4px);
+        }
+        
+        .activity-name {
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+        
+        .activity-date {
+            font-size: 12px;
+            color: #999;
+            margin: 4px 0;
+        }
+        
+        .activity-distance {
+            font-size: 13px;
+            color: #666;
+            margin-right: 15px;
+        }
+        
+        .activity-earned {
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #ff6b6b;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none !important;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-content h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .modal-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-stat-label {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .modal-stat-value {
+            color: #333;
+        }
+        
+        /* Form Styles */
+        form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        input, select {
+            padding: 12px;
+            border: 1px solid rgba(150, 150, 180, 0.3);
+            border-radius: 6px;
+            font-size: 14px;
+            background: rgba(100, 100, 120, 0.1);
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .gametime-value { font-size: 36px; }
+            .streak-count { font-size: 32px; }
+            .activities-header { flex-direction: column; align-items: flex-start; }
+            .streak-days { gap: 4px; }
+            .day-box { padding: 6px 8px; font-size: 10px; }
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-container">
