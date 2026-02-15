@@ -1,1689 +1,276 @@
 
 
-<!-- All your dashboard HTML goes here, from the Strava prompt to the end of the dashboard -->
-<!-- ...existing dashboard HTML content... -->
-    .streak-sub {
-        font-size: 12px;
-        opacity: 0.85;
-    }
-    
-    .streak-days {
-        display: flex;
-        gap: 8px;
-        margin-top: 15px;
-        justify-content: space-between;
-    }
-    
-    .day-box {
-        flex: 1;
-        height: 35px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        font-size: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-    
-    .day-box.active {
-        background: rgba(255, 255, 255, 0.4);
-    }
-    
-    .activities-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: #fff;
-    }
-    
-    .activity-item {
-        background: linear-gradient(135deg, rgba(100, 200, 50, 0.8) 0%, rgba(80, 180, 30, 0.8) 100%);
-        border-radius: 12px;
-        padding: 20px;
-        display: grid;
-        grid-template-columns: 60px 1fr auto;
-        gap: 15px;
-        align-items: start;
-        margin-bottom: 15px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .activity-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    }
-    
-    .activity-icon {
-        font-size: 32px;
-        text-align: center;
-        line-height: 1;
-    }
-    
-    .activity-details {
-        color: #fff;
-    }
-    
-    .activity-title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-    
-    .activity-time {
-        font-size: 12px;
-        opacity: 0.8;
-    }
-    
-    .activity-stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-top: 12px;
-    }
-    
-    .stat-box {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 11px;
-    }
-    
-    .stat-label {
-        opacity: 0.8;
-        font-size: 10px;
-        text-transform: uppercase;
-        display: block;
-    }
-    
-    .stat-value {
-        font-weight: 700;
-        margin-top: 2px;
-        font-size: 13px;
-    }
-    
-    .activity-earned {
-        text-align: right;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    .earned-label {
-        font-size: 11px;
-        opacity: 0.8;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .earned-value {
-        font-size: 24px;
-        font-weight: 700;
-    }
-    
-    .no-data {
-        text-align: center;
-        padding: 40px 20px;
-        color: #aaa;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-    }
-    
-    .intensity-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        margin-left: 8px;
-    }
-    
-    .intensity-easy {
-        background: rgba(0, 212, 255, 0.3);
-        color: #00d4ff;
-    }
-    
-    .intensity-medium {
-        background: rgba(255, 200, 0, 0.3);
-        color: #ffcc00;
-    }
-    
-    .intensity-hard {
-        background: rgba(255, 100, 100, 0.3);
-        color: #ff6464;
-    }
-    
-    .notification-item {
-        background: rgba(100, 150, 200, 0.2);
-        border-left: 3px solid #00d4ff;
-        border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 10px;
-        font-size: 13px;
-        color: #fff;
-    }
-    
-    .notification-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-    }
-    
-    .notification-from {
-        font-weight: 600;
-        color: #00d4ff;
-    }
-    
-    .notification-time {
-        font-size: 11px;
-        color: #999;
-    }
-    
-    .notification-bonus {
-        display: inline-block;
-        background: rgba(0, 255, 136, 0.2);
-        color: #00ff88;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-top: 6px;
-    }
-    
-    .notifications-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-    }
-    
 
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .progress-text {
-        color: #fff;
-        font-size: 16px;
-        font-weight: 500;
-        text-align: center;
-    }
-
-    /* Mobile Responsiveness */
-    @media (max-width: 768px) {
-        .container {
-            padding: 12px;
-        }
-
-        .dashboard-container {
-            gap: 15px;
-        }
-
-        .greeting-section {
-            padding: 20px;
-            margin-bottom: 15px;
-        }
-
-        .greeting-section h2 {
-            font-size: 20px;
-        }
-
-        .greeting-section p {
-            font-size: 13px;
-        }
-
-        .gametime-card {
-            padding: 20px;
-        }
-
-        .gametime-value {
-            font-size: 36px;
-        }
-
-        .gametime-limit {
-            font-size: 11px;
-        }
-
-        .notifications-card {
-            padding: 15px;
-        }
-
-        .notifications-card h3 {
-            font-size: 13px;
-        }
-
-        .notification-item {
-            padding: 10px;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-
-        .notification-header {
-            flex-wrap: wrap;
-        }
-
-        .notification-time {
-            font-size: 10px;
-        }
-
-        .streak-card {
-            padding: 20px;
-        }
-
-        .streak-count {
-            font-size: 32px;
-        }
-
-        .streak-days {
-            gap: 6px;
-        }
-
-        .day-box {
-            height: 32px;
-            font-size: 10px;
-        }
-
-        .activities-header {
-            font-size: 18px;
-        }
-
-        .activity-item {
-            grid-template-columns: 50px 1fr auto;
-            padding: 15px;
-            gap: 12px;
-        }
-
-        .activity-icon {
-            font-size: 28px;
-        }
-
-        .activity-title {
-            font-size: 15px;
-        }
-
-        .activity-time {
-            font-size: 11px;
-        }
-
-        .activity-stats {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .stat-box {
-            padding: 6px 8px;
-            font-size: 10px;
-        }
-
-        .stat-value {
-            font-size: 12px;
-        }
-
-        .earned-value {
-            font-size: 20px;
-        }
-
-        .earned-label {
-            font-size: 10px;
-        }
-
-        .intensity-badge {
-            padding: 3px 8px;
-            font-size: 10px;
-            margin-left: 4px;
-        }
-
-        .timer-section {
-            padding: 20px;
-        }
-
-        .timer-display {
-            font-size: 48px;
-        }
-
-        .timer-btn {
-            padding: 10px 20px;
-            font-size: 13px;
-        }
-
-        .activity-list {
-            gap: 12px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .container {
-            padding: 8px;
-        }
-
-        .dashboard-container {
-            gap: 12px;
-        }
-
-        header {
-            padding: 12px 15px;
-        }
-
-        header h1 {
-            font-size: 20px;
-        }
-
-        header p {
-            font-size: 12px;
-        }
-
-        .greeting-section {
-            padding: 15px;
-            margin-bottom: 12px;
-        }
-
-        .greeting-section h2 {
-            font-size: 18px;
-        }
-
-        .greeting-section p {
-            font-size: 12px;
-        }
-
-        .gametime-card {
-            padding: 15px;
-        }
-
-        .gametime-header {
-            font-size: 12px;
-        }
-
-        .gametime-value {
-            font-size: 32px;
-            margin-bottom: 6px;
-        }
-
-        .gametime-limit {
-            font-size: 10px;
-        }
-
-        .gametime-bar {
-            height: 6px;
-        }
-
-        .notifications-card {
-            padding: 12px;
-        }
-
-        .notifications-card h3 {
-            font-size: 12px;
-        }
-
-        .notifications-header {
-            margin-bottom: 10px;
-        }
-
-        .notification-item {
-            padding: 8px;
-            margin-bottom: 6px;
-            font-size: 11px;
-        }
-
-        .notification-bonus {
-            padding: 2px 6px;
-            font-size: 10px;
-        }
-
-        .streak-card {
-            padding: 15px;
-        }
-
-        .streak-icon {
-            font-size: 20px;
-        }
-
-        .streak-label {
-            font-size: 12px;
-        }
-
-        .streak-count {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .streak-sub {
-            font-size: 11px;
-        }
-
-        .streak-days {
-            gap: 4px;
-            margin-top: 10px;
-        }
-
-        .day-box {
-            height: 28px;
-            font-size: 9px;
-        }
-
-        .activities-header {
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-
-        .activity-item {
-            grid-template-columns: 45px 1fr auto;
-            padding: 12px;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .activity-icon {
-            font-size: 24px;
-        }
-
-        .activity-details {
-            font-size: 12px;
-        }
-
-        .activity-title {
-            font-size: 14px;
-        }
-
-        .activity-time {
-            font-size: 10px;
-        }
-
-        .activity-stats {
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .stat-box {
-            padding: 5px 6px;
-            font-size: 9px;
-        }
-
-        .stat-label {
-            font-size: 8px;
-        }
-
-        .stat-value {
-            font-size: 11px;
-            margin-top: 2px;
-        }
-
-        .activity-earned {
-            min-width: 40px;
-        }
-
-        .earned-label {
-            font-size: 9px;
-        }
-
-        .earned-value {
-            font-size: 18px;
-        }
-
-        .intensity-badge {
-            padding: 2px 6px;
-            font-size: 9px;
-            margin-left: 3px;
-        }
-
-        .timer-section {
-            padding: 15px;
-        }
-
-        .timer-label {
-            font-size: 12px;
-        }
-
-        .timer-display {
-            font-size: 42px;
-        }
-
-        .timer-controls {
-            gap: 10px;
-        }
-
-        .timer-btn {
-            padding: 8px 16px;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .upload-btn {
-            padding: 10px 16px;
-            font-size: 12px;
-            width: 100%;
-        }
-
-        .logout-btn {
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-
-        .activity-list {
-            gap: 10px;
-        }
-
-        .no-data {
-            padding: 30px 15px;
-            font-size: 12px;
-        }
-    }
-</style>
-{% endblock %}
-
-{# extra_js removed here to avoid duplicate block; ai script is injected into the final extra_js block below #}
-
-{% block content %}
-<!-- Strava Connection Prompt -->
-<div id="strava-prompt" style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-    <div style="font-size: 48px; margin-bottom: 20px;">🔌</div>
-    <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
-    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
-    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-        <a href="/strava-auth" class="btn btn-primary" style="display: inline-block; padding: 15px 40px; font-size: 16px;">Connect Strava</a>
-        <button onclick="skipStrava()" class="btn btn-secondary" style="display: inline-block; padding: 15px 40px; font-size: 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; cursor: pointer; border-radius: 6px;">Continue Without Strava</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Move2Earn Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="dashboard-container">
+    <div class="dashboard-main">
+        <div class="greeting-section">
+            <h2>Hi there! 👋</h2>
+            <p>Keep moving to unlock more game time!</p>
+        </div>
+        <!-- Game Time Card -->
+        <div class="gametime-card" id="gametimeCard">
+            <div class="gametime-header">⏱️ Game Time Used</div>
+            <div class="gametime-value" id="gametimeValue">--</div>
+            <div class="gametime-limit" id="gametimeLimit">of 180 min limit</div>
+            <div class="gametime-bar">
+                <div class="gametime-progress" id="gametimeProgress"></div>
+            </div>
+        </div>
+        <!-- Notifications Card -->
+        <div class="notifications-card">
+            <div class="notifications-header" id="notificationsToggle">
+                <h3>🔔 Notifications</h3>
+                <span class="notifications-toggle">▼</span>
+            </div>
+            <div class="notifications-content" id="notificationsContent">
+                <div id="messagesContainer"></div>
+            </div>
+        </div>
+        <!-- Streak Card -->
+        <div class="streak-card">
+            <div class="streak-icon">🔥</div>
+            <div class="streak-label">Streak</div>
+            <div class="streak-count" id="streak-count">0</div>
+            <div class="streak-sub">Days in a row!</div>
+            <div class="streak-days" id="streak-days">
+                <div class="day-box">+15 Minutes</div>
+                <div class="day-box active">+15 Minutes</div>
+                <div class="day-box active">+15 Minutes</div>
+                <div class="day-box active">+15 Minutes</div>
+                <div class="day-box active">+15 Minutes</div>
+            </div>
+        </div>
+        <!-- Recent Activities Section -->
+        <div class="activities-header">
+            ☰ Recent Activity
+            <div style="display: flex; gap: 8px; margin-left: auto;">
+                <button onclick="openSimulateModal()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">⚡ Simulate</button>
+                <button onclick="openUploadModal()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">+ Manual Upload</button>
+            </div>
+        </div>
+        <div id="activities-list">
+            <div class="no-data">
+                <div class="spinner"></div>
+                <p>Loading activities...</p>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Dashboard Container -->
-<div class="dashboard-container" style="display: none;">
-    <div class="dashboard-layout" style="display:flex; gap:20px; align-items:flex-start; flex-wrap: wrap;">
-        <aside class="dashboard-sidebar" style="width:100%; margin-bottom: 20px;">
-            <div style="background: rgba(20,20,30,0.6); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="/friends" style="padding: 10px 20px; background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,212,255,0.3)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">👥 Friends</a>
-                <a href="/challenges" style="padding: 10px 20px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: #000; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255,193,7,0.3)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">🎯 Challenges</a>
-                <a href="/leaderboard" style="padding: 10px 20px; background: rgba(0, 212, 255, 0.1); color: #00d4ff; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.3); font-weight: 600; display: inline-block; text-decoration: none;">🏆 Leaderboard</a>
-            </div>
-        </aside>
-        <div class="dashboard-main" style="flex:1; width: 100%;">
-
-    <!-- Greeting Section -->
-    <div class="greeting-section">
-        <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
-        <p>Keep moving to unlock more game time!</p>
+<!-- Activity Modal -->
+<div class="modal" id="activity-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: white; border-radius: 8px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <h2 id="modal-title">Activity Details</h2>
+        <div id="modal-body"></div>
+        <button onclick="closeModal()" style="background: #333; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px;">Close</button>
     </div>
-    
+</div>
 
-    
-    <!-- Game Time Card -->
-    <div class="gametime-card" id="gametimeCard">
-        <div class="gametime-header">⏱️ Game Time Used</div>
-        <div class="gametime-value" id="gametimeValue">--</div>
-        <div class="gametime-limit" id="gametimeLimit">of 180 min limit</div>
-        <div class="gametime-bar">
-            <div class="gametime-progress" id="gametimeProgress"></div>
-        </div>
-    </div>
-    
-    <!-- Notifications Card -->
-    <div class="notifications-card">
-        <div class="notifications-header" id="notificationsToggle">
-            <h3>🔔 Notifications</h3>
-            <span class="notifications-toggle">▼</span>
-        </div>
-        <div class="notifications-content" id="notificationsContent">
-            <div id="messagesContainer"></div>
-        </div>
-    </div>
-    
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script src="/static/ai_trainer.js"></script>
-<script>
-// Existing dashboard visibility logic
-const straPrompt = document.getElementById('strava-prompt');
-const dashContainer = document.querySelector('.dashboard-container');
-if (straPrompt && dashContainer) {
-    if (typeof stravaConnected !== 'undefined' && stravaConnected) {
-        straPrompt.style.display = 'none';
-        dashContainer.style.display = 'flex';
-    } else {
-        straPrompt.style.display = 'block';
-        dashContainer.style.display = 'none';
-    }
-}
-
-function calculateIntensity(avgHR, maxHR) {
-    // Prefer absolute HR thresholds if available
-    if (avgHR) {
-        const hr = Number(avgHR);
-        if (hr < 150) return 'easy';
-        if (hr > 170) return 'hard';
-        return 'medium';
-    }
-    // Fallback: use pace if maxHR not available (pace in min/km)
-    return 'medium';
-}
-
-function getIntensityBadge(avgHR, maxHR) {
-    const intensity = calculateIntensity(avgHR, maxHR);
-    const labels = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
-    const classes = { 'easy': 'intensity-easy', 'medium': 'intensity-medium', 'hard': 'intensity-hard' };
-    return `<span class="intensity-badge ${classes[intensity]}">${labels[intensity]}</span>`;
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-// ...rest of dashboard JS code...
-</script>
-{% endblock %}
-        <!-- Progress Overlay -->
-        <div id="uploadProgressOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); border-radius: 12px; z-index: 10; flex-direction: column; justify-content: center; align-items: center;">
-            <div class="circular-progress" style="margin-bottom: 20px;">
-                <svg width="140" height="140" viewBox="0 0 140 140">
-                    <circle class="progress-circle" cx="70" cy="70" r="63" style="fill: none; stroke: rgba(0, 255, 136, 0.2); stroke-width: 8;"></circle>
-                    <circle class="progress-ring" cx="70" cy="70" r="63" style="fill: none; stroke: url(#progressGradient); stroke-width: 8; stroke-dasharray: 395.84; stroke-dashoffset: 395.84; transition: stroke-dashoffset 0.3s ease; transform: rotate(-90deg); transform-origin: 70px 70px;"></circle>
-                    <defs>
-                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color: #00ff88; stop-opacity: 1;"></stop>
-                            <stop offset="100%" style="stop-color: #00d4ff; stop-opacity: 1;"></stop>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                    <div style="font-size: 32px; font-weight: 700; color: #00ff88;"><span id="uploadProgressPercent">0</span>%</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">Uploading...</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
-            <h2 id="modal-title" style="color: #fff; margin: 0;">📝 Log Activity</h2>
-            <button class="close-btn" onclick="closeUploadModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
-        </div>
-        <div id="uploadMessage" class="upload-message" style="background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
+<!-- Upload Modal -->
+<div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; color: white;">
+        <h2>📝 Log Activity</h2>
         <form id="uploadForm" style="display: grid; gap: 15px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div style="grid-column: 1 / -1;">
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Title</label>
-                    <input type="text" name="activity_title" placeholder="e.g., Morning Run" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
-                </div>
-                <div>
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Date</label>
-                    <input type="date" name="date" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
-                </div>
-                <div>
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Activity Type</label>
-                    <select name="activity_type" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
-                        <option value="">Select type</option>
-                        <option value="Run">Run</option>
-                        <option value="Ride">Cycling</option>
-                        <option value="Swim">Swimming</option>
-                        <option value="Walk">Walking</option>
-                        <option value="Hiking">Hiking</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Distance (km)</label>
-                    <input type="number" name="distance" placeholder="0.00" step="0.1" min="0" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
-                </div>
-                <div>
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Duration (HH:MM:SS)</label>
-                    <input type="text" name="duration" placeholder="00:30:00" pattern="^\d{1,2}:\d{2}:\d{2}$" required style="width: 100%; padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 13px; margin-top: 5px;">
-                </div>
-                <div style="grid-column: 1 / -1;">
-                    <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Intensity</label>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px;">
-                        <button type="button" class="intensity-btn" data-intensity="Easy" style="padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; color: #00d4ff; font-weight: 600; cursor: pointer; transition: all 0.3s;">Easy</button>
-                        <button type="button" class="intensity-btn" data-intensity="Medium" style="padding: 10px; background: rgba(255, 200, 0, 0.2); border: 1px solid rgba(255, 200, 0, 0.4); border-radius: 4px; color: #ffcc00; font-weight: 600; cursor: pointer; transition: all 0.3s;">Medium</button>
-                        <button type="button" class="intensity-btn" data-intensity="Hard" style="padding: 10px; background: rgba(255, 100, 100, 0.2); border: 1px solid rgba(255, 100, 100, 0.4); border-radius: 4px; color: #ff6464; font-weight: 600; cursor: pointer; transition: all 0.3s;">Hard</button>
-                    </div>
-                    <input type="hidden" name="intensity" required>
-                </div>
-            </div>
-            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Log Activity</button>
+            <input type="text" name="activity_title" placeholder="Activity Title" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+            <input type="date" name="date" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+            <select name="activity_type" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+                <option value="">Select type</option>
+                <option value="Run">Run</option>
+                <option value="Ride">Cycling</option>
+                <option value="Swim">Swimming</option>
+                <option value="Walk">Walking</option>
+            </select>
+            <input type="number" name="distance" placeholder="Distance (km)" step="0.1" min="0" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+            <input type="text" name="duration" placeholder="Duration (HH:MM:SS)" pattern="^\d{1,2}:\d{2}:\d{2}$" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+            <select name="intensity" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+                <option value="">Select intensity</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer;">Log Activity</button>
+            <button type="button" onclick="closeUploadModal()" style="padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white; font-weight: 600; cursor: pointer;">Cancel</button>
         </form>
     </div>
 </div>
 
-<!-- Simulate Activities Modal -->
+<!-- Simulate Modal -->
 <div class="modal" id="simulate-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid rgba(100, 100, 150, 0.3); position: relative;">
-        <!-- Progress Overlay -->
-        <div id="simulateProgressOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); border-radius: 12px; z-index: 10; flex-direction: column; justify-content: center; align-items: center;">
-            <div class="circular-progress" style="margin-bottom: 20px;">
-                <svg width="140" height="140" viewBox="0 0 140 140">
-                    <circle class="progress-circle" cx="70" cy="70" r="63" style="fill: none; stroke: rgba(156, 39, 176, 0.2); stroke-width: 8;"></circle>
-                    <circle class="progress-ring" cx="70" cy="70" r="63" style="fill: none; stroke: url(#simulateProgressGradient); stroke-width: 8; stroke-dasharray: 395.84; stroke-dashoffset: 395.84; transition: stroke-dashoffset 0.3s ease; transform: rotate(-90deg); transform-origin: 70px 70px;"></circle>
-                    <defs>
-                        <linearGradient id="simulateProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color: #9c27b0; stop-opacity: 1;"></stop>
-                            <stop offset="100%" style="stop-color: #673ab7; stop-opacity: 1;"></stop>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                    <div style="font-size: 32px; font-weight: 700; color: #9c27b0;"><span id="simulateProgressPercent">0</span>%</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">Generating...</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
-            <h2 style="color: #fff; margin: 0;">⚡ Simulate Activities</h2>
-            <button class="close-btn" onclick="closeSimulateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
-        </div>
-        <div id="simulateMessage" class="simulate-message" style="background: rgba(156, 39, 176, 0.1); border: 1px solid rgba(156, 39, 176, 0.3); color: #9c27b0; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
+    <div class="modal-content" style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; color: white;">
+        <h2>⚡ Simulate Activities</h2>
         <form id="simulateForm" style="display: grid; gap: 15px;">
-            <div>
-                <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Number of Activities</label>
-                <input type="number" name="count" min="1" max="100" value="5" required style="width: 100%; padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 14px; margin-top: 5px;">
-                <p style="color: #999; font-size: 12px; margin-top: 5px;">Generate random activities to test your dashboard (1-100)</p>
-            </div>
-            <div style="background: rgba(156, 39, 176, 0.05); border: 1px solid rgba(156, 39, 176, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 5px;">
-                <p style="color: #aaa; font-size: 12px; margin: 0; line-height: 1.5;">
-                    <strong style="color: #9c27b0;">ℹ️ Info:</strong> This will create random activities with varying distances, durations, and intensities for testing purposes.
-                </p>
-            </div>
-            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Generate Activities</button>
+            <input type="number" name="count" min="1" max="100" value="5" required style="padding: 10px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white;">
+            <p style="color: #aaa; font-size: 12px;">Generate 1-100 test activities</p>
+            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); border: none; border-radius: 6px; color: white; font-weight: 600; cursor: pointer;">Generate</button>
+            <button type="button" onclick="closeSimulateModal()" style="padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: white; font-weight: 600; cursor: pointer;">Cancel</button>
         </form>
     </div>
 </div>
 
-<style>
-.modal.active {
-    display: flex !important;
-}
-
-.modal-stat {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.modal-stat-label {
-    font-weight: 600;
-    color: #666;
-}
-
-.modal-stat-value {
-    color: #333;
-    font-weight: 600;
-}
-
-.upload-message {
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-</style>
-    {% endblock %}
-
-<!-- removed duplicate extra_js block -->
-<script src="/static/ai_trainer.js"></script>
-// Existing dashboard visibility logic
-const straPrompt = document.getElementById('strava-prompt');
-const dashContainer = document.querySelector('.dashboard-container');
-if (straPrompt && dashContainer) {
-    if (typeof stravaConnected !== 'undefined' && stravaConnected) {
-        straPrompt.style.display = 'none';
-        dashContainer.style.display = 'flex';
-    } else {
-        straPrompt.style.display = 'block';
-        dashContainer.style.display = 'none';
-    }
-}
-
-function calculateIntensity(avgHR, maxHR) {
-    // Prefer absolute HR thresholds if available
-    if (avgHR) {
-        const hr = Number(avgHR);
-        if (hr < 150) return 'easy';
-        if (hr > 170) return 'hard';
-        return 'medium';
-    }
-
-    // Fallback: use pace if maxHR not available (pace in min/km)
-    return 'medium';
-}
-
-function getIntensityBadge(avgHR, maxHR) {
-    const intensity = calculateIntensity(avgHR, maxHR);
-    const labels = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
-    const classes = { 'easy': 'intensity-easy', 'medium': 'intensity-medium', 'hard': 'intensity-hard' };
-    return `<span class="intensity-badge ${classes[intensity]}">${labels[intensity]}</span>`;
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-        return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-}
-
-function getActivityIcon(type) {
-    const icons = {
-        'Run': '🏃',
-        'TrailRun': '🏃',
-        'Ride': '🚴',
-        'MountainBikeRide': '🚴',
-        'Swim': '🏊',
-        'Walk': '🚶',
-        'Hiking': '⛰️',
-        'Workout': '💪'
-    };
-    return icons[type] || '⚡';
-}
-
-async function loadActivities() {
-    try {
-        const list = document.getElementById('activities-list');
-        
-        // Fetch both Strava and manual activities
-        let stravasActivities = [];
-        let manualActivities = [];
-        
-        try {
-            const stravasResponse = await fetch('/api/activities');
-            if (stravasResponse.ok) {
-                stravasActivities = await stravasResponse.json();
+<script>
+// Load activities from API
+function loadActivities() {
+    fetch('/api/activities')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('activities-list');
+            if (!data.activities || data.activities.length === 0) {
+                list.innerHTML = '<div class="no-data">No activities yet. Start moving! 🏃</div>';
+                return;
             }
-        } catch (err) {
-            console.error('Error loading Strava activities:', err);
-        }
-        
-        try {
-            const manualResponse = await fetch('/api/manual-activities');
-            if (manualResponse.ok) {
-                const manualData = await manualResponse.json();
-                if (manualData.activities) {
-                    manualActivities = manualData.activities;
-                }
-            }
-        } catch (err) {
-            console.error('Error loading manual activities:', err);
-        }
-
-        
-        
-        // Combine activities (manual activities have different field names)
-        const allActivities = [
-            ...stravasActivities.map(a => ({
-                ...a,
-                source: 'strava',
-                time_minutes: a.moving_time / 60,
-                activity_date: a.start_date
-            })),
-            ...manualActivities.map(a => ({
-                id: a.id,
-                name: a.title,
-                type: a.type,
-                distance: a.distance,
-                moving_time: a.time_minutes * 60,
-                time_minutes: a.time_minutes,
-                start_date: a.date + 'T12:00:00Z',
-                activity_date: a.date,
-                intensity: a.intensity,
-                earned_minutes: a.earned_minutes,
-                source: 'manual'
-            }))
-        ];
-        // Sort by activity date (newest first) so manual uploads appear immediately
-        allActivities.sort((a, b) => {
-            const da = new Date(a.start_date || a.activity_date);
-            const db = new Date(b.start_date || b.activity_date);
-            return db - da;
-        });
-
-        
-        
-        if (allActivities.length === 0) {
-            list.innerHTML = '<div class="no-data">No activities found. Connect Strava or log an activity manually!</div>';
-            return;
-        }
-        
-        // Calculate streak from activities (fallback) then overwrite with server value if available
-        calculateStreak(allActivities);
-        // Try to get authoritative streak from server (gametime endpoint includes streak now)
-        try {
-            const streakResp = await fetch('/api/gametime-balance');
-            if (streakResp.ok) {
-                const streakData = await streakResp.json();
-                if (typeof streakData.streak_count !== 'undefined') {
-                    document.getElementById('streak-count').textContent = streakData.streak_count;
-                }
-            }
-        } catch (e) {
-            // ignore - we already showed the computed streak
-        }
-        
-        // htmlhint: off
-        list.innerHTML = allActivities.map(activity => {
-            const isStravasActivity = activity.source === 'strava';
-            const paceDisplay = !activity.average_heartrate && activity.distance > 0 
-                ? `${Math.floor((activity.moving_time / activity.distance) / 60)}:${String(Math.round((activity.moving_time / activity.distance) % 60)).padStart(2, '0')} min/km`
-                : '';
-            
-            // Prefer server-provided intensity label when present
-            const intensityLabel = activity.intensity || (isStravasActivity ? (activity.average_heartrate ? (activity.average_heartrate < 150 ? 'Easy' : (activity.average_heartrate > 170 ? 'Hard' : 'Medium')) : 'Medium') : activity.intensity);
-            const intensityBadge = `<span class="intensity-badge ${intensityLabel === 'Easy' ? 'intensity-easy' : intensityLabel === 'Hard' ? 'intensity-hard' : 'intensity-medium'}">${intensityLabel}</span>`;
-            
-            const onClickAttr = isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : '';
-            const cursorStyle = isStravasActivity ? 'cursor: pointer;' : 'cursor: default;';
-            
-            // Note: The following uses template literals with embedded HTML - this is valid JavaScript
-            return `
-                    <div class="activity-icon">${getActivityIcon(activity.type)}</div>
-                    <div class="activity-details">
-                        <div class="activity-title">
-                            ${activity.name}
-                            ${intensityBadge}
-                        </div>
-                        <div class="activity-time">${formatDate(activity.activity_date)}</div>
-                        <div class="activity-stats">
-                            <div class="stat-box">
-                                <span class="stat-label">Duration</span>
-                                <span class="stat-value">${formatTime(activity.moving_time)}</span>
-                            </div>
-                            <div class="stat-box">
-                                <span class="stat-label">Distance</span>
-                                <span class="stat-value">${activity.distance} km</span>
-                            </div>
-                            ${activity.average_heartrate ? `
-                            <div class="stat-box">
-                                <span class="stat-label">Avg HR</span>
-                                <span class="stat-value">${Math.round(activity.average_heartrate)} bpm</span>
-                            </div>
-                            ` : ''}
-                            ${paceDisplay ? `
-                            <div class="stat-box">
-                                <span class="stat-label">Pace</span>
-                                <span class="stat-value">${paceDisplay}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="activity-earned">
-                        <div class="earned-label">Time Earned</div>
-                        <div class="earned-value">${activity.earned_minutes ? activity.earned_minutes + ' min' : '--'}</div>
-                    </div>
+            list.innerHTML = data.activities.map(a => `
+                <div class="activity-card" onclick="openActivityModal('${a.id}')">
+                    <div class="activity-name">${a.name}</div>
+                    <div class="activity-date">${new Date(a.start_date).toLocaleDateString()}</div>
+                    <div class="activity-distance">${a.distance || 0} km</div>
+                    <div class="activity-earned">+${a.earned_minutes || 0} min</div>
                 </div>
-            `;
-        }).join('');
-        // htmlhint: on
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('activities-list').innerHTML = '<div class="error">Failed to load activities</div>';
-    }
+            `).join('');
+        })
+        .catch(err => console.error('Error loading activities:', err));
 }
 
-function calculateStreak(activities) {
-    if (activities.length === 0) {
-        document.getElementById('streak-count').textContent = '0';
-        return;
-    }
-    
-    // Get unique dates from activities
-    const dates = new Set();
-    activities.forEach(activity => {
-        const date = new Date(activity.start_date);
-        dates.add(date.toLocaleDateString('en-CA'));
-    });
-    
-    const sortedDates = Array.from(dates).sort().reverse();
-    let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-    
-    for (const dateStr of sortedDates) {
-        const activityDate = new Date(dateStr);
-        const diffDays = Math.floor((currentDate - activityDate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === streak) {
-            streak++;
-        } else {
-            break;
-        }
-    }
-    
-    document.getElementById('streak-count').textContent = streak;
+// Load game time from API
+function loadGameTime() {
+    fetch('/api/gametime-balance')
+        .then(r => r.json())
+        .then(data => {
+            const used = Math.round(data.used || 0);
+            const limit = data.limit || 180;
+            document.getElementById('gametimeValue').textContent = used + ' min';
+            document.getElementById('gametimeLimit').textContent = `of ${limit} min limit`;
+            document.getElementById('gametimeProgress').style.width = Math.min(100, (used / limit) * 100) + '%';
+            if (data.streak_count) {
+                document.getElementById('streak-count').textContent = data.streak_count;
+            }
+        })
+        .catch(err => console.error('Error loading game time:', err));
 }
 
-async function loadGameTime() {
-    const gametimeValue = document.getElementById('gametimeValue');
-    const gametimeLimit = document.getElementById('gametimeLimit');
-    const gametimeProgress = document.getElementById('gametimeProgress');
-    
-    if (!gametimeValue) return;
-    
-    try {
-        // Fetch authoritative values from server
-        const response = await fetch('/api/gametime-balance');
-        if (!response.ok) return;
-
-        // Keep a local copy of server state so interval can reference latest values
-        let serverState = await response.json();
-        const earned = Number(serverState.earned || 0);
-        const used = Number(serverState.used || 0);
-        const limit = Number(serverState.limit || 180);
-
-        // We'll display USED time as the main counter and count UP toward the limit.
-        // Compute usedSeconds as stored used + elapsed since timer_started_at if running.
-        function computeUsedSeconds(state) {
-            const baseUsed = Math.max(0, Math.floor((Number(state.used) || 0) * 60));
-            if (state.timer_running && state.timer_started_at) {
-                try {
-                    const startedMs = Date.parse(state.timer_started_at);
-                    if (!isNaN(startedMs)) {
-                        const nowMs = Date.now();
-                        const elapsedSec = Math.floor((nowMs - startedMs) / 1000);
-                        return baseUsed + elapsedSec;
-                    }
-                } catch (e) {
-                    // ignore and fallback to baseUsed
-                }
+// Load parent messages
+function loadParentMessages() {
+    fetch('/api/get-parent-messages')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('messagesContainer');
+            if (!data.messages || data.messages.length === 0) {
+                container.innerHTML = '<div class="no-messages">No notifications yet 🎉</div>';
+                return;
             }
-            return baseUsed;
-        }
-
-        let usedSeconds = computeUsedSeconds(serverState);
-        const limitSeconds = Math.max(1, Math.floor(limit * 60));
-
-        // Helper to render time (mm:ss or N min)
-        function renderSeconds(sec) {
-            if (sec <= 0) return '0:00';
-            const minutes = Math.floor(sec / 60);
-            const seconds = sec % 60;
-            if (minutes >= 60) return `${minutes}m`;
-            return `${minutes}:${String(seconds).padStart(2, '0')}`;
-        }
-
-        // Clean up any existing interval
-        if (window.gametimeInterval) {
-            clearInterval(window.gametimeInterval);
-            window.gametimeInterval = null;
-        }
-
-        // Initial render (show used time counting up toward the limit)
-        gametimeValue.textContent = renderSeconds(usedSeconds);
-        gametimeLimit.textContent = `of ${limit} min limit`;
-        const usedPercentage = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
-        gametimeProgress.style.width = usedPercentage + '%';
-
-        // Render streak from initial serverState if present
-        try {
-            if (typeof serverState.streak_count !== 'undefined') {
-                document.getElementById('streak-count').textContent = serverState.streak_count;
-                const settings = serverState.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
-                renderStreakDays(serverState.streak_count, settings);
-            }
-        } catch (e) {
-            // ignore
-        }
-
-        // Recompute displayed usedSeconds every second based on serverState and current time.
-        if (window.gametimeInterval) {
-            clearInterval(window.gametimeInterval);
-            window.gametimeInterval = null;
-        }
-        window.gametimeInterval = setInterval(() => {
-            try {
-                usedSeconds = computeUsedSeconds(serverState);
-                gametimeValue.textContent = renderSeconds(usedSeconds);
-                const pct = limitSeconds > 0 ? Math.min(100, (usedSeconds / limitSeconds) * 100) : 0;
-                gametimeProgress.style.width = pct + '%';
-            } catch (err) {
-                console.error('Error in gametime interval:', err);
-            }
-        }, 1000);
-
-        // Periodically refresh authoritative values from server every 20 seconds
-        window.gametimeRefreshTimer = setInterval(async () => {
-            try {
-                const resp = await fetch('/api/gametime-balance');
-                if (!resp.ok) return;
-                const fresh = await resp.json();
-                
-                const freshUsedSec = computeUsedSeconds(fresh);
-                const freshLimit = Number(fresh.limit || 180);
-                const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
-
-                // Update limit display if it changed
-                const newLimitText = `of ${freshLimit} min limit`;
-                if (gametimeLimit.textContent !== newLimitText) {
-                    gametimeLimit.textContent = newLimitText;
-                }
-                
-                // Only update serverState and recalculate if there's a significant difference (> 5 seconds)
-                // This prevents rapid jumping due to network latency
-                const currentUsedSec = computeUsedSeconds(serverState);
-                if (Math.abs(freshUsedSec - currentUsedSec) > 5) {
-                    serverState = fresh;
-                    usedSeconds = freshUsedSec;
-                    gametimeValue.textContent = renderSeconds(usedSeconds);
-                    const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
-                    gametimeProgress.style.width = pct + '%';
-                }
-
-                // Update streak display if provided by server
-                try {
-                    if (typeof fresh.streak_count !== 'undefined') {
-                        document.getElementById('streak-count').textContent = fresh.streak_count;
-                        const settings = fresh.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
-                        renderStreakDays(fresh.streak_count, settings);
-                    }
-                } catch (e) {
-                    // ignore
-                }
-            } catch (err) {
-                console.error('Failed to refresh gametime:', err);
-            }
-        }, 20000);
-
-    } catch (err) {
-        console.error('Error loading game time:', err);
-    }
-}
-
-function renderStreakDays(count, streakSettings) {
-    const container = document.getElementById('streak-days');
-    if (!container) return;
-    // Render up to 7 day boxes showing most recent streak
-    const maxBoxes = 7;
-    const boxes = [];
-    
-    // Get settings
-    const base = streakSettings.base_minutes || 5;
-    const increment = streakSettings.increment_minutes || 2;
-    const cap = streakSettings.cap_minutes || 60;
-    
-    for (let i = 0; i < maxBoxes; i++) {
-        const box = document.createElement('div');
-        box.className = 'day-box' + (i < count ? ' active' : '');
-        const dayNum = (i + 1);
-        
-        // Calculate reward for this day using the formula: base + (day - 1) * increment
-        let reward = base + (Math.max(0, dayNum - 1) * increment);
-        if (cap && reward > cap) {
-            reward = cap;
-        }
-        
-        box.textContent = i < count ? `+${reward}m` : `+${reward}m`;
-        boxes.push(box.outerHTML);
-    }
-    container.innerHTML = boxes.join('');
-}
-
-async function loadParentMessages() {
-    const container = document.getElementById('messagesContainer');
-    if (!container) return;
-    
-    try {
-        const response = await fetch('/api/get-parent-messages');
-        const data = await response.json();
-        
-        if (!response.ok) {
-            console.error('Failed to load messages:', data.error);
-            return;
-        }
-        
-        const messages = data.messages || [];
-        
-        if (messages.length === 0) {
-            container.innerHTML = '<div class="no-messages">No notifications yet. Keep up the good work! 🎉</div>';
-            return;
-        }
-        
-        const messagesHTML = messages.map(msg => {
-            const date = new Date(msg.created_at);
-            const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Display message text; if empty, show bonus_minutes info or a generic notification
-            let displayText = msg.message;
-            if (!displayText || displayText.trim() === '') {
-                if (msg.bonus_minutes > 0) {
-                    displayText = `Received ${msg.bonus_minutes} minutes of game time`;
-                } else {
-                    displayText = 'Parent sent a notification';
-                }
-            }
-            
-            return `
+            container.innerHTML = data.messages.map(m => `
                 <div class="notification-item">
-                    <div class="notification-header">
-                        <span class="notification-from">💬 ${msg.from_parent}</span>
-                        <span class="notification-time">${timeStr}</span>
-                    </div>
-                    <div class="notification-text">${displayText}</div>
-                    ${msg.bonus_minutes > 0 ? `<div class="notification-bonus">+${msg.bonus_minutes} min game time</div>` : ''}
+                    <div><strong>${m.from_parent}</strong></div>
+                    <div>${m.message}</div>
+                    ${m.bonus_minutes ? `<div>+${m.bonus_minutes} min</div>` : ''}
                 </div>
-            `;
-        }).join('');
-        
-        container.innerHTML = messagesHTML;
-    } catch (err) {
-        console.error('Error loading parent messages:', err);
-        container.innerHTML = '<div class="no-messages">Unable to load notifications</div>';
-    }
+            `).join('');
+        })
+        .catch(err => console.error('Error loading messages:', err));
 }
 
-// Toggle notifications collapse/expand
-function setupNotificationsToggle() {
-    const toggle = document.getElementById('notificationsToggle');
-    const content = document.getElementById('notificationsContent');
-    
-    if (!toggle || !content) return;
-    
-    toggle.addEventListener('click', function() {
-        const toggleIcon = this.querySelector('.notifications-toggle');
-        content.classList.toggle('collapsed');
-        toggleIcon.classList.toggle('collapsed');
-    });
-}
-
-// Load data when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadGameTime();
-    loadParentMessages();
-    setupNotificationsToggle();
-});
-
-async function openActivityModal(activityId) {
-    const modal = document.getElementById('activity-modal');
-    const modalBody = document.getElementById('modal-body');
-    modal.classList.add('active');
-    
-    try {
-        const response = await fetch(`/api/activity/${activityId}`);
-        if (!response.ok) throw new Error('Failed to load activity details');
-        
-        const activity = await response.json();
-        document.getElementById('modal-title').textContent = activity.name;
-        
-        modalBody.innerHTML = `
-            <div class="modal-stat">
-                <span class="modal-stat-label">Type</span>
-                <span class="modal-stat-value">${activity.type}</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Date</span>
-                <span class="modal-stat-value">${formatDate(activity.start_date)}</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Distance</span>
-                <span class="modal-stat-value">${activity.distance} km</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Duration</span>
-                <span class="modal-stat-value">${formatTime(activity.moving_time)}</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Elapsed Time</span>
-                <span class="modal-stat-value">${formatTime(activity.elapsed_time)}</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Average Speed</span>
-                <span class="modal-stat-value">${activity.average_speed} km/h</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Max Speed</span>
-                <span class="modal-stat-value">${activity.max_speed} km/h</span>
-            </div>
-            <div class="modal-stat">
-                <span class="modal-stat-label">Total Elevation</span>
-                <span class="modal-stat-value">${activity.total_elevation_gain} m</span>
-            </div>
-            ${activity.average_heartrate ? `
-            <div class="modal-stat">
-                <span class="modal-stat-label">Average Heart Rate</span>
-                <span class="modal-stat-value">${Math.round(activity.average_heartrate)} bpm</span>
-            </div>
-            ` : ''}
-            ${activity.max_heartrate ? `
-            <div class="modal-stat">
-                <span class="modal-stat-label">Max Heart Rate</span>
-                <span class="modal-stat-value">${Math.round(activity.max_heartrate)} bpm</span>
-            </div>
-            ` : ''}
-        `;
-    } catch (error) {
-        console.error('Error:', error);
-        modalBody.innerHTML = '<div class="error">Failed to load activity details.</div>';
-    }
+// Modal functions
+function openActivityModal(id) {
+    alert('Activity: ' + id);
 }
 
 function closeModal() {
-    document.getElementById('activity-modal').classList.remove('active');
+    document.getElementById('activity-modal').style.display = 'none';
 }
 
 function openUploadModal() {
     document.getElementById('upload-modal').style.display = 'flex';
-    document.getElementById('uploadForm').reset();
-    document.getElementById('uploadMessage').style.display = 'none';
-    // Reset intensity buttons
-    document.querySelectorAll('.intensity-btn').forEach(btn => {
-        btn.style.background = btn.dataset.intensity === 'Easy' 
-            ? 'rgba(0, 212, 255, 0.2)' 
-            : btn.dataset.intensity === 'Medium'
-            ? 'rgba(255, 200, 0, 0.2)'
-            : 'rgba(255, 100, 100, 0.2)';
-    });
 }
 
 function closeUploadModal() {
     document.getElementById('upload-modal').style.display = 'none';
 }
 
-// Intensity button selection
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.intensity-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Remove active state from all buttons
-            document.querySelectorAll('.intensity-btn').forEach(b => {
-                b.style.opacity = '0.7';
-                b.style.boxShadow = 'none';
-            });
-            // Set active state on clicked button
-            this.style.opacity = '1';
-            this.style.boxShadow = '0 0 12px ' + (
-                this.dataset.intensity === 'Easy' ? 'rgba(0, 212, 255, 0.5)' :
-                this.dataset.intensity === 'Medium' ? 'rgba(255, 200, 0, 0.5)' :
-                'rgba(255, 100, 100, 0.5)'
-            );
-            // Set the hidden input value
-            document.querySelector('input[name="intensity"]').value = this.dataset.intensity;
-        });
-    });
-
-    // Handle upload form submission
-    const uploadForm = document.getElementById('uploadForm');
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const title = this.querySelector('[name="activity_title"]').value;
-            const date = this.querySelector('[name="date"]').value;
-            const type = this.querySelector('[name="activity_type"]').value;
-            const distance = parseFloat(this.querySelector('[name="distance"]').value);
-            const duration = this.querySelector('[name="duration"]').value;
-            const intensity = this.querySelector('[name="intensity"]').value;
-            
-            if (!intensity) {
-                alert('Please select an intensity level');
-                return;
-            }
-            
-            // Parse HH:MM:SS to minutes
-            const parts = duration.split(':');
-            const hours = parseInt(parts[0]);
-            const minutes = parseInt(parts[1]);
-            const seconds = parseInt(parts[2] || 0);
-            const totalMinutes = hours * 60 + minutes + (seconds > 0 ? 1 : 0);
-            
-            // Show progress overlay
-            const progressOverlay = document.getElementById('uploadProgressOverlay');
-            progressOverlay.style.display = 'flex';
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 25;
-                if (progress > 85) progress = 85;
-                updateUploadProgress(progress);
-            }, 200);
-            
-            try {
-                const response = await fetch('/upload-activity', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        activity_title: title,
-                        date: date,
-                        activity_type: type,
-                        distance: distance,
-                        time_hours: hours,
-                        time_minutes: minutes,
-                        intensity: intensity
-                    })
-                });
-                
-                clearInterval(progressInterval);
-                updateUploadProgress(100);
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    setTimeout(() => {
-                        progressOverlay.style.display = 'none';
-                        closeUploadModal();
-                        loadActivities();
-                        // Refresh game time immediately so totals update without reload
-                        try { loadGameTime(); } catch (e) { console.error('loadGameTime error:', e); }
-                    }, 500);
-                } else {
-                    progressOverlay.style.display = 'none';
-                    const msg = document.getElementById('uploadMessage');
-                    msg.style.display = 'block';
-                    msg.style.background = 'rgba(255, 107, 107, 0.1)';
-                    msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
-                    msg.style.color = '#ff6b6b';
-                    msg.textContent = '✗ ' + (data.error || 'Failed to upload activity');
-                }
-            } catch (err) {
-                clearInterval(progressInterval);
-                progressOverlay.style.display = 'none';
-                const msg = document.getElementById('uploadMessage');
-                msg.style.display = 'block';
-                msg.style.background = 'rgba(255, 107, 107, 0.1)';
-                msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
-                msg.style.color = '#ff6b6b';
-                msg.textContent = '✗ Error: ' + err.message;
-            }
-        });
-    }
-});
-
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('activity-modal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    const uploadModal = document.getElementById('upload-modal');
-    if (event.target === uploadModal) {
-        closeUploadModal();
-    }
-    const simulateModal = document.getElementById('simulate-modal');
-    if (event.target === simulateModal) {
-        closeSimulateModal();
-    }
-});
-
 function openSimulateModal() {
     document.getElementById('simulate-modal').style.display = 'flex';
-    document.getElementById('simulateForm').reset();
-    document.getElementById('simulateMessage').style.display = 'none';
 }
 
 function closeSimulateModal() {
     document.getElementById('simulate-modal').style.display = 'none';
 }
 
-function skipStrava() {
-    // Mark user as having skipped Strava setup via API
-    fetch('/api/skip-strava', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    }).then(response => {
-        if (response.ok) {
-            // Hide the Strava connection prompt
-            const straPrompt = document.getElementById('strava-prompt');
-            if (straPrompt) {
-                straPrompt.style.display = 'none';
+// Handle upload form
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch('/upload-activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        activity_title: document.querySelector('[name="activity_title"]').value,
+                        date: document.querySelector('[name="date"]').value,
+                        activity_type: document.querySelector('[name="activity_type"]').value,
+                        distance: document.querySelector('[name="distance"]').value,
+                        intensity: document.querySelector('[name="intensity"]').value
+                    })
+                });
+                if (response.ok) {
+                    closeUploadModal();
+                    loadActivities();
+                    loadGameTime();
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
-            // Show the dashboard container
-            const dashContainer = document.querySelector('.dashboard-container');
-            if (dashContainer) {
-                dashContainer.style.display = 'flex';
-            }
-            // Load activities
-            loadActivities();
-            // Load game time
-            loadGameTime();
-        } else {
-            alert('Failed to skip Strava connection');
-        }
-    }).catch(err => {
-        console.error('Error skipping Strava:', err);
-        alert('Failed to skip Strava connection');
-    });
-}
+        });
+    }
 
-// Handle simulate form submission
-const simulateForm = document.getElementById('simulateForm');
-if (simulateForm) {
-    simulateForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const count = parseInt(this.querySelector('[name="count"]').value);
-        
-        if (count < 1 || count > 100) {
-            alert('Please enter a number between 1 and 100');
-            return;
-        }
-        
-        // Show progress overlay
-        const progressOverlay = document.getElementById('simulateProgressOverlay');
-        progressOverlay.style.display = 'flex';
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 25;
-            if (progress > 85) progress = 85;
-            updateSimulateProgress(progress);
-        }, 200);
-        
-        try {
-            const response = await fetch('/api/simulate-activities', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ count: count })
-            });
-            
-            clearInterval(progressInterval);
-            updateSimulateProgress(100);
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                setTimeout(() => {
-                    progressOverlay.style.display = 'none';
+    const simulateForm = document.getElementById('simulateForm');
+    if (simulateForm) {
+        simulateForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch('/api/simulate-activities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: document.querySelector('[name="count"]').value })
+                });
+                if (response.ok) {
                     closeSimulateModal();
                     loadActivities();
-                    // Refresh game time immediately so totals update without reload
-                    try { loadGameTime(); } catch (e) { console.error('loadGameTime error:', e); }
-                    // If server returned credited minutes, show a quick message
-                    if (data && data.credited_minutes) {
-                        const msg = document.getElementById('simulateMessage');
-                        msg.style.display = 'block';
-                        msg.style.background = 'rgba(56, 142, 60, 0.08)';
-                        msg.style.borderColor = 'rgba(56, 142, 60, 0.2)';
-                        msg.style.color = '#388e3c';
-                        msg.textContent = '✓ Credited ' + data.credited_minutes + ' minutes to today\'s balance';
-                        setTimeout(() => { msg.style.display = 'none'; }, 4000);
-                    }
-                }, 500);
-            } else {
-                progressOverlay.style.display = 'none';
-                const msg = document.getElementById('simulateMessage');
-                msg.style.display = 'block';
-                msg.style.background = 'rgba(255, 107, 107, 0.1)';
-                msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
-                msg.style.color = '#ff6b6b';
-                msg.textContent = '✗ ' + (data.error || 'Failed to generate activities');
+                    loadGameTime();
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
-        } catch (err) {
-            clearInterval(progressInterval);
-            progressOverlay.style.display = 'none';
-            const msg = document.getElementById('simulateMessage');
-            msg.style.display = 'block';
-            msg.style.background = 'rgba(255, 107, 107, 0.1)';
-            msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
-            msg.style.color = '#ff6b6b';
-            msg.textContent = '✗ Error: ' + err.message;
-        }
-    });
-}
+        });
+    }
 
-document.addEventListener('DOMContentLoaded', loadActivities);
-
-// Auto-refresh child dashboard every 5 seconds to keep data in sync
-setInterval(() => {
-    // Refresh activities list and parent messages
+    // Initial load
     loadActivities();
+    loadGameTime();
     loadParentMessages();
-}, 5000);
 
-// Progress bar functions for upload modal
-function updateUploadProgress(percent) {
-    const circumference = 2 * Math.PI * 63; // radius is 63
-    const offset = circumference - (percent / 100) * circumference;
-    const progressRing = document.querySelector('#uploadProgressOverlay .progress-ring');
-    if (progressRing) {
-        progressRing.style.strokeDashoffset = offset;
-    }
-    const percentSpan = document.getElementById('uploadProgressPercent');
-    if (percentSpan) {
-        percentSpan.textContent = Math.round(percent);
-    }
-}
+    // Refresh every 5 seconds
+    setInterval(() => {
+        loadActivities();
+        loadGameTime();
+        loadParentMessages();
+    }, 5000);
+});
 
-// Progress bar functions for simulate modal
-function updateSimulateProgress(percent) {
-    const circumference = 2 * Math.PI * 63; // radius is 63
-    const offset = circumference - (percent / 100) * circumference;
-    const progressRing = document.querySelector('#simulateProgressOverlay .progress-ring');
-    if (progressRing) {
-        progressRing.style.strokeDashoffset = offset;
-    }
-    const percentSpan = document.getElementById('simulateProgressPercent');
-    if (percentSpan) {
-        percentSpan.textContent = Math.round(percent);
-    }
-}
-
-    {% endblock %}
+// Close modals on background click
+window.addEventListener('click', function(e) {
+    if (e.target.id === 'activity-modal') closeModal();
+    if (e.target.id === 'upload-modal') closeUploadModal();
+    if (e.target.id === 'simulate-modal') closeSimulateModal();
+});
+</script>
+</body>
+</html>
