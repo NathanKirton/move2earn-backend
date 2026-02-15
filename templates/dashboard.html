@@ -1081,22 +1081,19 @@
 {% endblock %}
 
 {% block extra_js %}
-// AI Trainer removed
-        const straPrompt = document.getElementById('strava-prompt');
-        const dashContainer = document.querySelector('.dashboard-container');
-        if (straPrompt && dashContainer) {
-            if (stravaConnected) {
-                straPrompt.style.display = 'none';
-                dashContainer.style.display = 'flex';
-            } else {
-                straPrompt.style.display = 'block';
-                dashContainer.style.display = 'none';
-            }
-        }
-    } catch (e) {
-        console.debug('Dashboard visibility init failed:', e);
+<script src="/static/ai_trainer.js"></script>
+// Existing dashboard visibility logic
+const straPrompt = document.getElementById('strava-prompt');
+const dashContainer = document.querySelector('.dashboard-container');
+if (straPrompt && dashContainer) {
+    if (typeof stravaConnected !== 'undefined' && stravaConnected) {
+        straPrompt.style.display = 'none';
+        dashContainer.style.display = 'flex';
+    } else {
+        straPrompt.style.display = 'block';
+        dashContainer.style.display = 'none';
     }
-});
+}
 
 function calculateIntensity(avgHR, maxHR) {
     // Prefer absolute HR thresholds if available
