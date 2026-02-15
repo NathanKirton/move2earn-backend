@@ -438,7 +438,9 @@ def ai_insights(child_id):
             return jsonify({'error': 'Child not found'}), 404
 
     try:
+        logger.debug('AI insights request: child_id=%s session_user=%s account_type=%s', child_id, session.get('user_id'), session.get('account_type'))
         insights = generate_ai_insights(child_id)
+        logger.debug('AI insights generated for %s: %s', child_id, insights)
         return jsonify(insights), 200
     except Exception as e:
         logger.exception('AI insights generation failed for %s: %s', child_id, str(e))

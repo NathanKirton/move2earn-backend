@@ -124,6 +124,7 @@ def generate_ai_insights(child_id):
     activities = fetch_last_7_days(child_id)
     activity_today = has_activity_today(child_id)
     features = _aggregate_features(activities, child_id)
+    logger.debug('generate_ai_insights: child=%s activity_today=%s activities_count=%d features=%s', child_id, activity_today, len(activities), features)
 
     # Default outputs
     streak_risk = 0

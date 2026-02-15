@@ -29,10 +29,19 @@ function setAiContent(insights) {
       html += '<div class="ai-row ai-warning">⚠ Streak at risk — try a short activity to keep it.</div>';
     }
   } else {
-    html = '<div class="ai-row">AI unavailable right now.</div>';
+    html = '<div class="ai-row">AI unavailable right now. If you are logged in, check server logs for errors.</div>';
   }
 
   content.innerHTML = html;
+}
+
+// Expose a debug helper to surface fetch errors directly into the AI box
+window.debugAIError = function(err) {
+  var box = document.getElementById('ai-box');
+  if (!box) return;
+  var content = box.querySelector('.ai-content');
+  if (!content) return;
+  content.innerHTML = '<div class="ai-row ai-warning">AI error: ' + String(err) + '</div>';
 }
 
 function toggleAiBox(e) {
