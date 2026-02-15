@@ -51,6 +51,20 @@ def handle_exception(e):
     return render_template('register.html', error='An unexpected error occurred. Please try again.'), 500
 
 
+@app.errorhandler(404)
+def not_found_error(e):
+    """Log 404s with request path and return a helpful page."""
+    try:
+        req_path = request.path
+    except Exception:
+        req_path = 'unknown'
+    logger.warning('404 Not Found requested path: %s, remote_addr=%s, ref=%s', req_path, request.remote_addr, request.referrer)
+    # Return a simple JSON for API calls, otherwise render register page with message
+    if request.path.startswith('/api/') or request.path.startswith('/ai/'):
+        return jsonify({'error': 'Not Found', 'path': req_path}), 404
+    return render_template('register.html', error=f'404 Not Found: {req_path}'), 404
+
+
 # Before request hook to ensure proper content types
 @app.before_request
 def set_content_type():
