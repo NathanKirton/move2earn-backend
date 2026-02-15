@@ -11,6 +11,18 @@ function createAiBoxIfMissing() {
   box.className = 'ai-collapsible';
   box.innerHTML = "<div class=\"ai-header\">Your AI Training Partner <span class='ai-toggle'>▼</span></div><div class=\"ai-content\">Loading AI insights...</div>";
   container.insertBefore(box, container.firstChild);
+  // Make sure the loading text is visible even if CSS sets opacity elsewhere
+  try {
+    var contentEl = box.querySelector('.ai-content');
+    if (contentEl) {
+      contentEl.style.opacity = '1';
+      contentEl.style.transition = 'none';
+      // allow subsequent JS to control height
+      contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
+    }
+  } catch (err) {
+    console.debug('ai create visibility guard failed', err);
+  }
 }
 
 function setAiContent(insights) {
@@ -33,6 +45,12 @@ function setAiContent(insights) {
   }
 
   content.innerHTML = html;
+  // ensure visible regardless of external CSS
+  try {
+    content.style.opacity = '1';
+    content.style.transition = 'none';
+    content.style.maxHeight = content.scrollHeight + 'px';
+  } catch (e) {}
 }
 
 // Expose a debug helper to surface fetch errors directly into the AI box
@@ -61,11 +79,21 @@ async function fetchInsights(childId) {
   if (!childId) return null;
   try {
     var resp = await fetch('/ai/insights/' + encodeURIComponent(childId));
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      var txt = '';
+      try {
+        var j = await resp.json(); txt = JSON.stringify(j);
+      } catch (e) {
+        try { txt = await resp.text(); } catch (e2) { txt = resp.statusText; }
+      }
+      window.debugAIError('Fetch error ' + resp.status + ': ' + txt);
+      return null;
+    }
     var json = await resp.json();
     return json;
   } catch (e) {
     console.error('Failed to fetch AI insights', e);
+    window.debugAIError(e.message || String(e));
     return null;
   }
 }
