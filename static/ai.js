@@ -4,61 +4,115 @@
 function createAiBoxIfMissing() {
   var container = document.querySelector('.dashboard-main');
   if (!container) return;
-  if (document.getElementById('ai-box')) return;
-
-  var box = document.createElement('div');
-  box.id = 'ai-box';
-  box.className = 'ai-collapsible';
-  box.innerHTML = "<div class=\"ai-header\">Your AI Training Partner <span class='ai-toggle'>▼</span></div><div class=\"ai-content\"><div class=\"ai-loading\">Loading AI insights...</div></div>";
-  container.insertBefore(box, container.firstChild);
-  // Make sure the loading text is visible even if CSS sets opacity elsewhere
-  try {
-    var contentEl = box.querySelector('.ai-content');
-    if (contentEl) {
-      contentEl.style.opacity = '1';
-      contentEl.style.transition = 'none';
-      // allow subsequent JS to control height
-      contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
-    }
-  } catch (err) {
-    console.debug('ai create visibility guard failed', err);
-  }
+    if (document.getElementById('ai-box')) return document.getElementById('ai-box');
+    const box = document.createElement('div');
+    box.id = 'ai-box';
+    box.className = 'ai-box';
+    box.innerHTML = `
+        <div class="ai-header">Your AI Training Partner <span class="ai-arrow">▾</span></div>
+        <div class="ai-content">
+            <div class="ai-loading">Loading AI insights...</div>
+        </div>
+    `;
+    document.body.insertBefore(box, document.body.firstChild);
+    // Ensure visible
+    box.style.opacity = 1;
+    // Toggle open/close with animation-friendly class
+    const header = box.querySelector('.ai-header');
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', function () {
+        box.classList.toggle('open');
+        const arrow = box.querySelector('.ai-arrow');
+        if (box.classList.contains('open')) arrow.style.transform = 'rotate(180deg)';
+        else arrow.style.transform = 'rotate(0deg)';
+    });
+    return box;
 }
 
 function setAiContent(insights) {
   var box = document.getElementById('ai-box');
-  if (!box) return;
-  var content = box.querySelector('.ai-content');
-  if (!content) return;
+    const content = box.querySelector('.ai-content');
+    content.innerHTML = '';
 
-  var html = '';
-  if (insights) {
-    // Show core insights
-    html += '<div class="ai-row"><strong>Message:</strong> ' + (insights.message || '') + '</div>';
-    html += '<div class="ai-row"><strong>Predicted Minutes:</strong> ' + (insights.predicted_minutes || 0) + '</div>';
-    html += '<div class="ai-row"><strong>Challenge:</strong> ' + (insights.challenge_recommendation || '') + '</div>';
-    html += '<div class="ai-row"><strong>Workout:</strong> ' + (insights.recommended_workout || '') + '</div>';
-    if (insights.streak_risk) {
-      html += '<div class="ai-row ai-warning">⚠ Streak at risk — try a short activity to keep it.</div>';
+    if (!insights) {
+        content.innerHTML = '<div class="ai-empty">No insights available.</div>';
+        return;
     }
 
-    // Show model diagnostics when available
-    if (insights._model_status || insights._model_source) {
-      html += '<hr/>';
-      html += '<div class="ai-row"><strong>Model Source:</strong> ' + (insights._model_source || 'unknown') + '</div>';
-      try {
-        html += '<div class="ai-row"><strong>Model Status:</strong> ' + JSON.stringify(insights._model_status) + '</div>';
-      } catch (e) {
-        html += '<div class="ai-row"><strong>Model Status:</strong> (unavailable)</div>';
-      }
-    }
-    html += '<div class="ai-row"><button id="ai-refresh-btn" class="btn">Refresh</button> <button id="ai-login-btn" class="btn">Login</button></div>';
-  } else {
-    html = '<div class="ai-row">AI unavailable right now. If you are logged in, check server logs for errors.</div>';
-    html += '<div class="ai-row"><button id="ai-refresh-btn" class="btn">Retry</button> <button id="ai-login-btn" class="btn">Login</button></div>';
-  }
+    // Header / quick summary
+    const summary = document.createElement('div');
+    summary.className = 'ai-summary';
+    const title = document.createElement('div');
+    title.className = 'ai-title';
+    title.innerText = 'Insights';
+    summary.appendChild(title);
 
-  content.innerHTML = html;
+    if (insights.message) {
+        const msg = document.createElement('div');
+        msg.className = 'ai-message';
+        msg.innerText = insights.message;
+        summary.appendChild(msg);
+    }
+    content.appendChild(summary);
+
+    // Stats
+    const stats = document.createElement('div');
+    stats.className = 'ai-stats';
+    const ul = document.createElement('ul');
+    ul.style.margin = '6px 0 0 12px';
+    const addStat = (k, v) => { const li = document.createElement('li'); li.innerText = `${k}: ${v}`; ul.appendChild(li); }
+    addStat('Activities (7d)', insights.total_activities || 0);
+    if (insights.avg_distance !== undefined) addStat('Avg distance (km)', (insights.avg_distance || 0).toFixed(2));
+    if (insights.avg_pace !== undefined) addStat('Avg pace (min/km)', (insights.avg_pace || 0).toFixed(2));
+    if (insights.avg_heartrate !== undefined) addStat('Avg HR', Math.round(insights.avg_heartrate || 0));
+    if (insights.streak_length !== undefined) addStat('Streak', insights.streak_length);
+    if (insights.pace_trend) addStat('Pace trend', insights.pace_trend);
+    stats.appendChild(ul);
+    content.appendChild(stats);
+
+    // Tips / actionable next steps
+    if (insights.tips && insights.tips.length) {
+        const tips = document.createElement('div');
+        tips.className = 'ai-tips';
+        const h = document.createElement('div');
+        h.className = 'ai-subhead';
+        h.innerText = 'Recommendations';
+        tips.appendChild(h);
+        const tlist = document.createElement('ol');
+        insights.tips.forEach(t => {
+            const li = document.createElement('li');
+            li.innerText = t;
+            tlist.appendChild(li);
+        });
+        tips.appendChild(tlist);
+        content.appendChild(tips);
+    }
+
+    // Model diagnostics + actions
+    const actions = document.createElement('div');
+    actions.className = 'ai-actions';
+    actions.style.marginTop = '8px';
+    if (insights._model_status !== undefined) {
+        const diag = document.createElement('div');
+        diag.className = 'ai-debug';
+        diag.innerText = `Model loaded: ${insights._model_status} (source: ${insights._model_source})`;
+        actions.appendChild(diag);
+    }
+    // Retry / refresh
+    const retry = document.createElement('button');
+    retry.className = 'ai-btn';
+    retry.innerText = 'Refresh';
+    retry.addEventListener('click', fetchInsights);
+    actions.appendChild(retry);
+
+    // If user not logged in, show login hint (server will return 401)
+    const login = document.createElement('a');
+    login.href = '/login';
+    login.innerText = 'Log in';
+    login.style.marginLeft = '8px';
+    actions.appendChild(login);
+
+    content.appendChild(actions);
   // ensure visible regardless of external CSS
   try {
     content.style.opacity = '1';
