@@ -93,6 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
   if (childId) sessionStorage.setItem('m2e_child_id', childId);
   refreshAI();
 
+  // Open the AI box by default so loading text is visible
+  var box = document.getElementById('ai-box');
+  if (box) {
+    box.classList.add('open');
+    var content = box.querySelector('.ai-content');
+    if (content) content.style.maxHeight = content.scrollHeight + 'px';
+  }
+
   // Listen for app-wide custom events to refresh AI insights
   ['activity:submitted', 'strava:sync', 'timer:stopped'].forEach(function(evt) {
     document.addEventListener(evt, function() {

@@ -441,6 +441,24 @@ def ai_insights(child_id):
         logger.debug('AI insights request: child_id=%s session_user=%s account_type=%s', child_id, session.get('user_id'), session.get('account_type'))
         insights = generate_ai_insights(child_id)
         logger.debug('AI insights generated for %s: %s', child_id, insights)
+
+        # Persist a short AI message into the child's parent_messages as 'AI Training Partner'
+        try:
+            saved_msg = insights.get('message') if isinstance(insights, dict) else None
+            if saved_msg:
+                UserDB.add_parent_message(child_id, 'AI Training Partner', saved_msg, minutes=0)
+        except Exception:
+            logger.exception('Failed to persist AI message for %s', child_id)
+
+        # Optionally include model status when requested via debug query param
+        if request.args.get('debug') == '1':
+            try:
+                from ai_engine import MODEL_STATUS
+                if isinstance(insights, dict):
+                    insights['_model_status'] = MODEL_STATUS
+            except Exception:
+                logger.debug('MODEL_STATUS not available')
+
         return jsonify(insights), 200
     except Exception as e:
         logger.exception('AI insights generation failed for %s: %s', child_id, str(e))

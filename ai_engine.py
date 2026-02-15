@@ -49,6 +49,15 @@ def _load_model(filename):
 streak_model = _load_model('streak_model.pkl')
 challenge_model = _load_model('challenge_model.pkl')
 minutes_model = _load_model('minutes_model.pkl')
+logger.info('AI models loaded: streak=%s challenge=%s minutes=%s',
+            bool(streak_model), bool(challenge_model), bool(minutes_model))
+
+# Expose model loaded flags for diagnostics
+MODEL_STATUS = {
+    'streak_model': bool(streak_model),
+    'challenge_model': bool(challenge_model),
+    'minutes_model': bool(minutes_model)
+}
 
 
 def recommend_workout(minutes, difficulty):
@@ -125,6 +134,9 @@ def generate_ai_insights(child_id):
     activity_today = has_activity_today(child_id)
     features = _aggregate_features(activities, child_id)
     logger.debug('generate_ai_insights: child=%s activity_today=%s activities_count=%d features=%s', child_id, activity_today, len(activities), features)
+    # Make sure features are present
+    if not activities:
+        logger.debug('No recent activities found for %s; heuristics will be used', child_id)
 
     # Default outputs
     streak_risk = 0
