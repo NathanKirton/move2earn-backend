@@ -1090,8 +1090,59 @@ window.M2E_CHILD_ID = {{ session['user_id']|tojson }};
 (function(){
     var s = document.createElement('script');
     s.src = '/static/ai.js';
-    s.defer = true;
+    // Load synchronously to ensure execution order and availability
+    s.async = false;
+    s.defer = false;
     document.body.appendChild(s);
+})();
+
+// Fallback UI: ensure AI box exists and provide simple toggle + retry if ai.js fails to execute
+(function(){
+    function ensureAiBox() {
+        try {
+            var container = document.querySelector('.dashboard-container');
+            if (!container) return;
+            if (document.getElementById('ai-box')) return;
+
+            var box = document.createElement('div');
+            box.id = 'ai-box';
+            box.className = 'ai-collapsible open';
+            var childId = window.M2E_CHILD_ID || null;
+            var debugUrl = childId ? ('/ai/insights/' + encodeURIComponent(childId) + '?debug=1') : '/ai/insights';
+            box.innerHTML = "<div class=\"ai-header\">Your AI Training Partner <span class='ai-toggle'>▼</span></div>" +
+                            "<div class=\"ai-content\"><div class=\"ai-loading\">Loading AI insights...</div>" +
+                            "<div class=\"ai-row\"><button id=\"ai-refresh-fallback\" class=\"btn\">Retry</button> <a href='"+debugUrl+"' target='_blank' class=\"btn\">Open debug</a></div></div>";
+            container.insertBefore(box, container.firstChild);
+
+            // Simple toggle handler so UI is interactive even if ai.js doesn't run
+            var header = box.querySelector('.ai-header');
+            header.addEventListener('click', function(){
+                box.classList.toggle('open');
+                var content = box.querySelector('.ai-content');
+                if (box.classList.contains('open')) {
+                    try { content.style.maxHeight = content.scrollHeight + 'px'; } catch (e) {}
+                } else {
+                    try { content.style.maxHeight = '0px'; } catch (e) {}
+                }
+            });
+
+            // Retry button attempts to call window.refreshAI if present, otherwise opens debug url
+            setTimeout(function(){
+                var r = document.getElementById('ai-refresh-fallback');
+                if (r) r.addEventListener('click', function(){
+                    if (window.refreshAI) return window.refreshAI();
+                    window.open(debugUrl, '_blank');
+                });
+            }, 50);
+        } catch (e) { console.debug('ensureAiBox fallback failed', e); }
+    }
+
+    // Run on DOM ready
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        ensureAiBox();
+    } else {
+        document.addEventListener('DOMContentLoaded', ensureAiBox);
+    }
 })();
 // Initialize dashboard visibility after DOM is ready to avoid runtime errors
 document.addEventListener('DOMContentLoaded', function() {
