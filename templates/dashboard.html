@@ -2,6 +2,7 @@
 
 {% block title %}Move2Earn Dashboard{% endblock %}
 
+
 {% block extra_css %}
 <style>
     body {
@@ -703,7 +704,7 @@
         }
     }
 </style>
-    {% endblock %}
+{% endblock %}
 
 {# extra_js removed here to avoid duplicate block; ai script is injected into the final extra_js block below #}
 
@@ -760,59 +761,61 @@
         </div>
     </div>
     
-    <!-- Streak Card -->
-    <div class="streak-card">
-        <div class="streak-icon">🔥</div>
-        <div class="streak-label">Streak</div>
-        <div class="streak-count" id="streak-count">0</div>
-        <div class="streak-sub">Days in a row!</div>
-        <div class="streak-days" id="streak-days">
-            <div class="day-box">+15 Minutes</div>
-            <div class="day-box active">+15 Minutes</div>
-            <div class="day-box active">+15 Minutes</div>
-            <div class="day-box active">+15 Minutes</div>
-            <div class="day-box active">+15 Minutes</div>
-        </div>
-    </div>
-    
-    <!-- Recent Activities Section -->
-    <div class="activities-header">
-        ☰ Recent Activity
-        <div style="display: flex; gap: 8px; margin-left: auto;">
-            <button onclick="openSimulateModal()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">⚡ Simulate</button>
-            <button onclick="openUploadModal()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">+ Manual Upload</button>
-        </div>
-    </div>
-    <div id="activities-list">
-        <div class="no-data">
-            <div class="spinner"></div>
-            <p>Loading activities...</p>
-        </div>
-    </div>
-</div>
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
 
-</div> <!-- end dashboard-main -->
-    </div> <!-- end dashboard-layout -->
+{% block extra_js %}
+<script src="/static/ai_trainer.js"></script>
+<script>
+// Existing dashboard visibility logic
+const straPrompt = document.getElementById('strava-prompt');
+const dashContainer = document.querySelector('.dashboard-container');
+if (straPrompt && dashContainer) {
+    if (typeof stravaConnected !== 'undefined' && stravaConnected) {
+        straPrompt.style.display = 'none';
+        dashContainer.style.display = 'flex';
+    } else {
+        straPrompt.style.display = 'block';
+        dashContainer.style.display = 'none';
+    }
+}
 
-<!-- Activity Detail Modal -->
-<div class="modal" id="activity-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content" style="background: white; border-radius: 8px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-            <h2 id="modal-title" style="color: #333;">Activity Details</h2>
-            <button class="close-btn" onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
-        </div>
-        <div class="modal-body" id="modal-body" style="display: grid; gap: 15px;">
-            <div class="loading">
-                <div class="spinner"></div>
-                Loading details...
-            </div>
-        </div>
-    </div>
-</div>
+function calculateIntensity(avgHR, maxHR) {
+    // Prefer absolute HR thresholds if available
+    if (avgHR) {
+        const hr = Number(avgHR);
+        if (hr < 150) return 'easy';
+        if (hr > 170) return 'hard';
+        return 'medium';
+    }
+    // Fallback: use pace if maxHR not available (pace in min/km)
+    return 'medium';
+}
 
-<!-- Manual Activity Upload Modal -->
-<div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(100, 100, 150, 0.3); position: relative;">
+function getIntensityBadge(avgHR, maxHR) {
+    const intensity = calculateIntensity(avgHR, maxHR);
+    const labels = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
+    const classes = { 'easy': 'intensity-easy', 'medium': 'intensity-medium', 'hard': 'intensity-hard' };
+    return `<span class="intensity-badge ${classes[intensity]}">${labels[intensity]}</span>`;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+// ...rest of dashboard JS code...
+</script>
+{% endblock %}
         <!-- Progress Overlay -->
         <div id="uploadProgressOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); border-radius: 12px; z-index: 10; flex-direction: column; justify-content: center; align-items: center;">
             <div class="circular-progress" style="margin-bottom: 20px;">
