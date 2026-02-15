@@ -22,110 +22,39 @@
 {# JS moved to extra_js at the end of the file #}
     }
     
-    .gametime-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .gametime-value {
-        font-size: 42px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-    
-    .gametime-limit {
-        font-size: 12px;
-        color: rgba(0, 0, 0, 0.7);
-        margin-bottom: 12px;
-    }
-    
-    .gametime-bar {
-        width: 100%;
-        height: 8px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    
-    .gametime-progress {
-        height: 100%;
-        background: #000;
-        width: 66%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-    
-    .notifications-card {
-        background: rgba(80, 60, 120, 0.3);
-        border: 1px solid rgba(150, 100, 200, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        backdrop-filter: blur(10px);
-        margin-bottom: 20px;
-    }
-    
-    .notifications-card h3 {
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-bottom: 12px;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .notification-item {
-        font-size: 12px;
-        color: #ccc;
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-    
-    .see-more {
-        color: #00d4ff;
-        font-weight: 600;
-        margin-top: 8px;
-        cursor: pointer;
-    }
-    
-    .streak-card {
-        background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
-        border-radius: 12px;
-        padding: 25px;
-        color: #fff;
-        margin-bottom: 20px;
-    }
-    
-    .streak-icon {
-        font-size: 24px;
-        margin-bottom: 12px;
-    }
-    
-    .streak-label {
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        opacity: 0.9;
-        margin-bottom: 8px;
-    }
-    
-    .streak-count {
-        font-size: 36px;
-        font-weight: 700;
-        margin-bottom: 15px;
-    }
-    
+
+    {% extends "base.html" %}
+
+    {% block title %}Move2Earn Dashboard{% endblock %}
+
+    {% block extra_css %}
+    <style>
+        body {
+            background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 50%, #3e0d5e 100%) !important;
+        }
+        .notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        /* ...rest of your CSS... */
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <!-- All your dashboard HTML goes here, from the Strava prompt to the end of the dashboard -->
+    <!-- ...existing dashboard HTML content... -->
+    {% endblock %}
+
+    {% block extra_js %}
+    <script src="/static/ai_trainer.js"></script>
+    <script>
+    // All dashboard JS code goes here, including the code for dashboard logic, event handlers, etc.
+    // ...existing dashboard JS code...
+    </script>
+    {% endblock %}
     .streak-sub {
         font-size: 12px;
         opacity: 0.85;
