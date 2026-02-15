@@ -121,9 +121,11 @@ header { display:flex; align-items:center; justify-content:space-between; gap:va
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.35s ease, opacity 0.3s ease;
-  opacity: 0;
+  opacity: 1;
 }
 .ai-collapsible.open .ai-content { opacity: 1; }
+.ai-collapsible .ai-header .ai-toggle { transition: transform 0.25s ease; }
+.ai-collapsible.open .ai-header .ai-toggle { transform: rotate(180deg); }
 .ai-collapsible .ai-row { padding: 6px 0; color: #eaeaea; }
 .ai-collapsible .ai-warning { color: #ffcc00; background: rgba(255,204,0,0.06); padding: 8px; border-radius:6px; margin-top:8px; }
 

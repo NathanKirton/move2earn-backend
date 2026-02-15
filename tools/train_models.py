@@ -47,6 +47,7 @@ except Exception as e:
 
 def build_feature_vector(act):
     # Use numeric features: distance, duration, pace, intensity_num, earned_minutes, day_of_week
+    # Extend with heart rate, cadence and elevation
     return [
         act.get('distance', 0.0),
         act.get('duration', 0.0),
@@ -54,6 +55,10 @@ def build_feature_vector(act):
         act.get('intensity_num', 1),
         act.get('earned_minutes', 0),
         act.get('day_of_week') if act.get('day_of_week') is not None else -1,
+        act.get('avg_heartrate') or 0.0,
+        act.get('max_heartrate') or 0.0,
+        act.get('avg_cadence') or 0.0,
+        act.get('avg_elevation_gain') or 0.0,
     ]
 
 
@@ -64,23 +69,50 @@ def prepare_dataset(activities):
     y_challenge = []
     y_streak = []
 
-    for i, a in enumerate(activities):
+    # Sort activities by date ascending so we can inspect next-day behavior
+    activities_sorted = sorted(activities, key=lambda x: x.get('date') or '')
+
+    # Build simple arrays first
+    for i, a in enumerate(activities_sorted):
         X.append(build_feature_vector(a))
-        # Regression target: earned_minutes
         y_minutes.append(a.get('earned_minutes', 0))
-        # Challenge target: easy/medium/hard via heuristics
-        if a.get('distance', 0) >= 2.0 or (a.get('pace') and a.get('pace') < 6.0):
+
+    # Challenge labeling: use distribution of earned_minutes to define easy/medium/hard
+    import numpy as np
+    earned = np.array([a.get('earned_minutes', 0) for a in activities_sorted])
+    if len(earned) > 0:
+        p33 = np.percentile(earned, 33)
+        p66 = np.percentile(earned, 66)
+    else:
+        p33 = p66 = 0
+
+    for a in activities_sorted:
+        val = a.get('earned_minutes', 0)
+        if val >= p66 and val > 0:
             y_challenge.append('hard')
-        elif a.get('distance', 0) >= 1.0:
+        elif val >= p33 and val > 0:
             y_challenge.append('medium')
         else:
             y_challenge.append('easy')
-        # Streak target: next day activity exists? (we'll look ahead in the sequence)
-        # default 0
-        if i + 1 < len(activities):
-            next_a = activities[i+1]
-            y_streak.append(1 if next_a.get('date') == a.get('date') else 0)
-        else:
+
+    # Streak labeling: 1 if there is activity the next calendar day
+    from datetime import datetime, timedelta
+    dates = [a.get('date') for a in activities_sorted]
+    for i, d in enumerate(dates):
+        try:
+            cur = datetime.fromisoformat(d)
+            found_next = False
+            # check if any activity exists with date == cur + 1 day
+            for j in range(i+1, min(i+8, len(dates))):
+                try:
+                    other = datetime.fromisoformat(dates[j])
+                    if other.date() == (cur + timedelta(days=1)).date():
+                        found_next = True
+                        break
+                except Exception:
+                    continue
+            y_streak.append(1 if found_next else 0)
+        except Exception:
             y_streak.append(0)
 
     return np.array(X), np.array(y_minutes), np.array(y_challenge), np.array(y_streak)

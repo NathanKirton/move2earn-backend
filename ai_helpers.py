@@ -41,6 +41,25 @@ def normalize_activity(activity):
     intensity_map = {'Easy': 0, 'easy': 0, 'Medium': 1, 'medium': 1, 'Hard': 2, 'hard': 2}
     a['intensity_num'] = intensity_map.get(a['intensity'], 1)
     a['earned_minutes'] = int(activity.get('earned_minutes') or activity.get('time_minutes') or 0)
+    # Heart rate fields (some activities store average_heartrate / avg_hr)
+    try:
+        a['avg_heartrate'] = float(activity.get('average_heartrate') or activity.get('avg_hr') or 0) if activity.get('average_heartrate') or activity.get('avg_hr') else None
+    except Exception:
+        a['avg_heartrate'] = None
+    try:
+        a['max_heartrate'] = float(activity.get('max_heartrate') or activity.get('max_hr') or 0) if activity.get('max_heartrate') or activity.get('max_hr') else None
+    except Exception:
+        a['max_heartrate'] = None
+
+    # Elevation gain and cadence if present
+    try:
+        a['elevation_gain'] = float(activity.get('total_elevation_gain') or activity.get('elevation') or 0)
+    except Exception:
+        a['elevation_gain'] = 0.0
+    try:
+        a['cadence'] = float(activity.get('average_cadence') or activity.get('cadence') or 0) if activity.get('average_cadence') or activity.get('cadence') else None
+    except Exception:
+        a['cadence'] = None
     # Normalize date -> ISO YYYY-MM-DD when possible
     date = activity.get('date') or activity.get('start_date')
     try:

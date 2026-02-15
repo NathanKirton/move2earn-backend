@@ -36,14 +36,22 @@ MODEL_DIR = os.path.join(ROOT, 'models')
 
 def _load_model(filename):
     path = os.path.join(MODEL_DIR, filename)
-    if joblib is None:
-        logger.warning('joblib not available; models will not be loaded')
-        return None
-    try:
-        if os.path.exists(path):
-            return joblib.load(path)
-    except Exception:
-        logger.exception('Failed to load model %s', path)
+    # Prefer joblib when available, but fall back to pickle if not.
+    if os.path.exists(path):
+        if joblib is not None:
+            try:
+                return joblib.load(path)
+            except Exception:
+                logger.exception('Failed to load model with joblib %s', path)
+        # Try pickle as a fallback (allows simple pickled objects)
+        try:
+            import pickle
+            with open(path, 'rb') as f:
+                return pickle.load(f)
+        except Exception:
+            logger.exception('Failed to load model via pickle %s', path)
+    else:
+        logger.debug('Model file not found: %s', path)
     return None
 
 streak_model = _load_model('streak_model.pkl')
@@ -100,6 +108,17 @@ def _aggregate_features(activities, child_id):
                 avg_pace += float(p)
             avg_intensity += float(a.get('intensity_num') or 1)
             total_earned += int(a.get('earned_minutes') or 0)
+            # Heart rate aggregates
+            if a.get('avg_heartrate'):
+                avg_hr += float(a.get('avg_heartrate'))
+                hr_days += 1
+            if a.get('max_heartrate'):
+                max_hr = max(max_hr, float(a.get('max_heartrate')))
+            # cadence/elevation
+            if a.get('cadence'):
+                avg_cadence += float(a.get('cadence'))
+                cadence_days += 1
+            avg_elev += float(a.get('elevation_gain') or 0.0)
             days += 1
         except Exception:
             continue
@@ -109,6 +128,15 @@ def _aggregate_features(activities, child_id):
         avg_duration = avg_duration / days
         avg_pace = avg_pace / days
         avg_intensity = avg_intensity / days
+        if hr_days > 0:
+            avg_hr = avg_hr / hr_days
+        else:
+            avg_hr = None
+        if cadence_days > 0:
+            avg_cadence = avg_cadence / cadence_days
+        else:
+            avg_cadence = None
+        avg_elev = avg_elev / days
     else:
         avg_pace = 999.0
 
@@ -128,6 +156,11 @@ def _aggregate_features(activities, child_id):
         'total_earned': total_earned,
         'day_of_week': day_of_week
     }
+    # Add HR/cadence/elevation features
+    features['avg_heartrate'] = avg_hr
+    features['max_heartrate'] = max_hr
+    features['avg_cadence'] = avg_cadence
+    features['avg_elevation_gain'] = avg_elev
     return features
 
 
