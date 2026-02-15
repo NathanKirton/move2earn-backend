@@ -88,6 +88,33 @@ def fetch_last_7_days(child_id):
         return []
 
 
+def fetch_all_activities(child_id=None, limit=None):
+    """Fetch all activities optionally for a specific child_id.
+
+    Returns a list of normalized activity dicts (newest first). If DB unavailable,
+    returns an empty list.
+    """
+    db = get_db()
+    if db is None:
+        logger.warning('fetch_all_activities: DB not available')
+        return []
+
+    activities_collection = db['activities']
+    query = {}
+    if child_id:
+        query['user_id'] = child_id
+    try:
+        cursor = activities_collection.find(query).sort('created_at', -1)
+        if limit:
+            cursor = cursor.limit(limit)
+        docs = list(cursor)
+        normalized = [normalize_activity(d) for d in docs]
+        return normalized
+    except Exception:
+        logger.exception('Error fetching activities for training for %s', child_id)
+        return []
+
+
 def has_activity_today(child_id):
     """Return True if the child has an activity recorded today.
 

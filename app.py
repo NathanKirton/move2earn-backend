@@ -482,6 +482,26 @@ def ai_insights(child_id):
         return jsonify({'error': 'Failed to generate AI insights'}), 500
 
 
+@app.route('/admin/reload-models', methods=['POST'])
+def reload_models():
+    """Reload ai_engine module to pick up updated model files without restarting the process.
+
+    Restricted to logged-in parent accounts for safety.
+    """
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        import importlib
+        import ai_engine
+        importlib.reload(ai_engine)
+        status = getattr(ai_engine, 'MODEL_STATUS', {})
+        source = getattr(ai_engine, 'MODEL_SOURCE', 'unknown')
+        return jsonify({'result': 'reloaded', 'model_status': status, 'model_source': source}), 200
+    except Exception as e:
+        logger.exception('Failed to reload ai_engine: %s', str(e))
+        return jsonify({'error': 'reload failed', 'detail': str(e)}), 500
+
+
 @app.route('/api/athlete')
 def get_athlete():
     """API endpoint to get current athlete info"""
