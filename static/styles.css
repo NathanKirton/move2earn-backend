@@ -95,3 +95,35 @@ header { display:flex; align-items:center; justify-content:space-between; gap:va
   .placeholder-box { max-width: 100%; }
   header { padding: 12px 8px; }
 }
+
+/* AI Collapsible Box */
+.ai-collapsible {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease;
+  margin-bottom: 16px;
+}
+.ai-collapsible .ai-header {
+  padding: 14px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ai-collapsible .ai-header .ai-toggle { font-weight: 700; }
+.ai-collapsible .ai-content {
+  padding: 14px 18px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+.ai-collapsible.open .ai-content { opacity: 1; }
+.ai-collapsible .ai-row { padding: 6px 0; color: #eaeaea; }
+.ai-collapsible .ai-warning { color: #ffcc00; background: rgba(255,204,0,0.06); padding: 8px; border-radius:6px; margin-top:8px; }
+

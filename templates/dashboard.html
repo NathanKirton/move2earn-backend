@@ -820,6 +820,16 @@
 </style>
 {% endblock %}
 
+{% block extra_js %}
+window.M2E_CHILD_ID = "{{ session['user_id'] }}";
+(function(){
+    var s = document.createElement('script');
+    s.src = '/static/ai.js';
+    s.defer = true;
+    document.body.appendChild(s);
+})();
+{% endblock %}
+
 {% block content %}
 <!-- Strava Connection Prompt -->
 <div id="strava-prompt" style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
@@ -848,6 +858,12 @@
     <div class="greeting-section">
         <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
         <p>Keep moving to unlock more game time!</p>
+    </div>
+    
+    <!-- AI Training Partner (collapsible) -->
+    <div id="ai-box" class="ai-collapsible" style="display:block;">
+        <div class="ai-header">Your AI Training Partner <span class="ai-toggle">▼</span></div>
+        <div class="ai-content">Loading AI insights...</div>
     </div>
     
     <!-- Game Time Card -->
