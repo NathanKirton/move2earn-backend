@@ -331,35 +331,7 @@
         user-select: none;
     }
     
-    {% block extra_js %}
-    <script src="/static/ai_trainer.js"></script>
-    <script>
-    // Existing dashboard visibility logic
-    const straPrompt = document.getElementById('strava-prompt');
-    const dashContainer = document.querySelector('.dashboard-container');
-    if (straPrompt && dashContainer) {
-        if (typeof stravaConnected !== 'undefined' && stravaConnected) {
-            straPrompt.style.display = 'none';
-            dashContainer.style.display = 'flex';
-        } else {
-            straPrompt.style.display = 'block';
-            dashContainer.style.display = 'none';
-        }
-    }
 
-    function calculateIntensity(avgHR, maxHR) {
-        // Prefer absolute HR thresholds if available
-        if (avgHR) {
-            const hr = Number(avgHR);
-            if (hr < 150) return 'easy';
-            if (hr > 170) return 'hard';
-            return 'medium';
-        }
-        // Fallback: use pace if maxHR not available (pace in min/km)
-        return 'medium';
-    }
-    // ...existing code (all dashboard JS functions) goes here...
-    </script>
         flex-direction: column;
         align-items: center;
         gap: 20px;
