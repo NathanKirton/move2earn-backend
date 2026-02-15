@@ -1,7 +1,7 @@
+
 {% extends "base.html" %}
 
 {% block title %}Move2Earn Dashboard{% endblock %}
-
 
 {% block extra_css %}
 <style>
@@ -19,42 +19,18 @@
 </style>
 {% endblock %}
 
-{# JS moved to extra_js at the end of the file #}
-    }
-    
+{% block content %}
+<!-- All your dashboard HTML goes here, from the Strava prompt to the end of the dashboard -->
+<!-- ...existing dashboard HTML content... -->
+{% endblock %}
 
-    {% extends "base.html" %}
-
-    {% block title %}Move2Earn Dashboard{% endblock %}
-
-    {% block extra_css %}
-    <style>
-        body {
-            background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 50%, #3e0d5e 100%) !important;
-        }
-        .notifications-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-        }
-        /* ...rest of your CSS... */
-    </style>
-    {% endblock %}
-
-    {% block content %}
-    <!-- All your dashboard HTML goes here, from the Strava prompt to the end of the dashboard -->
-    <!-- ...existing dashboard HTML content... -->
-    {% endblock %}
-
-    {% block extra_js %}
-    <script src="/static/ai_trainer.js"></script>
-    <script>
-    // All dashboard JS code goes here, including the code for dashboard logic, event handlers, etc.
-    // ...existing dashboard JS code...
-    </script>
-    {% endblock %}
+{% block extra_js %}
+<script src="/static/ai_trainer.js"></script>
+<script>
+// All dashboard JS code goes here, including the code for dashboard logic, event handlers, etc.
+// ...existing dashboard JS code...
+</script>
+{% endblock %}
     .streak-sub {
         font-size: 12px;
         opacity: 0.85;
