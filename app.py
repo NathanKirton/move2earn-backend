@@ -448,7 +448,22 @@ def ai_insights(child_id):
         try:
             saved_msg = insights.get('message') if isinstance(insights, dict) else None
             if saved_msg:
-                UserDB.add_parent_message(child_id, 'AI Training Partner', saved_msg, minutes=0)
+                # Only attempt to persist when child_id is a valid ObjectId string
+                try:
+                    from bson.objectid import ObjectId
+                    try:
+                        ObjectId(child_id)
+                        valid_oid = True
+                    except Exception:
+                        valid_oid = False
+                except Exception:
+                    # If bson isn't available for some reason, be conservative and skip persistence
+                    valid_oid = False
+
+                if valid_oid:
+                    UserDB.add_parent_message(child_id, 'AI Training Partner', saved_msg, minutes=0)
+                else:
+                    logger.debug('Skipping AI message persistence: invalid child_id=%s', child_id)
         except Exception:
             logger.exception('Failed to persist AI message for %s', child_id)
 

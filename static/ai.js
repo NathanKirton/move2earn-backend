@@ -33,6 +33,7 @@ function setAiContent(insights) {
 
   var html = '';
   if (insights) {
+    // Show core insights
     html += '<div class="ai-row"><strong>Message:</strong> ' + (insights.message || '') + '</div>';
     html += '<div class="ai-row"><strong>Predicted Minutes:</strong> ' + (insights.predicted_minutes || 0) + '</div>';
     html += '<div class="ai-row"><strong>Challenge:</strong> ' + (insights.challenge_recommendation || '') + '</div>';
@@ -40,8 +41,21 @@ function setAiContent(insights) {
     if (insights.streak_risk) {
       html += '<div class="ai-row ai-warning">⚠ Streak at risk — try a short activity to keep it.</div>';
     }
+
+    // Show model diagnostics when available
+    if (insights._model_status || insights._model_source) {
+      html += '<hr/>';
+      html += '<div class="ai-row"><strong>Model Source:</strong> ' + (insights._model_source || 'unknown') + '</div>';
+      try {
+        html += '<div class="ai-row"><strong>Model Status:</strong> ' + JSON.stringify(insights._model_status) + '</div>';
+      } catch (e) {
+        html += '<div class="ai-row"><strong>Model Status:</strong> (unavailable)</div>';
+      }
+    }
+    html += '<div class="ai-row"><button id="ai-refresh-btn" class="btn">Refresh</button> <button id="ai-login-btn" class="btn">Login</button></div>';
   } else {
     html = '<div class="ai-row">AI unavailable right now. If you are logged in, check server logs for errors.</div>';
+    html += '<div class="ai-row"><button id="ai-refresh-btn" class="btn">Retry</button> <button id="ai-login-btn" class="btn">Login</button></div>';
   }
 
   content.innerHTML = html;
@@ -50,6 +64,14 @@ function setAiContent(insights) {
     content.style.opacity = '1';
     content.style.transition = 'none';
     content.style.maxHeight = content.scrollHeight + 'px';
+  } catch (e) {}
+
+  // Hook up buttons
+  try {
+    var refBtn = document.getElementById('ai-refresh-btn');
+    if (refBtn) refBtn.addEventListener('click', function() { refreshAI(); });
+    var loginBtn = document.getElementById('ai-login-btn');
+    if (loginBtn) loginBtn.addEventListener('click', function() { window.location = '/login'; });
   } catch (e) {}
 }
 

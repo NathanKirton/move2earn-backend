@@ -59,6 +59,9 @@ MODEL_STATUS = {
     'minutes_model': bool(minutes_model)
 }
 
+# Indicate whether models are being used or heuristics (for diagnostics)
+MODEL_SOURCE = 'models' if any(MODEL_STATUS.values()) else 'heuristic'
+
 
 def recommend_workout(minutes, difficulty):
     """Return human-friendly workout suggestion based on minutes and difficulty."""
@@ -223,5 +226,12 @@ def generate_ai_insights(child_id):
         'recommended_workout': recommended_text,
         'message': message
     }
+
+    # Attach model diagnostics so frontend can display whether models were used
+    try:
+        result['_model_status'] = MODEL_STATUS
+        result['_model_source'] = MODEL_SOURCE
+    except Exception:
+        pass
 
     return result
