@@ -9,7 +9,7 @@ function createAiBoxIfMissing() {
   var box = document.createElement('div');
   box.id = 'ai-box';
   box.className = 'ai-collapsible';
-  box.innerHTML = "<div class=\"ai-header\">Your AI Training Partner <span class='ai-toggle'>▼</span></div><div class=\"ai-content\">Loading AI insights...</div>";
+  box.innerHTML = "<div class=\"ai-header\">Your AI Training Partner <span class='ai-toggle'>▼</span></div><div class=\"ai-content\"><div class=\"ai-loading\">Loading AI insights...</div></div>";
   container.insertBefore(box, container.firstChild);
   // Make sure the loading text is visible even if CSS sets opacity elsewhere
   try {
@@ -123,7 +123,28 @@ async function fetchInsights(childId) {
 async function refreshAI() {
   var childId = window.M2E_CHILD_ID || sessionStorage.getItem('m2e_child_id');
   if (!childId) return;
+  var box = document.getElementById('ai-box');
+  var content = box ? box.querySelector('.ai-content') : null;
+  if (content) {
+    content.innerHTML = '<div class="ai-loading">Loading AI insights...</div>';
+    try { content.style.maxHeight = content.scrollHeight + 'px'; } catch (e) {}
+  }
+
+  console.debug('AI: fetching insights for', childId);
   var insights = await fetchInsights(childId);
+  if (!insights) {
+    // Show actionable fallback
+    var debugUrl = '/ai/insights/' + encodeURIComponent(childId) + '?debug=1';
+    var msg = '<div class="ai-row ai-warning">Unable to load AI insights. Possible causes: not logged in, server error, or models missing.</div>' +
+              '<div class="ai-row">Try: <a href="' + debugUrl + '" target="_blank">Open debug response</a> or <button id="ai-refresh-fallback" class="btn">Retry</button></div>';
+    if (content) content.innerHTML = msg;
+    // hook retry
+    setTimeout(function() {
+      var b = document.getElementById('ai-refresh-fallback'); if (b) b.addEventListener('click', function(){ refreshAI(); });
+    }, 100);
+    return;
+  }
+
   setAiContent(insights);
 }
 

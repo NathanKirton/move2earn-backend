@@ -1085,8 +1085,8 @@
 {% endblock %}
 
 {% block extra_js %}
-// Inject AI frontend script and expose child id
-window.M2E_CHILD_ID = "{{ session['user_id'] }}";
+// Inject AI frontend script and expose child id (JSON-encoded to ensure valid JS)
+window.M2E_CHILD_ID = {{ session['user_id']|tojson }};
 (function(){
     var s = document.createElement('script');
     s.src = '/static/ai.js';
