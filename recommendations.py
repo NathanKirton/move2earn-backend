@@ -1,6 +1,85 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from database import get_db
 from embeddings import build_user_embeddings, query_similar_users
+
+
+def get_today_activity(user_id):
+    """Get activity summary for today."""
+    db = get_db()
+    if db is None:
+        return None
+    
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
+    
+    activities = db['activities']
+    today_acts = list(activities.find({
+        'user_id': user_id,
+        'created_at': {'$gte': today_start, '$lte': today_end}
+    }))
+    
+    if not today_acts:
+        return None
+    
+    total_dist = 0
+    total_mins = 0
+    act_types = []
+    for a in today_acts:
+        dist = a.get('distance') or a.get('distance_km') or a.get('distance_m') or 0
+        try:
+            d = float(dist)
+            if d > 1000:
+                d = d / 1000.0
+            total_dist += d
+        except:
+            pass
+        
+        duration = a.get('moving_time') or a.get('duration') or 0
+        try:
+            total_mins += float(duration) // 60
+        except:
+            pass
+        
+        act_type = a.get('type') or a.get('sport_type') or 'Activity'
+        if act_type not in act_types:
+            act_types.append(act_type)
+    
+    return {
+        'count': len(today_acts),
+        'distance': round(total_dist, 2),
+        'minutes': int(total_mins),
+        'types': act_types
+    }
+
+
+def generate_intro_message(user_id, weekly_km, session_type):
+    """Generate a contextual intro message for the recommendation."""
+    today_act = get_today_activity(user_id)
+    
+    # Base messages depending on activity today and session type
+    if today_act is None or today_act['count'] == 0:
+        # No activity today
+        if session_type == 'intervals':
+            return "You've been consistent this week! Today would be a great day for a challenging workout."
+        elif session_type == 'tempo':
+            return "Based on your recent activity, let's push it a bit today with a tempo effort."
+        elif session_type == 'easy_run':
+            return "Build on your streak with a relaxed session today."
+        else:
+            return "Start your day with some gentle movement."
+    else:
+        # Has activity today
+        types_str = ' and '.join(today_act['types'])
+        if today_act['count'] == 1 and today_act['minutes'] < 30:
+            return f"You already did {types_str} today ({today_act['minutes']}min). Let's follow up with a light activity to stay consistent."
+        elif today_act['distance'] > 10:
+            return f"Great work with {today_act['distance']}km today! Wind down with an easy recovery session for balance."
+        else:
+            if session_type == 'intervals':
+                return f"You're active today! Let's add a short interval workout to boost your effort."
+            else:
+                return f"Nice going with {types_str}! Finish the day with this light activity."
 
 
 def get_weekly_distance(user_id):
@@ -34,6 +113,7 @@ def rule_based_session(user_id, user_profile=None):
     {
       'type': 'easy_run',
       'duration_min': 30,
+      'intro': 'Based on your recent activity...',
       'notes': 'Keep effort conversational.'
     }
     """
@@ -69,6 +149,9 @@ def rule_based_session(user_id, user_profile=None):
             'duration_min': 20,
             'notes': 'Start gently: walk/run or steady walk to build habit.'
         }
+
+    # Generate contextual intro message
+    session['intro'] = generate_intro_message(user_id, weekly_km, session['type'])
 
     # add a safety cap
     if user_profile:
