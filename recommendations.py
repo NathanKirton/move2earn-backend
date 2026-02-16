@@ -71,15 +71,24 @@ def generate_intro_message(user_id, weekly_km, session_type):
     else:
         # Has activity today
         types_str = ' and '.join(today_act['types'])
-        if today_act['count'] == 1 and today_act['minutes'] < 30:
+        activity_count = today_act['count']
+        total_distance = today_act['distance']
+        
+        # Clarify distance info - indicate if it's combined from multiple activities
+        if activity_count == 1:
+            distance_str = f"{total_distance}km"
+        else:
+            distance_str = f"{total_distance}km ({activity_count} activities)"
+        
+        if activity_count == 1 and today_act['minutes'] < 30:
             return f"You already did {types_str} today ({today_act['minutes']}min). Let's follow up with a light activity to stay consistent."
-        elif today_act['distance'] > 10:
-            return f"Great work with {today_act['distance']}km today! Wind down with an easy recovery session for balance."
+        elif total_distance > 10:
+            return f"Great work—you've covered {distance_str} today! Wind down with an easy recovery session for balance."
         else:
             if session_type == 'intervals':
-                return f"You're active today! Let's add a short interval workout to boost your effort."
+                return f"You're active today ({distance_str})! Let's add a short interval workout to boost your effort."
             else:
-                return f"Nice going with {types_str}! Finish the day with this light activity."
+                return f"Nice going with {activity_count} activity/activities today ({distance_str})! Finish the day with this light session."
 
 
 def get_weekly_distance(user_id):

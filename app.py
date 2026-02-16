@@ -2333,12 +2333,10 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
 
-        # Ensure first activity is always today, others random in last 30 days
-        if i == 0:
-            activity_date = datetime.utcnow().strftime('%Y-%m-%d')
-        else:
-            days_ago = random.randint(1, 30)
-            activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+        # Create activities: 5 consecutive days (today to 4 days ago) to properly test streak system
+        # This ensures we can validate consecutive day logic
+        current_date = datetime.utcnow().date()
+        activity_date = (current_date - timedelta(days=i)).strftime('%Y-%m-%d')
 
         activity_doc = {
             'user_id': session['user_id'],
@@ -2357,27 +2355,25 @@ def api_simulate_activities():
             activities_collection.insert_one(activity_doc)
             created_count += 1
 
-            # Only credit earned minutes and increase today's daily limit if activity is for today
+            # Record daily activity for ALL simulated activities (not just today) to properly update streaks
+            # This allows testing of consecutive day logic
             try:
                 today_str = datetime.utcnow().strftime('%Y-%m-%d')
                 if activity_doc.get('date') == today_str:
-                    # Increase earned_game_time and daily_screen_time_limit for today's activity
+                    # Only credit earned minutes for today's activity
                     try:
                         UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
                         credited_today += int(earned_minutes)
                     except Exception as e:
                         logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
 
-                    # Record daily activity for streaks/rewards (will not double-credit earned from activity)
-                    try:
-                        UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
-                    except Exception:
-                        pass
-                else:
-                    # For past activities, just insert the record without crediting earned time
-                    pass
+                # Record daily activity for ALL dates (including past) so streak system is properly tested
+                try:
+                    UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
+                except Exception as e:
+                    logger.debug("Failed to record daily activity for %s: %s", activity_date, e)
             except Exception:
-                logger.exception('Error determining activity date for simulated credit')
+                logger.exception('Error processing simulated activity for streak/reward')
         except Exception as e:
             logger.error(f"Error creating simulated activity: {e}")
             continue
