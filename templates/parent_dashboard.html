@@ -410,6 +410,54 @@
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:15px;">
                     <div>
                         <h4 style="margin-bottom:10px; color:#aaa;">Friend Requests</h4>
+                    <script>
+                    // Recommendations UI logic
+                    const PARENT_ID = '{{ parent_id }}';
+                    async function getRecommendation(){
+                        const btn = document.getElementById('getRecBtn');
+                        btn.disabled = true;
+                        const content = document.getElementById('recContent');
+                        content.innerText = 'Loading recommendation...';
+                        try{
+                            const resp = await fetch('/api/recommendations', {
+                                method: 'POST', headers: {'Content-Type':'application/json'},
+                                body: JSON.stringify({user_id: PARENT_ID})
+                            });
+                            const j = await resp.json();
+                            const r = j.recommendation;
+                            const desc = r.description || r.notes || '';
+                            content.innerHTML = `<strong>${r.type}</strong> — ${r.duration_min} min<br>${desc}`;
+                            document.getElementById('recActions').style.display = 'flex';
+                            // record exposure A/B (simple experiment)
+                            await fetch(`/api/ab/assign?user_id=${encodeURIComponent(PARENT_ID)}&experiment=rec_v1&variants=control,treatment`);
+                            // log exposure event
+                            await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:PARENT_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})});
+                        }catch(e){
+                            content.innerText = 'Failed to get recommendation';
+                        }finally{ btn.disabled = false; }
+                    }
+
+                    async function acceptRec(){
+                        // record outcome
+                        await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:PARENT_ID,experiment:'rec_v1',outcome:'accepted'})});
+                        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:PARENT_ID,event_type:'recommendation_accepted'})});
+                        document.getElementById('recContent').innerHTML += '<div style="margin-top:8px;color:#00ff88;">Accepted — saved to schedule.</div>';
+                    }
+
+                    async function declineRec(){
+                        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:PARENT_ID,event_type:'recommendation_declined'})});
+                        await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:PARENT_ID,experiment:'rec_v1',outcome:'declined'})});
+                        document.getElementById('recContent').innerHTML += '<div style="margin-top:8px;color:#ff6b6b;">Declined.</div>';
+                    }
+
+                    document.addEventListener('DOMContentLoaded', ()=>{
+                        const btn = document.getElementById('getRecBtn');
+                        btn.addEventListener('click', getRecommendation);
+                        document.getElementById('acceptRec').addEventListener('click', acceptRec);
+                        document.getElementById('declineRec').addEventListener('click', declineRec);
+                    });
+                    </script>
+
                         <div id="friendApprovalsList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px;">
                             Loading...
                         </div>
@@ -424,6 +472,16 @@
             </div>
 
             <!-- Children List -->
+            <!-- AI/ML Recommendations Panel -->
+            <div class="card" id="recommendation-card">
+                <h2>🤖 AI Training Partner</h2>
+                <div id="recContent">Click <button class="bonus-btn" id="getRecBtn">Get Recommendation</button> to generate a session.</div>
+                <div id="recActions" style="margin-top:12px; display:none; gap:8px;">
+                    <button class="bonus-btn" id="acceptRec" style="background:linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);">Accept</button>
+                    <button class="bonus-btn" id="declineRec" style="background:#ff6b6b;">Decline</button>
+                </div>
+            </div>
+
             <div class="card">
                 <h2>👥 Your Children</h2>
                 {% if children|length > 0 %}

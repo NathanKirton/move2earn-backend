@@ -15,6 +15,9 @@ from werkzeug.utils import secure_filename
 import pathlib
 from bson.objectid import ObjectId
 load_dotenv()
+from recommendations import recommend
+from database import get_db
+from analytics import log_event, assign_variant, record_ab_outcome
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -224,6 +227,125 @@ def login():
         return redirect('/dashboard')
     
     return render_template('login.html', error='Invalid email or password')
+
+
+@app.route('/api/recommendations', methods=['POST'])
+def api_recommendations():
+    """Return a recommended training session for a user.
+
+    Body JSON: { "user_id": "...", "constraints": { ... } }
+    """
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+
+    constraints = data.get('constraints')
+    session_rec = recommend(user_id, constraints)
+    # expand with LLM if available
+    try:
+        from rag import expand_session_with_llm
+        db = get_db()
+        profile = db['user_profiles'].find_one({'user_id': user_id}) if db else None
+        expanded = expand_session_with_llm(session_rec, profile)
+        session_rec['description'] = expanded
+    except Exception:
+        pass
+    return jsonify({'recommendation': session_rec}), 200
+
+
+@app.route('/api/user_profiles', methods=['POST'])
+def api_create_user_profile():
+    """Create or update a user profile document.
+
+    Body JSON: { "user_id": "...", "max_minutes_per_session": 90 }
+    """
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'db connection failed'}), 500
+
+    profile = {
+        'user_id': user_id,
+        'max_minutes_per_session': data.get('max_minutes_per_session', 120)
+    }
+
+    db['user_profiles'].update_one({'user_id': user_id}, {'$set': profile}, upsert=True)
+    return jsonify({'ok': True, 'profile': profile}), 200
+
+
+@app.route('/api/user_profiles/<user_id>', methods=['GET'])
+def api_get_user_profile(user_id):
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'db connection failed'}), 500
+    p = db['user_profiles'].find_one({'user_id': user_id})
+    if not p:
+        return jsonify({'error': 'not found'}), 404
+    # convert ObjectIds/datetimes to strings safely
+    p['user_id'] = str(p['user_id']) if p.get('user_id') else user_id
+    return jsonify({'profile': p}), 200
+
+
+@app.route('/api/analytics/event', methods=['POST'])
+def api_log_event():
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+    user_id = data.get('user_id')
+    event_type = data.get('event_type')
+    metadata = data.get('metadata', {})
+    if not user_id or not event_type:
+        return jsonify({'error': 'user_id and event_type required'}), 400
+    ok = log_event(user_id, event_type, metadata)
+    return jsonify({'ok': ok}), (200 if ok else 500)
+
+
+@app.route('/api/ab/assign', methods=['GET'])
+def api_ab_assign():
+    """Assign a user to a variant for an experiment.
+
+    Query params: user_id, experiment, variants (comma-separated)
+    """
+    user_id = request.args.get('user_id')
+    experiment = request.args.get('experiment')
+    variants = request.args.get('variants')
+    if not user_id or not experiment or not variants:
+        return jsonify({'error': 'user_id, experiment, variants required'}), 400
+    variant_list = [v.strip() for v in variants.split(',') if v.strip()]
+    selected = assign_variant(user_id, experiment, variant_list)
+    # log exposure event
+    log_event(user_id, 'ab_exposure', {'experiment': experiment, 'variant': selected})
+    return jsonify({'variant': selected}), 200
+
+
+@app.route('/api/ab/outcome', methods=['POST'])
+def api_ab_outcome():
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+    user_id = data.get('user_id')
+    experiment = data.get('experiment')
+    outcome = data.get('outcome')
+    variant = data.get('variant')
+    if not user_id or not experiment or not outcome:
+        return jsonify({'error': 'user_id, experiment, outcome required'}), 400
+    ok = record_ab_outcome(user_id, experiment, outcome, variant)
+    return jsonify({'ok': ok}), (200 if ok else 500)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -622,6 +744,7 @@ def parent_dashboard():
     return render_template('parent_dashboard.html', 
                           parent_name=session.get('name'),
                           parent_email=session.get('email'),
+                          parent_id=session.get('user_id'),
                           children=children)
 
 
