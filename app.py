@@ -2333,10 +2333,12 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
 
-        # Create activities: 5 consecutive days (today to 4 days ago) to properly test streak system
-        # This ensures we can validate consecutive day logic
+        # Create activities: 5 consecutive days (oldest first to properly test streak system)
+        # Process in REVERSE so streak logic works correctly (old activities first, then newer)
         current_date = datetime.utcnow().date()
-        activity_date = (current_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        days_back = 4 - i  # Convert loop order: i=0->4 days ago, i=1->3 days ago, etc.
+        activity_date = (current_date - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        activity_datetime = datetime.combine(current_date - timedelta(days=days_back), datetime.min)
 
         activity_doc = {
             'user_id': session['user_id'],
@@ -2348,15 +2350,15 @@ def api_simulate_activities():
             'intensity': intensity,
             'earned_minutes': earned_minutes,
             'date': activity_date,
-            'created_at': datetime.utcnow()
+            'created_at': activity_datetime
         }
 
         try:
             activities_collection.insert_one(activity_doc)
             created_count += 1
 
-            # Record daily activity for ALL simulated activities (not just today) to properly update streaks
-            # This allows testing of consecutive day logic
+            # Record daily activity for ALL simulated activities to properly update streaks
+            # Activities are processed from oldest to newest to ensure consecutive day logic works
             try:
                 today_str = datetime.utcnow().strftime('%Y-%m-%d')
                 if activity_doc.get('date') == today_str:
@@ -2367,7 +2369,7 @@ def api_simulate_activities():
                     except Exception as e:
                         logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
 
-                # Record daily activity for ALL dates (including past) so streak system is properly tested
+                # Record daily activity for ALL dates with proper streak tracking
                 try:
                     UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
                 except Exception as e:

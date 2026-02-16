@@ -887,10 +887,16 @@
     </div>
     
     <!-- AI Training Partner (child-facing) - auto-refreshes every 3 minutes -->
-    <div class="card" id="training-card" style="margin-bottom:20px;">
-        <h2>🤖 AI Training Partner</h2>
-        <div id="childRecContent" style="min-height:80px; display:flex; align-items:center; justify-content:center;">
-            <div style="text-align:center; color:#aaa;">Loading your daily tip...</div>
+    <div class="card" id="training-card" style="margin-bottom:20px; background: linear-gradient(135deg, rgba(100, 50, 150, 0.15) 0%, rgba(50, 100, 150, 0.1) 100%); border: 1px solid rgba(100, 150, 255, 0.3); overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(100, 150, 255, 0.2);">
+            <h2 style="margin: 0; font-size: 20px; color: #00d4ff;">🤖 AI Training Partner</h2>
+            <span style="font-size: 11px; color: #888; background: rgba(100, 150, 255, 0.2); padding: 4px 10px; border-radius: 12px;">Auto-refresh: 3 min</span>
+        </div>
+        <div id="childRecContent" style="min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+            <div style="text-align: center; color: #aaa;">
+                <div class="spinner" style="width: 30px; height: 30px; border: 3px solid rgba(100, 150, 255, 0.3); display: inline-block; margin-bottom: 10px;"></div>
+                <div>Loading your daily tip...</div>
+            </div>
         </div>
     </div>
     
@@ -1946,18 +1952,36 @@ async function getChildRecommendation(){
         const sessionType = (r.type || 'Training').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const duration = r.duration_min || r.duration || '';
         
+        // Map session types to emojis
+        const typeEmojis = {
+            'Easy Run': '🏃‍♂️', 'Intervals': '⚡', 'Tempo': '🔥', 
+            'Walk Or Easy': '🚶', 'Walk': '🚶', 'Run': '🏃‍♂️',
+            'Ride': '🚴', 'Swim': '🏊', 'Hiking': '🥾'
+        };
+        const emoji = typeEmojis[sessionType] || '✨';
+        
         content.innerHTML = `
-          <div style="margin-bottom:12px; font-size:14px; color:#ccc; line-height:1.5;">${intro}</div>
-          <div style="background:rgba(0,212,255,0.1); border-left:3px solid #00d4ff; padding:12px; border-radius:6px;">
-            <strong style="font-size:16px; color:#00d4ff;">${sessionType}</strong><br>
-            <span style="font-size:12px; color:#aaa;">Duration: ${duration}min</span>
-            ${desc ? `<div style="font-size:12px; color:#ccc; margin-top:8px;">${desc}</div>` : ''}
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="font-size: 14px; color: #ccc; line-height: 1.6; font-style: italic; padding: 12px; background: rgba(0, 212, 255, 0.08); border-radius: 6px; border-left: 3px solid rgba(0, 212, 255, 0.5);">
+              "${intro}"
+            </div>
+            <div style="background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 255, 136, 0.08) 100%); border: 1px solid rgba(0, 212, 255, 0.3); padding: 16px; border-radius: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-size: 32px;">${emoji}</span>
+                <div>
+                  <div style="font-size: 18px; font-weight: 700; color: #00ff88;">${sessionType}</div>
+                  ${duration ? `<div style="font-size: 12px; color: #aaa; margin-top: 2px;">⏱️ ${duration} minutes</div>` : ''}
+                </div>
+              </div>
+              ${desc ? `<div style="font-size: 13px; color: #ccc; line-height: 1.5; padding-top: 10px; border-top: 1px solid rgba(0, 212, 255, 0.2); margin-top: 10px;">💡 <strong>Tips:</strong> ${desc}</div>` : ''}
+            </div>
+            <div style="font-size: 11px; color: #666; text-align: center;">✨ Personalized for you based on your activity</div>
           </div>
         `;
         await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`).catch(e => {});
         await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})}).catch(e => {});
     }catch(e){
-        content.innerHTML = '<div style="text-align:center; color:#aaa;">Unable to load tip. Will retry soon...</div>';
+        content.innerHTML = '<div style="text-align:center; color:#aaa; padding: 20px;">Unable to load tip. Will retry in 3 minutes...</div>';
     }
 }
 
