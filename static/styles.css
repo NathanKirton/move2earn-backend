@@ -227,3 +227,56 @@ body.theme-dashboard {
 
 /* End dashboard theme */
 
+/* Map theme styles to actual template class names used in dashboard.html */
+.theme-dashboard .gametime-card {
+  background: linear-gradient(90deg, #00f0c6 0%, #00b8ff 100%);
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.theme-dashboard .gametime-header { font-weight:700; color: rgba(0,0,0,0.6); }
+.theme-dashboard .gametime-value { font-size: 48px; font-weight:800; color: #001b3a; }
+.theme-dashboard .gametime-limit { opacity: 0.9; color: rgba(0,0,0,0.6); }
+.theme-dashboard .gametime-bar { height: 10px; background: rgba(255,255,255,0.06); border-radius: 8px; margin-top: 12px; overflow: hidden; }
+
+.theme-dashboard .notifications-card {
+  background: linear-gradient(90deg, #7a1aa8 0%, #4b006e 100%);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.theme-dashboard .streak-card {
+  background: linear-gradient(90deg, #ffb347 0%, #ff7a00 100%);
+  border-radius: 12px;
+  padding: 18px;
+  color: #4b006e;
+}
+
+.theme-dashboard .streak-count { font-size: 40px; font-weight:800; }
+
+.theme-dashboard .activity-item {
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #08202a;
+}
+.theme-dashboard .activity-icon { font-size: 28px; }
+.theme-dashboard .activity-title { font-weight:700; color: #08202a; }
+.theme-dashboard .earned-value { font-size: 18px; font-weight:800; color: #08202a; }
+
+/* Navbar tweaks */
+.theme-dashboard .navbar { align-items: center; padding: 12px 20px; border-radius: 8px; }
+.theme-dashboard .logo { font-size: 1.2rem; font-weight:800; color: #fff; }
+.theme-dashboard .user-info .name { color: #fff; font-weight:700; }
+.theme-dashboard .manual-upload-btn { background: #ffb347; color: #4b006e; padding: 8px 12px; border-radius: 8px; font-weight:700; }
+.theme-dashboard .logout-btn { background: #ff6b6b; color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; }
+
+/* Small Strava badge style */
+.theme-dashboard .strava-badge { background: #ff4b00; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight:700; font-size:12px; margin-left:8px; }
+
+

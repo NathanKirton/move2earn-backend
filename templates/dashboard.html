@@ -888,6 +888,28 @@
 </head>
 <body class="theme-dashboard">
 <div class="container">
+    <div class="navbar">
+        <div class="logo">Move2Earn</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="user-info" style="text-align:right; margin-right:12px;">
+                    <div style="font-weight:700;">{{ athlete_name or 'Guest' }}</div>
+                    <div style="font-size:12px; color: #e0c3fc; display:flex; align-items:center; gap:8px;">
+                        {% if strava_connected %}
+                            <span>✓ Strava Connected</span>
+                            <span class="strava-badge">STRAVA</span>
+                        {% else %}
+                            <span>⚠ Not Connected</span>
+                        {% endif %}
+                    </div>
+            </div>
+            {% if strava_connected %}
+                <button class="manual-upload-btn" onclick="openUploadModal()">Manual Upload</button>
+            {% else %}
+                <a href="/strava-auth" class="manual-upload-btn" style="text-decoration:none; display:inline-block;">Connect Strava</a>
+            {% endif %}
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
     <div class="dashboard-container">
         <div class="greeting-section">
             <h2>Hi there! 👋</h2>
