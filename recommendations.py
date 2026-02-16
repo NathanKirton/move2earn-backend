@@ -84,7 +84,7 @@ def recommend(user_id, constraints=None):
     # load lightweight profile
     db = get_db()
     profile = None
-    if db:
+    if db is not None:
         profile = db['user_profiles'].find_one({'user_id': user_id})
     # If we have enough users, try personalization via embeddings
     try:
