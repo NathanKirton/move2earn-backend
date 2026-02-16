@@ -415,6 +415,23 @@ def dashboard():
 
 
 
+@app.route('/__preview_dashboard')
+def preview_dashboard():
+    """Dev helper: set a lightweight preview session for the dashboard (local only)."""
+    # Only allow from localhost for safety
+    if request.remote_addr not in ('127.0.0.1', '::1', 'localhost'):
+        return "Not allowed", 403
+
+    # Set a preview session state; ?strava=1 to simulate connected
+    session['user_id'] = 'preview_user'
+    session['name'] = 'Preview User'
+    session['athlete_name'] = 'Preview Athlete'
+    session['account_type'] = 'child'
+    session['strava_connected'] = request.args.get('strava', '0') == '1'
+    return redirect('/dashboard')
+
+
+
 
 
 
