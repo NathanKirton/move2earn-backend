@@ -886,6 +886,16 @@
         </div>
     </div>
     
+    <!-- AI Training Partner (child-facing) -->
+    <div class="card" id="training-card" style="margin-bottom:20px;">
+        <h2>🤖 AI Training Partner</h2>
+        <div id="childRecContent">Click <button class="bonus-btn" id="childGetRecBtn">Get Recommendation</button> to generate a session.</div>
+        <div id="childRecActions" style="margin-top:12px; display:none; gap:8px;">
+            <button class="bonus-btn" id="childAcceptRec" style="background:linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);">Accept</button>
+            <button class="bonus-btn" id="childDeclineRec" style="background:#ff6b6b;">Decline</button>
+        </div>
+    </div>
+    
     <!-- Recent Activities Section -->
     <div class="activities-header">
         ☰ Recent Activity
@@ -1919,5 +1929,48 @@ function updateSimulateProgress(percent) {
         percentSpan.textContent = Math.round(percent);
     }
 }
+
+// --- Child AI Training Partner logic ---
+const CHILD_ID = '{{ user_id }}';
+async function getChildRecommendation(){
+    const btn = document.getElementById('childGetRecBtn');
+    if(!btn) return;
+    btn.disabled = true;
+    const content = document.getElementById('childRecContent');
+    content.innerText = 'Loading recommendation...';
+    try{
+        const resp = await fetch('/api/recommendations', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({user_id: CHILD_ID})
+        });
+        const j = await resp.json();
+        const r = j.recommendation || {};
+        const desc = r.description || r.notes || '';
+        content.innerHTML = `<strong>${r.type || 'Training'}</strong> — ${r.duration_min || r.duration || ''} min<br>${desc}`;
+        const actions = document.getElementById('childRecActions'); if(actions) actions.style.display = 'flex';
+        await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`);
+        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})});
+    }catch(e){
+        content.innerText = 'Failed to get recommendation';
+    }finally{ btn.disabled = false; }
+}
+
+async function childAcceptRec(){
+    await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,experiment:'rec_v1',outcome:'accepted'})});
+    await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_accepted'})});
+    const c = document.getElementById('childRecContent'); if(c) c.innerHTML += '<div style="margin-top:8px;color:#00ff88;">Accepted — saved to schedule.</div>';
+}
+
+async function childDeclineRec(){
+    await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_declined'})});
+    await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,experiment:'rec_v1',outcome:'declined'})});
+    const c = document.getElementById('childRecContent'); if(c) c.innerHTML += '<div style="margin-top:8px;color:#ff6b6b;">Declined.</div>';
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    const btn = document.getElementById('childGetRecBtn'); if(btn) btn.addEventListener('click', getChildRecommendation);
+    const a = document.getElementById('childAcceptRec'); if(a) a.addEventListener('click', childAcceptRec);
+    const d = document.getElementById('childDeclineRec'); if(d) d.addEventListener('click', childDeclineRec);
+});
 
 {% endblock %}

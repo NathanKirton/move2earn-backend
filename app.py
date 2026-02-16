@@ -518,7 +518,8 @@ def dashboard():
         # Child dashboard
         return render_template('dashboard.html', 
                               athlete_name=session.get('athlete_name', session.get('name')),
-                              strava_connected=session.get('strava_connected', False))
+                              strava_connected=session.get('strava_connected', False),
+                              user_id=session.get('user_id'))
 
 
 @app.route('/api/athlete')
