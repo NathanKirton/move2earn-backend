@@ -1851,10 +1851,30 @@ def api_gametime_balance():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    earned = user.get('earned_game_time', 0)
+    # Calculate TODAY's earned minutes from activities (only today's activities count toward "Game Time Used")
+    # Important: Count ONLY activities where the activity_date is TODAY, not activities created today
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    today_earned = 0
+    try:
+        db = get_db()
+        if db is not None:
+            activities_collection = db['activities']
+            # Sum earned_minutes for all activities where date field = today (not created_at)
+            today_activities = list(activities_collection.find({
+                'user_id': session['user_id'],
+                'date': today_str,  # This is the activity date, not when it was created
+                'source': {'$in': ['manual', 'simulated', 'strava']}  # Include all sources
+            }))
+            for activity in today_activities:
+                today_earned += int(activity.get('earned_minutes', 0))
+            logger.debug(f"Today's earned minutes for {session['user_id']}: {today_earned} from {len(today_activities)} activities")
+    except Exception as e:
+        logger.debug(f"Error calculating today's earned minutes: {e}")
+        today_earned = 0
+    
     # include running timer elapsed minutes in used
     used = UserDB.get_current_used_including_running(session['user_id'])
-    balance = max(0, earned - used)
+    balance = max(0, today_earned - used)
     limit = user.get('daily_screen_time_limit', 180)
     # Include streak info so client can show authoritative streak value
     streak_count = user.get('streak_count', 0)
@@ -1870,7 +1890,7 @@ def api_gametime_balance():
             pass
 
     return jsonify({
-        'earned': earned,
+        'earned': today_earned,
         'used': used,
         'balance': balance,
         'limit': limit,
@@ -2201,7 +2221,7 @@ def api_upload():
 
 @app.route('/api/manual-activities', methods=['GET'])
 def api_get_manual_activities():
-    """API endpoint to get manual and simulated activities for the current user"""
+    """API endpoint to get manual and simulated activities for the current user with pagination"""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -2209,11 +2229,27 @@ def api_get_manual_activities():
     if db is None:
         return jsonify({'error': 'Database connection failed'}), 500
     
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    if page < 1:
+        page = 1
+    
     activities_collection = db['activities']
-    # Get both manual and simulated activities
+    
+    # Count total activities
+    total_count = activities_collection.count_documents(
+        {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
+    )
+    
+    # Calculate skip for pagination
+    skip = (page - 1) * per_page
+    
+    # Get activities for this page, sorted by their activity date (not creation date)
     activities = list(activities_collection.find(
         {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
-    ).sort('created_at', -1).limit(20))
+    ).sort('date', -1).skip(skip).limit(per_page))
     
     # Convert ObjectId to string
     for activity in activities:
@@ -2232,11 +2268,18 @@ def api_get_manual_activities():
             pass
         del activity['_id']
 
-    # Debug log how many manual activities are returned
-    logger.debug(f"Returning {len(activities)} manual activities for user_id={session.get('user_id')}")
+    # Calculate pagination info
+    total_pages = (total_count + per_page - 1) // per_page
     
-
-    return jsonify({'activities': activities}), 200
+    logger.debug(f"Returning page {page} of {total_pages} ({len(activities)} activities) for user_id={session.get('user_id')}")
+    
+    return jsonify({
+        'activities': activities,
+        'page': page,
+        'per_page': per_page,
+        'total_count': total_count,
+        'total_pages': total_pages
+    }), 200
 
 
 @app.route('/api/skip-strava', methods=['POST'])
@@ -2268,7 +2311,7 @@ def skip_strava():
 
 @app.route('/api/simulate-activities', methods=['POST'])
 def api_simulate_activities():
-    """API endpoint to generate simulated activities for testing"""
+    """API endpoint to generate simulated activities for testing within the last 7 days"""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -2278,8 +2321,8 @@ def api_simulate_activities():
     # Validate count
     try:
         count = int(count)
-        if count < 1 or count > 100:
-            return jsonify({'error': 'Count must be between 1 and 100'}), 400
+        if count < 1 or count > 10:
+            return jsonify({'error': 'Count must be between 1 and 10'}), 400
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid count value'}), 400
     
@@ -2333,12 +2376,23 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
 
-        # Create activities: 5 consecutive days (oldest first to properly test streak system)
-        # Process in REVERSE so streak logic works correctly (old activities first, then newer)
+        # Create activities spread across the last 7 days with at least 1 on today
         current_date = datetime.utcnow().date()
-        days_back = 4 - i  # Convert loop order: i=0->4 days ago, i=1->3 days ago, etc.
-        activity_date = (current_date - timedelta(days=days_back)).strftime('%Y-%m-%d')
-        activity_datetime = datetime.combine(current_date - timedelta(days=days_back), datetime.min)
+        
+        # Ensure at least 1 activity is today; distribute the rest within last 7 days
+        if i == 0:
+            # First activity must be today
+            day_offset = 0
+        else:
+            # Remaining activities randomly distributed within last 6 days (1-6 days ago)
+            day_offset = random.randint(1, 6)
+        
+        activity_date = (current_date - timedelta(days=day_offset)).strftime('%Y-%m-%d')
+        # Generate a random time for realistic activity timing (6 AM to 8 PM)
+        random_hour = random.randint(6, 20)
+        random_minute = random.randint(0, 59)
+        random_time = datetime.min.time().replace(hour=random_hour, minute=random_minute)
+        activity_datetime = datetime.combine(current_date - timedelta(days=day_offset), random_time)
 
         activity_doc = {
             'user_id': session['user_id'],
@@ -2606,6 +2660,76 @@ def upload_activity():
         if is_json_request:
             return jsonify({'error': error}), 500
         return render_template('upload_activity.html', error=error)
+
+
+@app.route('/api/all-activities-for-streak', methods=['GET'])
+def api_all_activities_for_streak():
+    """API endpoint to get all manual and simulated activities (for streak calculation, no pagination)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    activities_collection = db['activities']
+    
+    # Get ALL activities for this user (no pagination, sorted newest first)
+    activities = list(activities_collection.find(
+        {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
+    ).sort('date', -1))
+    
+    # Convert ObjectId and normalize fields
+    for activity in activities:
+        activity['id'] = str(activity['_id'])
+        try:
+            if 'created_at' in activity:
+                activity['created_at'] = activity['created_at'].isoformat()
+        except Exception:
+            pass
+        try:
+            if 'date' in activity and not isinstance(activity['date'], str):
+                activity['date'] = str(activity['date'])
+        except Exception:
+            pass
+        del activity['_id']
+    
+    return jsonify({'activities': activities}), 200
+
+
+@app.route('/api/clear-manual-activities', methods=['POST'])
+def api_clear_manual_activities():
+    """API endpoint to clear manual and simulated activities for the current user (for testing/debugging)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    activities_collection = db['activities']
+    
+    # Delete all manual and simulated activities for this user
+    result = activities_collection.delete_many({
+        'user_id': session['user_id'],
+        'source': {'$in': ['manual', 'simulated']}
+    })
+    
+    deleted_count = result.deleted_count
+    logger.info(f"Cleared {deleted_count} manual/simulated activities for user {session['user_id']}")
+    
+    # Reset streak, earned game time, and daily limit when clearing activities
+    users_collection = db['users']
+    users_collection.update_one(
+        {'_id': ObjectId(session['user_id'])},
+        {'$set': {
+            'streak_count': 0,
+            'earned_game_time': 0,
+            'daily_screen_time_limit': 180  # Reset to default
+        }}
+    )
+    
+    return jsonify({'success': True, 'deleted_count': deleted_count}), 200
 
 
 # Helper function to get db instance

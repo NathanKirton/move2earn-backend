@@ -4,19 +4,18 @@ from embeddings import build_user_embeddings, query_similar_users
 
 
 def get_today_activity(user_id):
-    """Get activity summary for today."""
+    """Get activity summary for today using the 'date' field, not created_at."""
     db = get_db()
     if db is None:
         return None
     
-    today = date.today()
-    today_start = datetime.combine(today, datetime.min.time())
-    today_end = datetime.combine(today, datetime.max.time())
+    today_str = date.today().isoformat()  # Format: YYYY-MM-DD
     
     activities = db['activities']
+    # Filter by 'date' field (the activity's actual date) not 'created_at' (insert time)
     today_acts = list(activities.find({
         'user_id': user_id,
-        'created_at': {'$gte': today_start, '$lte': today_end}
+        'date': today_str
     }))
     
     if not today_acts:
@@ -54,41 +53,48 @@ def get_today_activity(user_id):
 
 
 def generate_intro_message(user_id, weekly_km, session_type):
-    """Generate a contextual intro message for the recommendation."""
+    """Generate a contextual intro message for the recommendation that matches the session type."""
     today_act = get_today_activity(user_id)
     
     # Base messages depending on activity today and session type
     if today_act is None or today_act['count'] == 0:
         # No activity today
         if session_type == 'intervals':
-            return "You've been consistent this week! Today would be a great day for a challenging workout."
+            return "Build intensity today with a challenging interval session!"
         elif session_type == 'tempo':
-            return "Based on your recent activity, let's push it a bit today with a tempo effort."
+            return "You're ready for a controlled tempo effort today."
         elif session_type == 'easy_run':
-            return "Build on your streak with a relaxed session today."
+            return "Start your day with a relaxed, easy-paced session."
+        elif session_type == 'recovery_walk':
+            return "Your body has earned a recovery day - light movement only."
         else:
-            return "Start your day with some gentle movement."
+            return "Build the habit with some gentle movement today."
     else:
         # Has activity today
         types_str = ' and '.join(today_act['types'])
         activity_count = today_act['count']
         total_distance = today_act['distance']
         
-        # Clarify distance info - indicate if it's combined from multiple activities
+        # Clarify distance info
         if activity_count == 1:
             distance_str = f"{total_distance}km"
         else:
             distance_str = f"{total_distance}km ({activity_count} activities)"
         
-        if activity_count == 1 and today_act['minutes'] < 30:
-            return f"You already did {types_str} today ({today_act['minutes']}min). Let's follow up with a light activity to stay consistent."
-        elif total_distance > 10:
-            return f"Great work—you've covered {distance_str} today! Wind down with an easy recovery session for balance."
-        else:
-            if session_type == 'intervals':
-                return f"You're active today ({distance_str})! Let's add a short interval workout to boost your effort."
+        # Match intro message to the actual session type being recommended
+        if session_type == 'intervals':
+            return f"Great work—you've covered {distance_str}! You're ready for a challenging interval workout."
+        elif session_type == 'tempo':
+            return f"Solid effort with {distance_str}! Let's maintain energy with a tempo session."
+        elif session_type == 'easy_run':
+            if total_distance > 15:
+                return f"Impressive {distance_str} today! Time to recover with a relaxed easy session."
             else:
-                return f"Nice going with {activity_count} activity/activities today ({distance_str})! Finish the day with this light session."
+                return f"Nice session with {distance_str}! Add an easy session to round out your day."
+        elif session_type == 'recovery_walk':
+            return f"Fantastic work—you've covered {distance_str}! Your body needs recovery. A light walk is perfect."
+        else:  # walk_or_easy
+            return f"Getting started with {distance_str}? Perfect—let's build on this with a gentle activity."
 
 
 def get_weekly_distance(user_id):
@@ -116,7 +122,10 @@ def get_weekly_distance(user_id):
 
 
 def rule_based_session(user_id, user_profile=None):
-    """Return a simple recommended session based on recent weekly load.
+    """Return a recommended session based on recent weekly load.
+    
+    Logic: Higher activity volume -> easier/recovery sessions. Lower volume -> more intense workouts.
+    This ensures balanced training and prevents overtraining.
 
     Output format:
     {
@@ -128,38 +137,54 @@ def rule_based_session(user_id, user_profile=None):
     """
     weekly_km = get_weekly_distance(user_id)
 
-    # basic thresholds
+    # Smart thresholds: high volume = recovery, low volume = build intensity
     if weekly_km >= 50:
-        # high-volume athlete -> maintain or do intervals
+        # Very high volume -> active recovery / rest day
+        session = {
+            'type': 'recovery_walk',
+            'duration_min': 20,
+            'structure': [
+                {'type': 'easy walk or very light activity'}
+            ],
+            'notes': 'Take it easy today. Your body needs recovery to get stronger. Light activity only.'
+        }
+    elif weekly_km >= 35:
+        # High volume -> easy session
+        session = {
+            'type': 'easy_run',
+            'duration_min': 30,
+            'structure': [
+                {'type': 'easy, conversational pace'}
+            ],
+            'notes': 'You\'ve been very active! Easy session today to allow recovery.'
+        }
+    elif weekly_km >= 20:
+        # Moderate volume -> balanced effort (tempo)
+        session = {
+            'type': 'tempo',
+            'duration_min': 40,
+            'structure': [{'tempo_min': 20}],
+            'notes': '20 minutes at comfortably hard effort. Good middle ground.'
+        }
+    elif weekly_km >= 10:
+        # Lower volume -> build intensity (intervals)
         session = {
             'type': 'intervals',
             'duration_min': 45,
             'structure': [
                 {'repeat': 6, 'work_sec': 60, 'rest_sec': 90}
             ],
-            'notes': '6 x 1min hard with 90s recovery. Warm up 15min, cool down 10min.'
-        }
-    elif weekly_km >= 20:
-        session = {
-            'type': 'tempo',
-            'duration_min': 40,
-            'structure': [{'tempo_min': 20}],
-            'notes': '20 minutes at comfortably hard effort.'
-        }
-    elif weekly_km >= 5:
-        session = {
-            'type': 'easy_run',
-            'duration_min': 30,
-            'notes': 'Easy conversational pace to build consistency.'
+            'notes': '6 x 1min hard with 90s recovery. Warm up 15min, cool down 10min. Time to push!'
         }
     else:
+        # Very low volume -> consistent easy building
         session = {
             'type': 'walk_or_easy',
             'duration_min': 20,
-            'notes': 'Start gently: walk/run or steady walk to build habit.'
+            'notes': 'Start building consistency: walk/run or steady walk. Focus on frequency over intensity.'
         }
 
-    # Generate contextual intro message
+    # Generate contextual intro message that matches the recommendation
     session['intro'] = generate_intro_message(user_id, weekly_km, session['type'])
 
     # add a safety cap

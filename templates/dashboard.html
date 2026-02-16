@@ -914,6 +914,13 @@
             <p>Loading activities...</p>
         </div>
     </div>
+    
+    <!-- Pagination Controls -->
+    <div id="pagination-controls" style="display: none; margin-top: 20px; text-align: center; gap: 10px; justify-content: center; align-items: center;">
+        <button id="prev-page-btn" onclick="goToPreviousPage()" style="padding: 8px 16px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">← Previous</button>
+        <span id="page-info" style="color: #aaa; font-size: 12px; margin: 0 10px;"></span>
+        <button id="next-page-btn" onclick="goToNextPage()" style="padding: 8px 16px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">Next →</button>
+    </div>
 </div>
 
 </div> <!-- end dashboard-main -->
@@ -1038,8 +1045,8 @@
         <form id="simulateForm" style="display: grid; gap: 15px;">
             <div>
                 <label style="color: #aaa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Number of Activities</label>
-                <input type="number" name="count" min="1" max="100" value="5" required style="width: 100%; padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 14px; margin-top: 5px;">
-                <p style="color: #999; font-size: 12px; margin-top: 5px;">Generate random activities to test your dashboard (1-100)</p>
+                <input type="number" name="count" min="1" max="10" value="5" required style="width: 100%; padding: 12px; background: rgba(100, 100, 120, 0.4); border: 1px solid rgba(150, 150, 180, 0.3); border-radius: 6px; color: #fff; font-size: 14px; margin-top: 5px;">
+                <p style="color: #999; font-size: 12px; margin-top: 5px;">Generate random activities to test your dashboard (1-10). Activities will be spread across the last 7 days with at least 1 today.</p>
             </div>
             <div style="background: rgba(156, 39, 176, 0.05); border: 1px solid rgba(156, 39, 176, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 5px;">
                 <p style="color: #aaa; font-size: 12px; margin: 0; line-height: 1.5;">
@@ -1047,6 +1054,7 @@
                 </p>
             </div>
             <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Generate Activities</button>
+            <button type="button" onclick="clearAllActivities()" style="padding: 12px; background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">🗑️ Clear All Activities</button>
         </form>
     </div>
 </div>
@@ -1106,6 +1114,11 @@
     }
 })();
 
+// Pagination state
+let currentActivityPage = 1;
+let totalActivityPages = 1;
+let streakCalculated = false;  // Flag to prevent duplicate streak calculations
+
 function calculateIntensity(avgHR, maxHR) {
     // Prefer absolute HR thresholds if available
     if (avgHR) {
@@ -1159,13 +1172,14 @@ function getActivityIcon(type) {
     return icons[type] || '⚡';
 }
 
-async function loadActivities() {
+async function loadActivities(page = 1) {
     try {
         const list = document.getElementById('activities-list');
         
         // Fetch both Strava and manual activities
         let stravasActivities = [];
         let manualActivities = [];
+        let paginationInfo = { page: 1, total_pages: 1, total_count: 0, per_page: 20 };
         
         try {
             const stravasResponse = await fetch('/api/activities');
@@ -1177,11 +1191,19 @@ async function loadActivities() {
         }
         
         try {
-            const manualResponse = await fetch('/api/manual-activities');
+            const manualResponse = await fetch(`/api/manual-activities?page=${page}`);
             if (manualResponse.ok) {
                 const manualData = await manualResponse.json();
                 if (manualData.activities) {
                     manualActivities = manualData.activities;
+                    paginationInfo = {
+                        page: manualData.page,
+                        total_pages: manualData.total_pages,
+                        total_count: manualData.total_count,
+                        per_page: manualData.per_page
+                    };
+                    currentActivityPage = manualData.page;
+                    totalActivityPages = manualData.total_pages;
                 }
             }
         } catch (err) {
@@ -1223,22 +1245,65 @@ async function loadActivities() {
         
         if (allActivities.length === 0) {
             list.innerHTML = '<div class="no-data">No activities found. Connect Strava or log an activity manually!</div>';
+            // Hide pagination if no activities
+            document.getElementById('pagination-controls').style.display = 'none';
             return;
         }
         
-        // Calculate streak from activities (fallback) then overwrite with server value if available
-        calculateStreak(allActivities);
-        // Try to get authoritative streak from server (gametime endpoint includes streak now)
-        try {
-            const streakResp = await fetch('/api/gametime-balance');
-            if (streakResp.ok) {
-                const streakData = await streakResp.json();
-                if (typeof streakData.streak_count !== 'undefined') {
-                    document.getElementById('streak-count').textContent = streakData.streak_count;
+        // Show pagination controls if there are multiple pages
+        const paginationControls = document.getElementById('pagination-controls');
+        if (totalActivityPages > 1) {
+            paginationControls.style.display = 'flex';
+            document.getElementById('page-info').textContent = `Page ${currentActivityPage} of ${totalActivityPages}`;
+            document.getElementById('prev-page-btn').disabled = currentActivityPage === 1;
+            document.getElementById('next-page-btn').disabled = currentActivityPage === totalActivityPages;
+            // Style disabled buttons
+            if (currentActivityPage === 1) document.getElementById('prev-page-btn').style.opacity = '0.5';
+            if (currentActivityPage === totalActivityPages) document.getElementById('next-page-btn').style.opacity = '0.5';
+        } else {
+            paginationControls.style.display = 'none';
+        }
+        
+        // Calculate streak from ALL activities (fetch all without pagination for accurate streak)
+        // Only calculate if not already calculated, to prevent flickering from multiple recalculations
+        if (!streakCalculated) {
+            try {
+                const allActivitiesResp = await fetch('/api/all-activities-for-streak');
+                if (allActivitiesResp.ok) {
+                    const allActivitiesData = await allActivitiesResp.json();
+                    const allActivitiesForStreak = [
+                        ...stravasActivities.map(a => ({
+                            ...a,
+                            source: 'strava',
+                            time_minutes: a.moving_time / 60,
+                            activity_date: a.start_date
+                        })),
+                        ...allActivitiesData.activities.map(a => ({
+                            id: a.id,
+                            name: a.title,
+                            type: a.type,
+                            distance: a.distance,
+                            moving_time: a.time_minutes * 60,
+                            time_minutes: a.time_minutes,
+                            start_date: a.date + 'T12:00:00Z',
+                            activity_date: a.date,
+                            intensity: a.intensity,
+                            earned_minutes: a.earned_minutes,
+                            source: 'manual'
+                        }))
+                    ];
+                    calculateStreak(allActivitiesForStreak);
+                    streakCalculated = true;  // Mark as calculated
+                } else {
+                    // Fallback to current page activities if endpoint fails
+                    calculateStreak(allActivities);
+                    streakCalculated = true;
                 }
+            } catch (e) {
+                // Fallback to current page activities if fetch fails
+                calculateStreak(allActivities);
+                streakCalculated = true;
             }
-        } catch (e) {
-            // ignore - we already showed the computed streak
         }
         
         // htmlhint: off
@@ -1302,36 +1367,77 @@ async function loadActivities() {
     }
 }
 
+function goToPreviousPage() {
+    if (currentActivityPage > 1) {
+        loadActivities(currentActivityPage - 1);
+    }
+}
+
+function goToNextPage() {
+    if (currentActivityPage < totalActivityPages) {
+        loadActivities(currentActivityPage + 1);
+    }
+}
+
 function calculateStreak(activities) {
     if (activities.length === 0) {
         document.getElementById('streak-count').textContent = '0';
         return;
     }
     
-    // Get unique dates from activities
+    // Get unique dates from activities using activity_date field (the actual activity date, not when it was created)
     const dates = new Set();
     activities.forEach(activity => {
-        const date = new Date(activity.start_date);
-        dates.add(date.toLocaleDateString('en-CA'));
+        // Use activity_date which is the actual date of the activity (e.g., '2026-02-16')
+        const dateStr = activity.activity_date || activity.start_date;
+        if (dateStr) {
+            // Extract just the date part (YYYY-MM-DD)
+            const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+            dates.add(datePart);
+        }
     });
     
+    if (dates.size === 0) {
+        document.getElementById('streak-count').textContent = '0';
+        return;
+    }
+    
+    // Sort dates newest to oldest
     const sortedDates = Array.from(dates).sort().reverse();
     let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
     
-    for (const dateStr of sortedDates) {
-        const activityDate = new Date(dateStr);
-        const diffDays = Math.floor((currentDate - activityDate) / (1000 * 60 * 60 * 24));
+    // Start from the most recent activity date (not today)
+    const mostRecentDateStr = sortedDates[0];
+    const mostRecentDate = new Date(mostRecentDateStr + 'T00:00:00Z');
+    
+    // Count consecutive days backwards from the most recent activity date
+    for (let i = 0; i < sortedDates.length; i++) {
+        // Calculate what date should be at position i (going backwards from most recent)
+        const expectedDate = new Date(mostRecentDate);
+        expectedDate.setUTCDate(expectedDate.getUTCDate() - i);
         
-        if (diffDays === streak) {
+        const expectedDateStr = expectedDate.getUTCFullYear() + '-' + 
+                                String(expectedDate.getUTCMonth() + 1).padStart(2, '0') + '-' + 
+                                String(expectedDate.getUTCDate()).padStart(2, '0');
+        
+        // Check if this date matches the expected consecutive date
+        if (sortedDates[i] === expectedDateStr) {
             streak++;
         } else {
+            // Streak broken - stop counting
             break;
         }
     }
     
     document.getElementById('streak-count').textContent = streak;
+    
+    // Also update renderStreakDays if we have it
+    try {
+        const settings = { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
+        renderStreakDays(streak, settings);
+    } catch (e) {
+        // ignore
+    }
 }
 
 async function loadGameTime() {
@@ -1830,8 +1936,8 @@ if (simulateForm) {
         
         const count = parseInt(this.querySelector('[name="count"]').value);
         
-        if (count < 1 || count > 100) {
-            alert('Please enter a number between 1 and 100');
+        if (count < 1 || count > 10) {
+            alert('Please enter a number between 1 and 10');
             return;
         }
         
@@ -1861,6 +1967,7 @@ if (simulateForm) {
                 setTimeout(() => {
                     progressOverlay.style.display = 'none';
                     closeSimulateModal();
+                    streakCalculated = false;
                     loadActivities();
                     // Refresh game time immediately so totals update without reload
                     try { loadGameTime(); } catch (e) { console.error('loadGameTime error:', e); }
@@ -1897,14 +2004,58 @@ if (simulateForm) {
     });
 }
 
+async function clearAllActivities() {
+    if (!confirm('⚠️ Are you sure? This will delete ALL manual and simulated activities and reset your streak to 0.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/clear-manual-activities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        const msg = document.getElementById('simulateMessage');
+        if (response.ok) {
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(56, 142, 60, 0.08)';
+            msg.style.borderColor = 'rgba(56, 142, 60, 0.2)';
+            msg.style.color = '#388e3c';
+            msg.textContent = '✓ Cleared ' + data.deleted_count + ' activities and reset your streak';
+            setTimeout(() => {
+                msg.style.display = 'none';
+                streakCalculated = false;  // Reset streak calculation flag so next load recalculates
+                loadActivities();
+                try { loadGameTime(); } catch (e) { }
+            }, 2000);
+        } else {
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(255, 107, 107, 0.1)';
+            msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+            msg.style.color = '#ff6b6b';
+            msg.textContent = '✗ Failed to clear activities: ' + (data.error || 'Unknown error');
+        }
+    } catch (err) {
+        const msg = document.getElementById('simulateMessage');
+        msg.style.display = 'block';
+        msg.style.background = 'rgba(255, 107, 107, 0.1)';
+        msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+        msg.style.color = '#ff6b6b';
+        msg.textContent = '✗ Error: ' + err.message;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', loadActivities);
 
-// Auto-refresh child dashboard every 5 seconds to keep data in sync
+// Auto-refresh child dashboard every 30 seconds to keep data in sync (long enough to avoid glitching)
+// Note: AI recommender has its own 3-minute refresh, activities refresh separately
 setInterval(() => {
     // Refresh activities list and parent messages
     loadActivities();
     loadParentMessages();
-}, 5000);
+}, 30000);
 
 // Progress bar functions for upload modal
 function updateUploadProgress(percent) {
@@ -1988,8 +2139,10 @@ async function getChildRecommendation(){
 // Load recommendation immediately on page load
 document.addEventListener('DOMContentLoaded', ()=>{
     getChildRecommendation();
-    // Auto-refresh every 3 minutes (180000 ms)
+    // Auto-refresh every 3 minutes (180000 ms) - ensure no existing interval first
+    if(aiRefreshInterval) clearInterval(aiRefreshInterval);
     aiRefreshInterval = setInterval(getChildRecommendation, 180000);
+    console.log('AI auto-refresh started: every 3 minutes');
 });
 
 // Clean up interval if user navigates away
