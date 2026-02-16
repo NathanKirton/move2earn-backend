@@ -36,6 +36,141 @@
         color: #fff;
     }
 
+            body {
+                background: linear-gradient(180deg, #6a11cb 0%, #2575fc 100%);
+                min-height: 100vh;
+                margin: 0;
+                font-family: 'Segoe UI', 'Arial', sans-serif;
+                color: #fff;
+            }
+            .navbar {
+                background: #4b006e;
+                padding: 16px 32px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: 0 0 18px 18px;
+            }
+            .navbar .logo {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #fff;
+            }
+            .navbar .user-info {
+                color: #e0c3fc;
+                font-size: 1rem;
+            }
+            .navbar .logout-btn, .navbar .manual-upload-btn {
+                background: #ffb347;
+                color: #4b006e;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 18px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-left: 12px;
+                transition: background 0.2s;
+            }
+            .navbar .logout-btn:hover, .navbar .manual-upload-btn:hover {
+                background: #ff9800;
+            }
+            .container {
+                max-width: 900px;
+                margin: 32px auto;
+                padding: 0 16px;
+            }
+            .card {
+                background: linear-gradient(90deg, #00c6fb 0%, #005bea 100%);
+                border-radius: 18px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+                margin-bottom: 24px;
+                padding: 28px 32px;
+            }
+            .card.orange {
+                background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
+                color: #4b006e;
+            }
+            .card.purple {
+                background: linear-gradient(90deg, #a4508b 0%, #5f0a87 100%);
+            }
+            .card.green {
+                background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+                color: #1b2a49;
+            }
+            .section-title {
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-bottom: 12px;
+            }
+            .game-time {
+                font-size: 2.5rem;
+                font-weight: bold;
+                margin: 0 0 8px 0;
+            }
+            .streak-days {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 18px;
+            }
+            .streak-day {
+                background: #fff3e0;
+                color: #ff9800;
+                border-radius: 8px;
+                padding: 6px 0;
+                width: 12%;
+                text-align: center;
+                font-weight: bold;
+                font-size: 1rem;
+            }
+            .notifications {
+                background: #fff;
+                color: #4b006e;
+                border-radius: 12px;
+                padding: 12px 18px;
+                margin-bottom: 18px;
+                font-size: 1rem;
+            }
+            .recent-activity {
+                margin-top: 32px;
+            }
+            .activity-card {
+                background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+                color: #1b2a49;
+                border-radius: 14px;
+                padding: 18px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+            .activity-details {
+                display: flex;
+                flex-direction: column;
+            }
+            .activity-title {
+                font-weight: bold;
+                font-size: 1.1rem;
+            }
+            .activity-meta {
+                font-size: 0.95rem;
+                color: #1b2a49;
+            }
+            .activity-time {
+                font-size: 1.2rem;
+                font-weight: bold;
+                color: #4b006e;
+            }
+            @media (max-width: 600px) {
+                .container, .card, .activity-card {
+                    padding: 12px;
+                }
+                .navbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
+        </style>
     .gametime-card {
         background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
         color: #001;
