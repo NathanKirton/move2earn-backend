@@ -273,8 +273,13 @@ body.theme-dashboard {
 .theme-dashboard .navbar { align-items: center; padding: 12px 20px; border-radius: 8px; }
 .theme-dashboard .logo { font-size: 1.2rem; font-weight:800; color: #fff; }
 .theme-dashboard .user-info .name { color: #fff; font-weight:700; }
-.theme-dashboard .manual-upload-btn { background: #ffb347; color: #4b006e; padding: 8px 12px; border-radius: 8px; font-weight:700; }
-.theme-dashboard .logout-btn { background: #ff6b6b; color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; }
+.theme-dashboard .connect-btn, .theme-dashboard .manual-upload-btn {
+  background: linear-gradient(135deg,#ffb347 0%, #ffcc33 100%);
+  color: #4b006e; padding: 8px 12px; border-radius: 8px; font-weight:700; text-decoration:none; display:inline-block; border: 2px solid rgba(0,0,0,0.08);
+}
+.theme-dashboard .connect-btn:hover, .theme-dashboard .manual-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+.theme-dashboard .logout-btn { background: linear-gradient(135deg,#ff6b6b 0%, #ff4b4b 100%); color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; border: none; }
+.theme-dashboard .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
 
 /* Small Strava badge style */
 .theme-dashboard .strava-badge { background: #ff4b00; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight:700; font-size:12px; margin-left:8px; }

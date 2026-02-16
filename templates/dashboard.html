@@ -902,10 +902,9 @@
                         {% endif %}
                     </div>
             </div>
+            <a href="/strava-auth" class="connect-btn" style="text-decoration:none; display:inline-block;">Connect Strava</a>
             {% if strava_connected %}
                 <button class="manual-upload-btn" onclick="openUploadModal()">Manual Upload</button>
-            {% else %}
-                <a href="/strava-auth" class="manual-upload-btn" style="text-decoration:none; display:inline-block;">Connect Strava</a>
             {% endif %}
             <a href="/logout" class="logout-btn">Logout</a>
         </div>
