@@ -886,13 +886,11 @@
         </div>
     </div>
     
-    <!-- AI Training Partner (child-facing) -->
+    <!-- AI Training Partner (child-facing) - auto-refreshes every 3 minutes -->
     <div class="card" id="training-card" style="margin-bottom:20px;">
         <h2>🤖 AI Training Partner</h2>
-        <div id="childRecContent">Click <button class="bonus-btn" id="childGetRecBtn">Get Recommendation</button> to generate a session.</div>
-        <div id="childRecActions" style="margin-top:12px; display:none; gap:8px;">
-            <button class="bonus-btn" id="childAcceptRec" style="background:linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);">Accept</button>
-            <button class="bonus-btn" id="childDeclineRec" style="background:#ff6b6b;">Decline</button>
+        <div id="childRecContent" style="min-height:80px; display:flex; align-items:center; justify-content:center;">
+            <div style="text-align:center; color:#aaa;">Loading your daily tip...</div>
         </div>
     </div>
     
@@ -1930,14 +1928,12 @@ function updateSimulateProgress(percent) {
     }
 }
 
-// --- Child AI Training Partner logic ---
+// --- Child AI Training Partner logic - auto-refreshing tips ---
 const CHILD_ID = '{{ user_id }}';
+let aiRefreshInterval = null;
+
 async function getChildRecommendation(){
-    const btn = document.getElementById('childGetRecBtn');
-    if(!btn) return;
-    btn.disabled = true;
     const content = document.getElementById('childRecContent');
-    content.innerText = 'Loading recommendation...';
     try{
         const resp = await fetch('/api/recommendations', {
             method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1952,36 +1948,29 @@ async function getChildRecommendation(){
         
         content.innerHTML = `
           <div style="margin-bottom:12px; font-size:14px; color:#ccc; line-height:1.5;">${intro}</div>
-          <div style="background:rgba(0,212,255,0.1); border-left:3px solid #00d4ff; padding:12px; border-radius:6px; margin-bottom:12px;">
+          <div style="background:rgba(0,212,255,0.1); border-left:3px solid #00d4ff; padding:12px; border-radius:6px;">
             <strong style="font-size:16px; color:#00d4ff;">${sessionType}</strong><br>
             <span style="font-size:12px; color:#aaa;">Duration: ${duration}min</span>
             ${desc ? `<div style="font-size:12px; color:#ccc; margin-top:8px;">${desc}</div>` : ''}
           </div>
         `;
-        const actions = document.getElementById('childRecActions'); if(actions) actions.style.display = 'flex';
-        await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`);
-        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})});
+        await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`).catch(e => {});
+        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})}).catch(e => {});
     }catch(e){
-        content.innerText = 'Failed to get recommendation';
-    }finally{ btn.disabled = false; }
+        content.innerHTML = '<div style="text-align:center; color:#aaa;">Unable to load tip. Will retry soon...</div>';
+    }
 }
 
-async function childAcceptRec(){
-    await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,experiment:'rec_v1',outcome:'accepted'})});
-    await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_accepted'})});
-    const c = document.getElementById('childRecContent'); if(c) c.innerHTML += '<div style="margin-top:8px;color:#00ff88;">Accepted — saved to schedule.</div>';
-}
-
-async function childDeclineRec(){
-    await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_declined'})});
-    await fetch('/api/ab/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,experiment:'rec_v1',outcome:'declined'})});
-    const c = document.getElementById('childRecContent'); if(c) c.innerHTML += '<div style="margin-top:8px;color:#ff6b6b;">Declined.</div>';
-}
-
+// Load recommendation immediately on page load
 document.addEventListener('DOMContentLoaded', ()=>{
-    const btn = document.getElementById('childGetRecBtn'); if(btn) btn.addEventListener('click', getChildRecommendation);
-    const a = document.getElementById('childAcceptRec'); if(a) a.addEventListener('click', childAcceptRec);
-    const d = document.getElementById('childDeclineRec'); if(d) d.addEventListener('click', childDeclineRec);
+    getChildRecommendation();
+    // Auto-refresh every 3 minutes (180000 ms)
+    aiRefreshInterval = setInterval(getChildRecommendation, 180000);
+});
+
+// Clean up interval if user navigates away
+window.addEventListener('beforeunload', ()=>{
+    if(aiRefreshInterval) clearInterval(aiRefreshInterval);
 });
 
 {% endblock %}
