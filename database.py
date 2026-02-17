@@ -125,10 +125,15 @@ class UserDB:
             user_doc['daily_screen_time_limit'] = 60  # Default 60 minutes
             user_doc['weekly_screen_time_limit'] = 420  # Default 7 hours
             user_doc['earned_game_time'] = 0  # Earned minutes
-            user_doc['used_game_time'] = 0  # Used minutes
+            user_doc['used_game_time'] = 0  # Used minutes (total)
+            user_doc['daily_used_minutes_today'] = 0  # Used minutes today (resets daily)
+            user_doc['last_daily_reset_date'] = datetime.utcnow().date().isoformat()  # Date of last daily reset
             user_doc['parent_messages'] = []  # Messages from parent
             user_doc['streak_count'] = 0  # Streak count
             user_doc['streak_bonus_minutes'] = 0  # Bonus minutes per day from streak
+            user_doc['last_activity_date'] = None  # Date of last activity (for streak)
+            user_doc['timer_running'] = False  # Is timer currently running
+            user_doc['timer_started_at'] = None  # When timer was started
         
         try:
             result = users.insert_one(user_doc)
@@ -748,6 +753,53 @@ class UserDB:
         except Exception as e:
             logger.exception("Error recording daily activity/streak: %s", e)
             return {'applied': False, 'reason': 'update failed'}
+
+    @staticmethod
+    def reset_daily_used_if_needed(child_id):
+        """Reset daily used game time and timer state if day has changed.
+        
+        Checks if the current date is different from last_daily_reset_date.
+        If so, resets:
+        - daily_used_minutes_today to 0
+        - timer_running to False
+        - timer_started_at to None
+        - last_daily_reset_date to today
+        """
+        database = get_db()
+        if database is None:
+            return
+        
+        from bson import ObjectId
+        users = database['users']
+        
+        try:
+            child = UserDB.get_user_by_id(child_id)
+            if not child:
+                return
+            
+            today_str = datetime.utcnow().date().isoformat()
+            last_reset = child.get('last_daily_reset_date')
+            
+            # If last_reset is not set or is a different day, reset
+            if not last_reset or str(last_reset) != today_str:
+                logger.debug("reset_daily_used_if_needed: child=%s last_reset=%s today=%s - resetting", child_id, last_reset, today_str)
+                
+                # Reset daily usage, timer state, and track reset date
+                result = users.update_one(
+                    {'_id': ObjectId(child_id)},
+                    {
+                        '$set': {
+                            'daily_used_minutes_today': 0,
+                            'timer_running': False,
+                            'timer_started_at': None,
+                            'last_daily_reset_date': today_str
+                        }
+                    }
+                )
+                
+                logger.debug("reset_daily_used_if_needed: reset completed, modified=%s", getattr(result, 'modified_count', None))
+        except Exception as e:
+            logger.exception("Error resetting daily used time: %s", e)
 
     @staticmethod
     def delete_child(parent_id, child_id):
