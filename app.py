@@ -299,6 +299,149 @@ def api_get_user_profile(user_id):
     return jsonify({'profile': p}), 200
 
 
+@app.route('/api/compute-athlete-type', methods=['POST'])
+def api_compute_athlete_type():
+    """Compute and store an `athlete_type` label for the current user based on recent activities.
+
+    Body JSON (optional): { "user_id": "..." } - if omitted, uses session user
+    """
+    # Require logged-in user
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json(force=True) if request.data else {}
+    except Exception:
+        data = {}
+
+    target_user = data.get('user_id') or session['user_id']
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    # Load user's activities
+    activities = list(db['activities'].find({'user_id': target_user}))
+    if not activities:
+        return jsonify({'error': 'No activities found for user'}), 400
+
+    # Build a lightweight DataFrame compatible with the ETL function
+    try:
+        import pandas as pd
+        rows = []
+        for a in activities:
+            row = {'MemberID': str(target_user)}
+            # Activity type
+            row['Activity Type'] = a.get('type') or a.get('activity_type') or a.get('sport_type') or 'Activity'
+            # Duration: prefer moving_time (seconds) then time_minutes (minutes)
+            if a.get('moving_time') is not None:
+                try:
+                    row['Duration_min'] = float(a.get('moving_time')) / 60.0
+                except Exception:
+                    row['Duration_min'] = None
+            else:
+                row['Duration_min'] = a.get('time_minutes') or a.get('Duration_min') or None
+            # Avg HR
+            row['AvgHR'] = a.get('average_heartrate') or a.get('avg_hr') or a.get('AvgHR')
+            # Distance (normalize to km)
+            dist = a.get('distance') or a.get('distance_km') or a.get('distance_m')
+            try:
+                if dist is None:
+                    row['Distance'] = None
+                else:
+                    d = float(dist)
+                    if d > 1000:
+                        d = d / 1000.0
+                    row['Distance'] = d
+            except Exception:
+                row['Distance'] = None
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+
+        # Try to pull gender from users collection for better features
+        users_col = db.get('users')
+        gender = None
+        try:
+            u = users_col.find_one({'_id': ObjectId(target_user)})
+            if u:
+                gender = u.get('gender') or u.get('sex')
+        except Exception:
+            # target_user may already be string id; try lookup by string
+            try:
+                u = users_col.find_one({'user_id': target_user})
+                if u:
+                    gender = u.get('gender')
+            except Exception:
+                pass
+        if gender is not None:
+            df['Gender'] = gender
+
+        # Import feature aggregator from ml prototype
+        try:
+            from ml.athlete_classifier import aggregate_user_features
+        except Exception as e:
+            logger.error('Failed to import ETL helper: %s', e)
+            return jsonify({'error': 'Server not configured for ML ETL (missing module)'}), 500
+
+        features = aggregate_user_features(df)
+        if features is None or features.shape[0] == 0:
+            return jsonify({'error': 'Failed to compute features'}), 500
+
+        # Load classifier
+        import joblib
+        model_path = os.path.join(pathlib.Path(__file__).parent, 'ml', 'models', 'athlete_classifier.joblib')
+        if not os.path.exists(model_path):
+            return jsonify({'error': 'No classifier model found. Run ml/athlete_classifier.py to train.'}), 400
+
+        model_data = joblib.load(model_path)
+        clf = model_data.get('clf')
+        feature_cols = model_data.get('feature_columns')
+        if clf is None or not feature_cols:
+            return jsonify({'error': 'Invalid classifier model artifact'}), 500
+
+        X = features.reindex(columns=feature_cols, fill_value=0)
+        # Predict label and confidence
+        try:
+            pred = clf.predict(X)[0]
+            prob = None
+            if hasattr(clf, 'predict_proba'):
+                proba = clf.predict_proba(X)[0]
+                prob = float(max(proba))
+            else:
+                prob = 1.0
+        except Exception as e:
+            logger.error('Classifier prediction failed: %s', e)
+            return jsonify({'error': 'Prediction failed'}), 500
+
+        # Map numeric cluster -> human label if mapping available
+        human_label = None
+        try:
+            map_path = os.path.join(pathlib.Path(__file__).parent, 'ml', 'models', 'cluster_label_map.joblib')
+            if os.path.exists(map_path):
+                label_map = joblib.load(map_path)
+                # label_map keys are ints
+                human_label = label_map.get(int(pred)) if isinstance(label_map, dict) else None
+        except Exception:
+            human_label = None
+
+        # Persist to user_profiles (store both numeric cluster and human label when available)
+        profiles = db['user_profiles']
+        store_doc = {
+            'user_id': target_user,
+            'athlete_type': str(human_label) if human_label else str(pred),
+            'athlete_confidence': float(prob),
+            'athlete_cluster': int(pred)
+        }
+        profiles.update_one({'user_id': target_user}, {'$set': store_doc}, upsert=True)
+
+        return jsonify({'ok': True, 'athlete_type': str(pred), 'confidence': float(prob)}), 200
+
+    except Exception as e:
+        logger.exception('Error computing athlete type: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/analytics/event', methods=['POST'])
 def api_log_event():
     try:

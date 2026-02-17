@@ -203,14 +203,13 @@ def recommend(user_id, constraints=None):
     profile = None
     if db is not None:
         profile = db['user_profiles'].find_one({'user_id': user_id})
-    # If we have enough users, try personalization via embeddings
+    # If we have enough users, try personalization via embeddings to adjust the profile
     try:
         emb_index = build_user_embeddings()
         if emb_index:
             similar = query_similar_users(user_id, emb_index, topk=3)
             # If similar users exist and this user has low weekly km, prefer sessions similar users accept
             if similar:
-                # simple heuristic: if similar users have higher weekly_km, suggest slightly harder session
                 sim_kms = []
                 for s in similar:
                     p = db['user_profiles'].find_one({'user_id': s})
@@ -218,16 +217,54 @@ def recommend(user_id, constraints=None):
                         sim_kms.append(p.get('weekly_km', 0))
                 if sim_kms:
                     avg_sim = sum(sim_kms)/len(sim_kms)
-                    # bump thresholds by 50% of difference
-                    # create an adjusted profile copy
                     if profile is None:
                         profile = {'max_minutes_per_session': 120}
                     profile_adjusted = dict(profile)
-                    # if similar users run more, increase recommended duration
                     if avg_sim > (profile.get('weekly_km', 0)):
                         profile_adjusted['max_minutes_per_session'] = min(180, profile_adjusted.get('max_minutes_per_session',120) + 15)
-                    return rule_based_session(user_id, profile_adjusted)
+                    # Use the adjusted profile going forward
+                    profile = profile_adjusted
     except Exception:
         pass
 
-    return rule_based_session(user_id, profile)
+    # Generate base session using (possibly adjusted) profile
+    session_rec = rule_based_session(user_id, profile)
+
+    # Apply athlete-type based personalization if available in profile
+    try:
+        if profile and isinstance(profile, dict) and profile.get('athlete_type'):
+            atype = str(profile.get('athlete_type'))
+            conf = float(profile.get('athlete_confidence', 0.5))
+            # Apply label-specific adjustments
+            if atype == 'endurance':
+                # Prefer longer steady sessions, reduce interval focus
+                if session_rec.get('type') in ('intervals', 'walk_or_easy'):
+                    session_rec['type'] = 'tempo'
+                    session_rec['notes'] = session_rec.get('notes', '') + ' (Adjusted for endurance athlete)'
+                if 'duration_min' in session_rec:
+                    session_rec['duration_min'] = int(max(20, session_rec['duration_min'] * 1.2))
+            elif atype == 'power':
+                # Prefer interval-style shorter high-intensity work
+                if session_rec.get('type') in ('tempo', 'easy_run'):
+                    session_rec['type'] = 'intervals'
+                    session_rec['notes'] = session_rec.get('notes', '') + ' (Adjusted for power athlete)'
+                if 'duration_min' in session_rec:
+                    session_rec['duration_min'] = int(max(15, session_rec['duration_min'] * 0.9))
+            elif atype == 'novice':
+                # Reduce duration and intensity
+                if 'duration_min' in session_rec:
+                    session_rec['duration_min'] = int(max(10, session_rec['duration_min'] * 0.7))
+                session_rec['notes'] = session_rec.get('notes', '') + ' (Gentler session for beginner athletes)'
+            else:  # balanced or unknown
+                # small confidence-weighted scaling (preserve original behavior)
+                scale = 1.0 + (conf - 0.5) * 0.3
+                if 'duration_min' in session_rec and isinstance(session_rec['duration_min'], (int, float)):
+                    orig = session_rec['duration_min']
+                    session_rec['duration_min'] = max(5, int(orig * scale))
+
+            session_rec['athlete_type_used'] = atype
+            session_rec['athlete_confidence'] = conf
+    except Exception:
+        pass
+
+    return session_rec
