@@ -2851,6 +2851,39 @@ def get_db():
     return db_get_db()
 
 
+@app.route('/api/admin/delete-all-accounts', methods=['DELETE', 'POST'])
+def api_delete_all_accounts():
+    """Admin endpoint to delete all accounts from database (for testing/debugging only)"""
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    try:
+        # Delete all collections
+        users_collection = db['users']
+        activities_collection = db['activities']
+        user_challenges_collection = db['user_challenges']
+        
+        users_deleted = users_collection.delete_many({}).deleted_count
+        activities_deleted = activities_collection.delete_many({}).deleted_count
+        challenges_deleted = user_challenges_collection.delete_many({}).deleted_count
+        
+        logger.warning(f"DELETED ALL: {users_deleted} users, {activities_deleted} activities, {challenges_deleted} user_challenges")
+        
+        return jsonify({
+            'success': True,
+            'message': 'All accounts and data deleted',
+            'deleted': {
+                'users': users_deleted,
+                'activities': activities_deleted,
+                'user_challenges': challenges_deleted
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error deleting all accounts: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     # Production-friendly run: read port from environment and bind to 0.0.0.0
     port = int(os.getenv('PORT', '5000'))

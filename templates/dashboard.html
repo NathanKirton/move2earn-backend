@@ -2010,6 +2010,13 @@ async function clearAllActivities() {
     }
     
     try {
+        // Immediately clear the display
+        const list = document.getElementById('activities-list');
+        list.innerHTML = '<div class="no-data"><div class="spinner"></div><p>Clearing activities...</p></div>';
+        document.getElementById('pagination-controls').style.display = 'none';
+        currentActivityPage = 1;
+        totalActivityPages = 1;
+        
         const response = await fetch('/api/clear-manual-activities', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
@@ -2027,15 +2034,20 @@ async function clearAllActivities() {
             setTimeout(() => {
                 msg.style.display = 'none';
                 streakCalculated = false;  // Reset streak calculation flag so next load recalculates
-                loadActivities();
+                currentActivityPage = 1;  // Reset page number
+                loadActivities(1);  // Explicitly load first page
                 try { loadGameTime(); } catch (e) { }
-            }, 2000);
+            }, 500);
         } else {
             msg.style.display = 'block';
             msg.style.background = 'rgba(255, 107, 107, 0.1)';
             msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
             msg.style.color = '#ff6b6b';
             msg.textContent = '✗ Failed to clear activities: ' + (data.error || 'Unknown error');
+            setTimeout(() => {
+                currentActivityPage = 1;
+                loadActivities(1);
+            }, 1000);
         }
     } catch (err) {
         const msg = document.getElementById('simulateMessage');
@@ -2044,6 +2056,10 @@ async function clearAllActivities() {
         msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
         msg.style.color = '#ff6b6b';
         msg.textContent = '✗ Error: ' + err.message;
+        setTimeout(() => {
+            currentActivityPage = 1;
+            loadActivities(1);
+        }, 1000);
     }
 }
 
