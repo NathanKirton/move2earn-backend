@@ -2593,6 +2593,11 @@ def api_simulate_activities():
     activities_collection = db['activities']
     created_count = 0
     credited_today = 0
+    
+    # First pass: create activities for consecutive days (oldest to newest)
+    # This ensures they span from (count-1) days ago through today
+    activities_to_process = []
+    current_date = datetime.utcnow().date()
 
     for i in range(count):
         # Generate random data
@@ -2632,18 +2637,11 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
 
-        # Create activities spread across the last 7 days with at least 1 on today
-        current_date = datetime.utcnow().date()
-        
-        # Ensure at least 1 activity is today; distribute the rest within last 7 days
-        if i == 0:
-            # First activity must be today
-            day_offset = 0
-        else:
-            # Remaining activities randomly distributed within last 6 days (1-6 days ago)
-            day_offset = random.randint(1, 6)
-        
+        # Create activities for consecutive days: (count-1) days ago through today
+        # day_offset: count-1, count-2, ... 1, 0
+        day_offset = count - 1 - i
         activity_date = (current_date - timedelta(days=day_offset)).strftime('%Y-%m-%d')
+        
         # Generate a random time for realistic activity timing (6 AM to 8 PM)
         random_hour = random.randint(6, 20)
         random_minute = random.randint(0, 59)
@@ -2660,37 +2658,42 @@ def api_simulate_activities():
             'intensity': intensity,
             'earned_minutes': earned_minutes,
             'date': activity_date,
-            'created_at': activity_datetime
+            'created_at': activity_datetime,
+            'day_offset': day_offset
         }
 
         try:
             activities_collection.insert_one(activity_doc)
             created_count += 1
-
-            # Record daily activity for ALL simulated activities to properly update streaks
-            # Activities are processed from oldest to newest to ensure consecutive day logic works
-            try:
-                today_str = datetime.utcnow().strftime('%Y-%m-%d')
-                if activity_doc.get('date') == today_str:
-                    # Only credit earned minutes for today's activity
-                    try:
-                        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
-                        credited_today += int(earned_minutes)
-                    except Exception as e:
-                        logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
-
-                # Record daily activity for ALL dates with proper streak tracking
-                try:
-                    UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
-                except Exception as e:
-                    logger.debug("Failed to record daily activity for %s: %s", activity_date, e)
-            except Exception:
-                logger.exception('Error processing simulated activity for streak/reward')
+            activities_to_process.append(activity_doc)
         except Exception as e:
             logger.error(f"Error creating simulated activity: {e}")
             continue
     
-    logger.info(f"Created {created_count} simulated activities for user {session['user_id']}; credited_today={credited_today}")
+    # Second pass: process activities in date order (oldest to newest) for proper streak calculation
+    # Sort by day_offset (descending): oldest day first
+    activities_to_process.sort(key=lambda x: x['day_offset'], reverse=True)
+    
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    for activity_doc in activities_to_process:
+        try:
+            if activity_doc.get('date') == today_str:
+                # Only credit earned minutes for today's activity
+                try:
+                    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], activity_doc.get('earned_minutes', 0))
+                    credited_today += int(activity_doc.get('earned_minutes', 0))
+                except Exception as e:
+                    logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
+
+            # Record daily activity for ALL dates with proper streak tracking (in date order)
+            try:
+                UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
+            except Exception as e:
+                logger.debug("Failed to record daily activity for %s: %s", activity_doc.get('date'), e)
+        except Exception:
+            logger.exception('Error processing simulated activity for streak/reward')
+    
+    logger.info(f"Created {created_count} simulated activities for user {session['user_id']} across {count} consecutive days; credited_today={credited_today}")
     return jsonify({'success': True, 'count': created_count, 'credited_minutes': credited_today}), 201
 
 
