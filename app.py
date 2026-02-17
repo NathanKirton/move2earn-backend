@@ -1285,7 +1285,8 @@ def api_get_challenges():
             'task': ch.get('task', {}),
             'is_unlocked': unlocked,
             'assigned_children': [str(x) for x in (ch.get('assigned_children') or [])],
-            'visible_to_children': bool(ch.get('visible_to_children', False))
+            'visible_to_children': bool(ch.get('visible_to_children', False)),
+            'requires_parent_approval': bool(ch.get('requires_parent_approval', False))
         })
     return jsonify({'challenges': out}), 200
 
@@ -1536,6 +1537,155 @@ def api_parent_challenge_approvals():
     return jsonify({'requests': out}), 200
 
 
+@app.route('/api/request-challenge-completion', methods=['POST'])
+def api_request_challenge_completion():
+    """Child requests parent approval to mark a challenge as completed."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    challenge_id = data.get('challenge_id')
+    if not challenge_id:
+        return jsonify({'error': 'challenge_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    user_ch = db['user_challenges']
+
+    # Prevent duplicate/duplicate pending requests
+    try:
+        existing = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+        if existing:
+            return jsonify({'error': 'Challenge already completed'}), 400
+    except Exception:
+        pass
+
+    try:
+        pending = reqs.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'status': 'pending'})
+        if pending:
+            return jsonify({'success': True, 'request_id': str(pending['_id']), 'status': 'pending'}), 200
+
+        doc = {
+            'user_id': session['user_id'],
+            'challenge_id': challenge_id,
+            'status': 'pending',
+            'created_at': datetime.utcnow()
+        }
+        res = reqs.insert_one(doc)
+        return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
+    except Exception as e:
+        logger.exception('Error creating completion request: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/my-challenge-completion-requests')
+def api_my_challenge_completion_requests():
+    """Return pending completion requests for currently logged-in child."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    try:
+        rows = list(reqs.find({'user_id': session['user_id'], 'status': 'pending'}))
+        out = [{'id': str(r['_id']), 'challenge_id': r['challenge_id'], 'created_at': r.get('created_at').isoformat()} for r in rows]
+        return jsonify({'requests': out}), 200
+    except Exception as e:
+        logger.exception('Error fetching my completion requests: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/parent/challenge-completion-requests')
+def api_parent_challenge_completion_requests():
+    """Return pending challenge completion requests for this parent's children"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    reqs = db['challenge_completion_requests']
+
+    parent = users.find_one({'_id': ObjectId(session['user_id'])})
+    children = [str(c) for c in parent.get('children', [])]
+
+    pending = list(reqs.find({'status': 'pending', 'user_id': {'$in': children}}))
+    out = []
+    for p in pending:
+        child_name = 'Unknown Child'
+        try:
+            c_user = users.find_one({'_id': ObjectId(p['user_id'])})
+            if c_user:
+                child_name = c_user.get('name', 'Unknown')
+        except Exception:
+            pass
+        out.append({'id': str(p['_id']), 'user_id': p['user_id'], 'child_name': child_name, 'challenge_id': p['challenge_id'], 'created_at': p.get('created_at').isoformat()})
+    return jsonify({'requests': out}), 200
+
+
+@app.route('/api/parent/respond-challenge-completion', methods=['POST'])
+def api_parent_respond_challenge_completion():
+    """Parent approves or rejects a child's completion request."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    req_id = data.get('request_id')
+    action = data.get('action')
+    if not req_id or action not in ('approve', 'reject'):
+        return jsonify({'error': 'Invalid parameters'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    user_ch = db['user_challenges']
+    challenges = db['challenges']
+    users = db['users']
+
+    try:
+        r = reqs.find_one({'_id': ObjectId(req_id)})
+        if not r:
+            return jsonify({'error': 'Request not found'}), 404
+
+        # Verify parent owns child
+        parent = users.find_one({'_id': ObjectId(session['user_id'])})
+        children = [str(c) for c in parent.get('children', [])]
+        if r.get('user_id') not in children:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        if action == 'reject':
+            reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
+            return jsonify({'success': True}), 200
+
+        # Approve: mark request approved, record completion and credit reward
+        reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+        ch = challenges.find_one({'_id': ObjectId(r.get('challenge_id'))})
+        reward = int(ch.get('reward_minutes', 0)) if ch else 0
+
+        # Prevent duplicate completion
+        existing = user_ch.find_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id')})
+        if existing:
+            return jsonify({'success': True, 'message': 'Already completed'}), 200
+
+        user_ch.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'completed_at': datetime.utcnow(), 'reward_earned': reward})
+        # Credit persistent reward
+        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward, persistent=True)
+        return jsonify({'success': True, 'reward_minutes': reward}), 200
+    except Exception as e:
+        logger.exception('Error responding to completion request: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
 @app.route('/api/respond-challenge-unlock', methods=['POST'])
 def api_respond_challenge_unlock():
     """Parent approves or rejects a challenge unlock request."""
@@ -1616,6 +1766,10 @@ def api_complete_challenge():
     except Exception as e:
         logger.exception('Error finding challenge: %s', e)
         return jsonify({'error': 'Server error'}), 500
+
+    # If this challenge requires parent approval for completion, instruct client to request approval
+    if bool(ch.get('requires_parent_approval', False)):
+        return jsonify({'error': 'This challenge requires parent approval. Please request completion.'}), 403
 
     # 3. Record completion
     try:

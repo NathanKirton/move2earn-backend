@@ -595,9 +595,12 @@
         // Load child's challenges
         async function loadChildChallenges() {
             try {
-                const resp = await fetch('/api/challenges');
-                if (!resp.ok) throw new Error('Failed to fetch challenges');
-                const data = await resp.json();
+            // Fetch challenges and any pending completion requests for this child
+            const [chResp, pendingResp] = await Promise.all([fetch('/api/challenges'), fetch('/api/my-challenge-completion-requests')]);
+            if (!chResp.ok) throw new Error('Failed to fetch challenges');
+            const data = await chResp.json();
+            const pendingData = pendingResp.ok ? await pendingResp.json() : {requests: []};
+            const pendingSet = new Set((pendingData.requests || []).map(r => r.challenge_id));
                 
                 const container = document.getElementById('childChallengesContainer');
                 if (!data.challenges || data.challenges.length === 0) {
@@ -607,6 +610,40 @@
                 
                 container.innerHTML = data.challenges.map(ch => {
                     const isCompleted = ch.is_unlocked; // Using is_unlocked as completion status
+                    const requiresApproval = !!ch.requires_parent_approval;
+                    const hasPending = pendingSet.has(ch.id);
+
+                    // Button behavior:
+                    // - already completed -> disabled Completed
+                    // - requires parent approval and pending -> disabled Pending
+                    // - requires parent approval and not pending -> Request Completion
+                    // - otherwise -> Complete Challenge (auto)
+
+                    let btnClass = 'btn-complete';
+                    let btnText = '';
+                    let btnOnclick = '';
+                    let btnDisabled = '';
+
+                    if (isCompleted) {
+                        btnClass = 'btn-completed';
+                        btnText = '✅ Completed';
+                        btnDisabled = 'disabled';
+                    } else if (requiresApproval) {
+                        if (hasPending) {
+                            btnClass = 'btn-completed';
+                            btnText = '⏳ Pending parent approval';
+                            btnDisabled = 'disabled';
+                        } else {
+                            btnClass = 'btn-complete';
+                            btnText = '📨 Request Completion';
+                            btnOnclick = `requestCompletion('${ch.id}')`;
+                        }
+                    } else {
+                        btnClass = 'btn-complete';
+                        btnText = '🎯 Complete Challenge';
+                        btnOnclick = `completeChallenge('${ch.id}')`;
+                    }
+
                     return `
                         <div class="challenge-card">
                             <div class="challenge-content">
@@ -615,11 +652,11 @@
                                 <div class="challenge-description">${ch.description}</div>
                                 <div class="challenge-reward">🎮 +${ch.reward_minutes} minutes</div>
                                 <button 
-                                    class="challenge-button ${isCompleted ? 'btn-completed' : 'btn-complete'}"
-                                    onclick="${isCompleted ? '' : `completeChallenge('${ch.id}')`}"
-                                    ${isCompleted ? 'disabled' : ''}
+                                    class="challenge-button ${btnClass}"
+                                    onclick="${btnOnclick}"
+                                    ${btnDisabled}
                                 >
-                                    ${isCompleted ? '✅ Completed' : '🎯 Complete Challenge'}
+                                    ${btnText}
                                 </button>
                             </div>
                         </div>
@@ -628,6 +665,28 @@
             } catch (err) {
                 console.error('Error loading challenges:', err);
                 document.getElementById('childChallengesContainer').innerHTML = '<div class="empty-state"><p>Error loading challenges</p></div>';
+            }
+        }
+
+        async function requestCompletion(challengeId) {
+            try {
+                if (!confirm('Request parent approval to complete this challenge?')) return;
+                const resp = await fetch('/api/request-challenge-completion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ challenge_id: challengeId })
+                });
+                if (resp.ok) {
+                    alert('✅ Request sent to your parent.');
+                    loadChildChallenges();
+                } else {
+                    const err = await resp.json();
+                    alert('Error: ' + (err.error || 'Failed to send request'));
+                }
+            } catch (err) {
+                console.error('Error requesting completion:', err);
+                alert('Error sending request');
             }
         }
 
