@@ -1632,7 +1632,8 @@ def api_complete_challenge():
 
     # 4. Credit reward minutes automatically
     try:
-        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+        # Challenge rewards are persistent (do not expire at midnight)
+        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward, persistent=True)
         logger.info(f"Challenge {challenge_id} completed by {session['user_id']}, reward: {reward} min")
     except Exception as e:
         logger.exception('Error crediting reward: %s', e)
@@ -2394,9 +2395,24 @@ def api_apply_earned_strava(child_id):
                 'created_at': dt.utcnow()
             })
             # Credit earned minutes to child (and increase daily limit so it's usable)
-            UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
-            total_applied += earned
-            applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+            # Only credit if the activity date is TODAY (so earned time doesn't carry across days)
+            try:
+                activity_day = act.get('start_date')
+                if activity_day and 'T' in activity_day:
+                    activity_day = activity_day.split('T')[0]
+                today_str = datetime.utcnow().strftime('%Y-%m-%d')
+                if activity_day == today_str:
+                    UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+                    total_applied += earned
+                    applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+                else:
+                    # Do not credit earned minutes for past activities
+                    applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
+            except Exception:
+                # Fallback to crediting if date parsing fails
+                UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+                total_applied += earned
+                applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
 
             # Record daily activity for streaks (will only apply once per day)
             try:
@@ -2882,7 +2898,18 @@ def upload_activity():
         result = activities_collection.insert_one(activity_doc)
         
         # Add earned game time to user and increase their daily limit
-        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+        # Only credit earned minutes when the activity date is TODAY
+        try:
+            today_str = datetime.utcnow().strftime('%Y-%m-%d')
+            if activity_date and 'T' in activity_date:
+                activity_day = activity_date.split('T')[0]
+            else:
+                activity_day = activity_date
+            if activity_day == today_str:
+                UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+        except Exception:
+            # Fallback to crediting if something unexpected happens
+            UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
 
         # Record daily activity for streaks (manual upload)
         try:

@@ -127,6 +127,7 @@ class UserDB:
             user_doc['earned_game_time'] = 0  # Earned minutes
             user_doc['used_game_time'] = 0  # Used minutes (total)
             user_doc['daily_used_minutes_today'] = 0  # Used minutes today (resets daily)
+            user_doc['daily_earned_minutes_today'] = 0  # Earned minutes awarded today (resets daily)
             user_doc['last_daily_reset_date'] = datetime.utcnow().date().isoformat()  # Date of last daily reset
             user_doc['parent_messages'] = []  # Messages from parent
             user_doc['streak_count'] = 0  # Streak count
@@ -419,8 +420,13 @@ class UserDB:
             return False
 
     @staticmethod
-    def add_earned_game_time_and_increase_limit(child_id, minutes):
-        """Add bonus game time and increase the daily limit by the same amount."""
+    def add_earned_game_time_and_increase_limit(child_id, minutes, persistent=False):
+        """Add bonus game time and increase the daily limit by the same amount.
+
+        By default the granted minutes are treated as daily-earned (they will be
+        tracked in `daily_earned_minutes_today` and removed at the next daily reset).
+        Set `persistent=True` to grant minutes that persist across days (e.g., challenge rewards).
+        """
         database = get_db()
         if database is None:
             return False
@@ -429,12 +435,13 @@ class UserDB:
         users = database['users']
 
         try:
-            # Increase both earned_game_time AND daily_screen_time_limit by the bonus minutes
-            # This increases the child's daily allowance
-            result = users.update_one(
-                {'_id': ObjectId(child_id)},
-                {'$inc': {'earned_game_time': minutes, 'daily_screen_time_limit': minutes}}
-            )
+            # Build increment fields. Always increment earned_game_time and daily limit.
+            inc_fields = {'earned_game_time': int(minutes), 'daily_screen_time_limit': int(minutes)}
+            # If not persistent, also record these as today's earned minutes so they can be reverted at midnight
+            if not persistent:
+                inc_fields['daily_earned_minutes_today'] = int(minutes)
+
+            result = users.update_one({'_id': ObjectId(child_id)}, {'$inc': inc_fields})
             return result.modified_count > 0
         except Exception as e:
             logger.exception("Error adding earned game time: %s", e)
@@ -785,16 +792,31 @@ class UserDB:
                 logger.debug("reset_daily_used_if_needed: child=%s last_reset=%s today=%s - resetting", child_id, last_reset, today_str)
                 
                 # Reset daily usage, timer state, and track reset date
+                # Also revert any earned minutes that were awarded today so they don't carry across days
+                daily_earned = int(child.get('daily_earned_minutes_today', 0) or 0)
+                updates = {
+                    '$set': {
+                        'daily_used_minutes_today': 0,
+                        'timer_running': False,
+                        'timer_started_at': None,
+                        'last_daily_reset_date': today_str,
+                        'daily_earned_minutes_today': 0
+                    }
+                }
+
+                # If there were daily earned minutes, subtract them from persistent earned_game_time and daily limit
+                if daily_earned > 0:
+                    # Ensure we don't underflow earned_game_time or daily_screen_time_limit
+                    try:
+                        # Use $inc with negative values to subtract
+                        users.update_one({'_id': ObjectId(child_id)}, {'$inc': {'earned_game_time': -int(daily_earned), 'daily_screen_time_limit': -int(daily_earned)}})
+                    except Exception:
+                        # If decrement fails, continue to at least reset daily fields
+                        pass
+
                 result = users.update_one(
                     {'_id': ObjectId(child_id)},
-                    {
-                        '$set': {
-                            'daily_used_minutes_today': 0,
-                            'timer_running': False,
-                            'timer_started_at': None,
-                            'last_daily_reset_date': today_str
-                        }
-                    }
+                    updates
                 )
                 
                 logger.debug("reset_daily_used_if_needed: reset completed, modified=%s", getattr(result, 'modified_count', None))
