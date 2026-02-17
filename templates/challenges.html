@@ -12,214 +12,392 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #fff;
+            padding: 20px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
         
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 30px;
-            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .header-left h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
         }
         
-        .header-right {
+        .header-buttons {
             display: flex;
-            gap: 15px;
+            gap: 12px;
         }
         
         .btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
             font-weight: 600;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
+            font-size: 14px;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            color: #000;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+            color: #fff;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
         }
         
-        .btn-back {
-            background: rgba(255, 255, 255, 0.1);
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
             color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
-        .btn-back:hover {
-            background: rgba(255, 255, 255, 0.15);
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
-        .btn-logout {
-            background: #ff6b6b;
-            color: white;
-            padding: 8px 16px;
-            font-size: 13px;
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #fff;
         }
         
-        .btn-logout:hover {
-            background: #ee5a52;
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.3);
         }
         
-        .challenges-grid {
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Parent Section */
+        .parent-section {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        
+        .template-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .template-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .template-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+        
+        .template-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        
+        .template-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        
+        .template-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .sidebar-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .sidebar-card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #00ff88;
+        }
+        
+        .child-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .child-item input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .child-item label {
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        /* Child Section */
+        .child-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
         
         .challenge-card {
-            background: rgba(50, 50, 80, 0.4);
-            border: 1px solid rgba(100, 100, 150, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
+            padding: 24px;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0) 0%, rgba(0, 255, 136, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .challenge-card:hover::before {
+            opacity: 1;
         }
         
         .challenge-card:hover {
-            border-color: rgba(255, 193, 7, 0.5);
-            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
         }
         
-        .challenge-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 15px;
+        .challenge-content {
+            position: relative;
+            z-index: 1;
         }
         
-        .challenge-name {
+        .challenge-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .challenge-title {
             font-size: 18px;
             font-weight: 700;
-            color: #ffc107;
-        }
-        
-        .challenge-status {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
+            margin-bottom: 8px;
         }
         
         .challenge-description {
             font-size: 13px;
-            color: #aaa;
-            margin-bottom: 15px;
-            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+            line-height: 1.5;
         }
         
         .challenge-reward {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: rgba(0, 255, 136, 0.1);
+            background: rgba(0, 255, 136, 0.2);
+            border-left: 3px solid #00ff88;
+            padding: 12px;
             border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
             color: #00ff88;
         }
         
-        .challenge-action {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .unlock-btn, .complete-btn, .request-btn {
-            flex: 1;
-            padding: 10px;
+        .challenge-button {
+            width: 100%;
+            padding: 12px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 12px;
-        }
-        
-        .request-btn {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-        }
-        
-        .request-btn:hover {
-            background: rgba(0, 212, 255, 0.3);
-        }
-        
-        .unlock-btn {
-            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-            color: #000;
-        }
-        
-        .unlock-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
-        }
-        
-        .complete-btn {
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            color: #000;
-        }
-        
-        .complete-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #aaa;
-            grid-column: 1 / -1;
-        }
-        
-        .empty-state p {
-            margin: 10px 0;
             font-size: 14px;
         }
         
+        .btn-complete {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #fff;
+        }
+        
+        .btn-complete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.3);
+        }
+        
+        .btn-completed {
+            background: rgba(56, 239, 125, 0.3);
+            color: #38ef7d;
+            border: 2px solid #38ef7d;
+            cursor: not-allowed;
+        }
+        
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
             header {
                 flex-direction: column;
-                gap: 15px;
-                padding: 15px;
+                gap: 12px;
+                text-align: center;
             }
             
-            .challenges-grid {
+            h1 {
+                font-size: 24px;
+            }
+            
+            .parent-section {
                 grid-template-columns: 1fr;
+            }
+            
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .child-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-buttons {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -227,163 +405,247 @@
 <body>
     <div class="container">
         <header>
-            <div class="header-left">
-                <h1>🎯 Challenges</h1>
-            </div>
-            <div class="header-right">
-                <a href="/dashboard" class="btn btn-back">← Back to Dashboard</a>
-                <a href="/logout" class="btn btn-logout">Logout</a>
+            <h1>🎯 Challenges</h1>
+            <div class="header-buttons">
+                <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+                <a href="/logout" class="btn btn-secondary">Logout</a>
             </div>
         </header>
 
         {% if account_type == 'parent' %}
-        <div style="margin-bottom:18px; display:flex; gap:12px; align-items:flex-start;">
-            <div style="flex:1;">
-                <div class="card" style="padding:16px; margin-bottom:12px;">
-                    <h2 style="margin-bottom:8px;">Create New Challenge</h2>
-                    <div style="display:grid; gap:10px;">
-                        <input id="chName" placeholder="Challenge name (e.g. Monday Madness)" />
-                        <input id="chReward" placeholder="Reward minutes (e.g. 15)" />
-                        <input id="chImageUrl" placeholder="Image URL (optional)" />
-                        <textarea id="chDesc" placeholder="Short description"></textarea>
-                        <select id="chTaskType">
-                            <option value="single_day">Complete activity on a specific day</option>
-                            <option value="minutes_total">Accumulate minutes across days</option>
-                            <option value="activity_type">Complete a specific activity type</option>
-                        </select>
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn btn-primary" onclick="createChallenge()">Create Challenge</button>
-                        </div>
+        <div class="parent-section">
+            <div>
+                <h2 style="margin-bottom: 20px; font-size: 20px; font-weight: 700;">Available Challenges</h2>
+                <div id="templatesContainer" class="templates-grid">
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <p>Loading templates...</p>
                     </div>
                 </div>
-                <div class="card">
-                    <h2 style="margin-bottom:8px;">Your Challenges</h2>
-                    <div id="adminChallengesList">Loading...</div>
-                </div>
             </div>
-            <div style="width:320px;">
-                <div class="card">
-                    <h3>Assign to Children</h3>
-                    <div id="childrenList">Loading children...</div>
+            <div>
+                <div class="sidebar-card">
+                    <h3>📋 Select Children</h3>
+                    <div id="childrenList" style="max-height: 300px; overflow-y: auto;">
+                        Loading...
+                    </div>
+                </div>
+                <div class="sidebar-card">
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                        <strong>How to assign:</strong><br>
+                        1. Select children<br>
+                        2. Click a template<br>
+                        3. Set reward<br>
+                        4. Confirm
+                    </div>
                 </div>
             </div>
         </div>
         {% else %}
-        <div id="challengesContainer" class="challenges-grid">
-            <div class="empty-state">
-                <p>Loading challenges...</p>
+        <h2 style="margin-bottom: 20px; font-size: 20px; font-weight: 700;">Your Challenges</h2>
+        <div id="childChallengesContainer" class="child-section">
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <p>Loading your challenges...</p>
             </div>
         </div>
         {% endif %}
     </div>
 
+    <!-- Assign Modal -->
+    <div id="assignModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">🎯 Assign Challenge</div>
+            <div class="modal-body">
+                <div id="templateInfo"></div>
+                <div class="form-group">
+                    <label>Reward Minutes</label>
+                    <input type="number" id="rewardInput" min="5" step="5" placeholder="e.g., 30" />
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAssign()">Assign Challenge</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        async function loadChallenges() {
+        const accountType = '{{ account_type }}';
+        let currentTemplateId = null;
+        let selectedChildren = [];
+
+        // Get templates and display for parent
+        async function loadTemplates() {
             try {
-                const resp = await fetch('/api/challenges');
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const container = document.getElementById('challengesContainer');
-
-                            if (data.challenges && data.challenges.length) {
-                                // Parent view handled separately
-                                const container = document.getElementById('challengesContainer');
-                                const accountType = '{{ account_type }}';
-                                if (accountType === 'parent') {
-                                    // populate admin list
-                                    const adminList = document.getElementById('adminChallengesList');
-                                    adminList.innerHTML = data.challenges.map(ch => `
-                                        <div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center;">
-                                            <div>
-                                                <div style="font-weight:700;color:#ffc107;">${ch.name}</div>
-                                                <div style="font-size:12px;color:#aaa;">${ch.description}</div>
-                                                <div style="font-size:12px;color:#00ff88;margin-top:6px;">Reward: ${ch.reward_minutes} min</div>
-                                            </div>
-                                            <div style="display:flex;flex-direction:column;gap:6px;">
-                                                <button onclick="openAssignModal('${ch.id}')" class="btn">Assign</button>
-                                                <button onclick="editReward('${ch.id}', ${ch.reward_minutes})" class="btn">Edit Reward</button>
-                                            </div>
-                                        </div>
-                                    `).join('');
-                                } else {
-                                    // child view: show cards
-                                    container.innerHTML = data.challenges.map(ch => {
-                                        const isLocked = !ch.is_unlocked;
-                                        let actionHtml = '';
-                                        if (isLocked) {
-                                            actionHtml = '<button class="request-btn" onclick="requestUnlock(\'' + ch.id + '\')">🔒 Request Unlock</button>';
-                                        } else {
-                                            actionHtml = '<button class="complete-btn" onclick="completeChallenge(\'' + ch.id + '\')">Complete</button>';
-                                        }
-
-                                        const img = ch.image_url ? `<img src="${ch.image_url}" alt="${ch.name}" style="width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:8px;">` : '';
-
-                                        return `
-                                            <div class="challenge-card">
-                                                ${img}
-                                                <div class="challenge-header">
-                                                    <div class="challenge-name">${ch.name}</div>
-                                                </div>
-                                                <div class="challenge-description">${ch.description}</div>
-                                                <div class="challenge-reward">
-                                                    🎮 +${ch.reward_minutes} game time minutes
-                                                </div>
-                                                <div class="challenge-action">
-                                                    ${actionHtml}
-                                                </div>
-                                            </div>
-                                        `;
-                                    }).join('');
-                                }
-                            } else {
-                                if ('{{ account_type }}' === 'parent') {
-                                    document.getElementById('adminChallengesList').innerHTML = '<div class="empty-state"><p>No challenges yet.</p></div>';
-                                } else {
-                                    container.innerHTML = '<div class="empty-state"><p>No challenges available yet.</p></div>';
-                                }
-                            }
+                const resp = await fetch('/api/challenge-templates');
+                if (!resp.ok) throw new Error('Failed to fetch templates');
+                const data = await resp.json();
+                
+                const container = document.getElementById('templatesContainer');
+                if (!data.templates || data.templates.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No templates available</p></div>';
+                    return;
                 }
+                
+                container.innerHTML = data.templates.map(t => `
+                    <div class="template-card" onclick="openAssignModal('${t.id}', '${t.name}', '${t.description}', ${t.default_reward}, '${t.icon}')">
+                        <div class="template-icon">${t.icon}</div>
+                        <div class="template-name">${t.name}</div>
+                        <div class="template-description">${t.description}</div>
+                        <div class="template-actions">
+                            <button class="btn btn-primary btn-small" onclick="event.stopPropagation();">Assign</button>
+                        </div>
+                    </div>
+                `).join('');
             } catch (err) {
-                console.error('Failed to load challenges:', err);
-                document.getElementById('challengesContainer').innerHTML = '<div class="empty-state"><p>Error loading challenges</p></div>';
+                console.error('Error loading templates:', err);
+                document.getElementById('templatesContainer').innerHTML = '<div class="empty-state"><p>Error loading templates</p></div>';
             }
         }
 
-        async function requestUnlock(challengeId) {
+        // Load children for assignment
+        async function loadChildren() {
             try {
-                const resp = await fetch('/api/request-challenge-unlock', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ challenge_id: challengeId })
-                });
+                const resp = await fetch('/api/parent-children');
+                if (!resp.ok) throw new Error('Failed to fetch children');
+                const data = await resp.json();
+                
+                const container = document.getElementById('childrenList');
+                if (!data.children || data.children.length === 0) {
+                    container.innerHTML = '<div style="padding: 8px; color: rgba(255,255,255,0.6);">No children found</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.children.map(c => `
+                    <div class="child-item">
+                        <input type="checkbox" data-child-id="${c.id}" onchange="updateSelectedChildren()" />
+                        <label for="child-${c.id}" onclick="event.preventDefault();">${c.name || c.email}</label>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading children:', err);
+                document.getElementById('childrenList').innerHTML = '<div style="color: rgba(255,255,255,0.6);">Error loading children</div>';
+            }
+        }
 
+        function updateSelectedChildren() {
+            const checkboxes = document.querySelectorAll('#childrenList input[type="checkbox"]');
+            selectedChildren = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.getAttribute('data-child-id'));
+        }
+
+        function openAssignModal(templateId, name, desc, defaultReward, icon) {
+            currentTemplateId = templateId;
+            document.getElementById('templateInfo').innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">${icon}</div>
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">${name}</div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.7);">${desc}</div>
+                </div>
+            `;
+            document.getElementById('rewardInput').value = defaultReward;
+            document.getElementById('assignModal').classList.add('active');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignModal').classList.remove('active');
+        }
+
+        async function confirmAssign() {
+            if (selectedChildren.length === 0) {
+                alert('Please select at least one child');
+                return;
+            }
+            
+            const reward = parseInt(document.getElementById('rewardInput').value);
+            if (!reward || reward <= 0) {
+                alert('Please enter a valid reward amount (minimum 5 minutes)');
+                return;
+            }
+            
+            try {
+                document.querySelector('.btn-primary').classList.add('loading');
+                const resp = await fetch('/api/parent/assign-template-challenge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        template_id: currentTemplateId,
+                        child_ids: selectedChildren,
+                        reward_minutes: reward
+                    })
+                });
+                
                 if (resp.ok) {
-                    alert('Unlock request sent! Your parent will review it.');
-                    loadChallenges();
+                    alert('✅ Challenge assigned successfully!');
+                    closeAssignModal();
+                    loadTemplates();
                 } else {
                     const err = await resp.json();
-                    alert('Error: ' + (err.error || 'Failed to send request'));
+                    alert('Error: ' + (err.error || 'Failed to assign challenge'));
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('Error sending request');
+                alert('Error assigning challenge');
+            } finally {
+                document.querySelector('.btn-primary').classList.remove('loading');
+            }
+        }
+
+        // Load child's challenges
+        async function loadChildChallenges() {
+            try {
+                const resp = await fetch('/api/challenges');
+                if (!resp.ok) throw new Error('Failed to fetch challenges');
+                const data = await resp.json();
+                
+                const container = document.getElementById('childChallengesContainer');
+                if (!data.challenges || data.challenges.length === 0) {
+                    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>No challenges yet. Ask your parent to assign some!</p></div>';
+                    return;
+                }
+                
+                container.innerHTML = data.challenges.map(ch => {
+                    const isCompleted = ch.is_unlocked; // Using is_unlocked as completion status
+                    return `
+                        <div class="challenge-card">
+                            <div class="challenge-content">
+                                <div class="challenge-icon">${ch.icon || '🎯'}</div>
+                                <div class="challenge-title">${ch.name}</div>
+                                <div class="challenge-description">${ch.description}</div>
+                                <div class="challenge-reward">🎮 +${ch.reward_minutes} minutes</div>
+                                <button 
+                                    class="challenge-button ${isCompleted ? 'btn-completed' : 'btn-complete'}"
+                                    onclick="${isCompleted ? '' : `completeChallenge('${ch.id}')`}"
+                                    ${isCompleted ? 'disabled' : ''}
+                                >
+                                    ${isCompleted ? '✅ Completed' : '🎯 Complete Challenge'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading challenges:', err);
+                document.getElementById('childChallengesContainer').innerHTML = '<div class="empty-state"><p>Error loading challenges</p></div>';
             }
         }
 
         async function completeChallenge(challengeId) {
             try {
+                if (!confirm('Complete this challenge?')) return;
+                
                 const resp = await fetch('/api/complete-challenge', {
                     method: 'POST',
-                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
                     body: JSON.stringify({ challenge_id: challengeId })
                 });
-
+                
                 if (resp.ok) {
                     const data = await resp.json();
                     alert('🎉 Challenge completed! You earned ' + data.reward_minutes + ' game time minutes!');
-                    loadChallenges();
+                    loadChildChallenges();
                 } else {
                     const err = await resp.json();
                     alert('Error: ' + (err.error || 'Failed to complete challenge'));
@@ -394,75 +656,13 @@
             }
         }
 
-            // Parent: create challenge
-            async function createChallenge() {
-                const name = document.getElementById('chName').value.trim();
-                const desc = document.getElementById('chDesc').value.trim();
-                const reward = parseInt(document.getElementById('chReward').value || '0', 10);
-                const image_url = document.getElementById('chImageUrl').value.trim();
-                if (!name) { alert('Please provide a name'); return; }
-                try {
-                    const resp = await fetch('/api/admin/challenges', {
-                        method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({ name, description: desc, reward_minutes: reward, image_url })
-                    });
-                    if (resp.ok) { alert('Challenge created'); loadChallenges(); loadChildren(); }
-                    else { const j = await resp.json(); alert('Error: ' + (j.error||'Failed')); }
-                } catch (err) { console.error(err); alert('Error creating challenge'); }
-            }
-
-            // Parent: load children for assignment
-            async function loadChildren() {
-                try {
-                    const resp = await fetch('/api/parent-children');
-                    if (!resp.ok) return;
-                    const j = await resp.json();
-                    const el = document.getElementById('childrenList');
-                    if (j.children && j.children.length) {
-                        el.innerHTML = j.children.map(c => `<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);">` +
-                            `<label><input type="checkbox" data-child-id="${c.id}" /> ${c.name || c.email}</label></div>`).join('');
-                    } else {
-                        el.innerHTML = '<div class="empty-state"><p>No children found.</p></div>';
-                    }
-                } catch (err) { console.error(err); }
-            }
-
-            // Parent: open assign modal (simple prompt flow)
-            function openAssignModal(chId) {
-                // collect checked children from childrenList
-                const boxes = Array.from(document.querySelectorAll('#childrenList input[type=checkbox]'));
-                const selected = boxes.filter(b => b.checked).map(b => b.getAttribute('data-child-id'));
-                if (!selected.length) { alert('Select one or more children to assign to'); return; }
-                assignChallenge(chId, selected, true);
-            }
-
-            async function assignChallenge(chId, children, visible) {
-                try {
-                    const resp = await fetch('/api/admin/challenges/' + chId + '/assign', {
-                        method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({ children, visible })
-                    });
-                    if (resp.ok) { alert('Assigned'); loadChallenges(); }
-                    else { const j = await resp.json(); alert('Error: ' + (j.error||'Failed')); }
-                } catch (err) { console.error(err); alert('Error assigning challenge'); }
-            }
-
-            function editReward(chId, current) {
-                const v = prompt('Enter new reward minutes', String(current||0));
-                if (v === null) return;
-                const nv = parseInt(v,10) || 0;
-                fetch('/api/admin/challenges/' + chId + '/update', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ reward_minutes: nv}) })
-                    .then(r => { if (r.ok) { alert('Updated'); loadChallenges(); } else r.json().then(j=>alert('Error: '+(j.error||'Failed'))); })
-                    .catch(e=>{console.error(e); alert('Error');});
-            }
-
-        // Load on page load
-        loadChallenges();
-            {% if account_type == 'parent' %}
+        // Initialize
+        if (accountType === 'parent') {
+            loadTemplates();
             loadChildren();
-            {% endif %}
-        // Refresh every 8 seconds
-        setInterval(loadChallenges, 8000);
+        } else {
+            loadChildChallenges();
+        }
     </script>
 </body>
 </html>

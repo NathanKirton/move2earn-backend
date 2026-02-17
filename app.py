@@ -1036,48 +1036,63 @@ def api_leaderboard():
 # ------------------------
 @app.route('/api/challenge-templates', methods=['GET'])
 def api_get_challenge_templates():
-    """Return a list of wacky template challenges."""
+    """Return a list of simple, achievement-based challenge templates."""
     templates = [
         {
-            'id': 'tpl_weekend_madness',
-            'name': 'Weekend Madness',
-            'description': 'Complete 2 runs (one Sat, one Sun) to boost next week\'s time!',
-            'reward_minutes': 60,
-            'reward_type': 'percentage',
-            'reward_value': 10,  # 10% increase
-            'icon': '🤪'
+            'id': 'tpl_monday_momentum',
+            'name': 'Monday Momentum',
+            'description': 'Complete an activity on Monday',
+            'default_reward': 15,
+            'icon': '🚀'
         },
         {
             'id': 'tpl_wild_wednesday',
             'name': 'Wild Wednesday',
-            'description': 'Log a 5km run on a Wednesday.',
-            'reward_minutes': 45,
-            'reward_type': 'fixed',
+            'description': 'Complete an activity on Wednesday',
+            'default_reward': 15,
             'icon': '🐪'
         },
         {
-            'id': 'tpl_marathon_month',
-            'name': 'Marathon Month',
-            'description': 'Accumulate 42km total distance this month.',
-            'reward_minutes': 120,
-            'reward_type': 'fixed',
-            'icon': '🏃'
+            'id': 'tpl_friday_finisher',
+            'name': 'Friday Finisher',
+            'description': 'Complete an activity on Friday',
+            'default_reward': 20,
+            'icon': '🎉'
+        },
+        {
+            'id': 'tpl_weekend_warrior',
+            'name': 'Weekend Warrior',
+            'description': 'Complete activities on both Saturday and Sunday',
+            'default_reward': 60,
+            'icon': '⛹️'
         },
         {
             'id': 'tpl_early_bird',
             'name': 'Early Bird',
-            'description': 'Complete an activity before 8 AM.',
-            'reward_minutes': 30,
-            'reward_type': 'fixed',
+            'description': 'Complete an activity before 8 AM',
+            'default_reward': 30,
             'icon': '🌅'
         },
         {
-            'id': 'tpl_family_feat',
-            'name': 'Family Feat',
-            'description': 'Go for a walk/run with a parent.',
-            'reward_minutes': 45,
-            'reward_type': 'fixed',
-            'icon': '👨‍👩‍👧‍👦'
+            'id': 'tpl_marathon_week',
+            'name': 'Marathon Week',
+            'description': 'Complete activities 5 or more days this week',
+            'default_reward': 90,
+            'icon': '🏃'
+        },
+        {
+            'id': 'tpl_two_day_streak',
+            'name': 'Two Day Streak',
+            'description': 'Complete activities on 2 consecutive days',
+            'default_reward': 25,
+            'icon': '🔥'
+        },
+        {
+            'id': 'tpl_three_day_streak',
+            'name': 'Three Day Streak',
+            'description': 'Complete activities on 3 consecutive days',
+            'default_reward': 50,
+            'icon': '🔥🔥'
         }
     ]
     return jsonify({'templates': templates}), 200
@@ -1188,7 +1203,7 @@ def api_activate_challenge():
 
 @app.route('/api/admin/challenges', methods=['POST'])
 def api_admin_create_challenge():
-    """Parent creates a new challenge template (not visible to children until assigned)."""
+    """Parent creates a new custom challenge with simple fixed reward."""
     if 'user_id' not in session or session.get('account_type') != 'parent':
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -1196,8 +1211,6 @@ def api_admin_create_challenge():
     name = data.get('name')
     description = data.get('description')
     reward = int(data.get('reward_minutes', 0))
-    image_url = data.get('image_url')
-    task = data.get('task') or {}
 
     if not name:
         return jsonify({'error': 'name required'}), 400
@@ -1211,10 +1224,6 @@ def api_admin_create_challenge():
         'name': name,
         'description': description,
         'reward_minutes': reward,
-        'reward_type': data.get('reward_type', 'fixed'),
-        'reward_value': int(data.get('reward_value', 0)),
-        'image_url': image_url,
-        'task': task,
         'visible_to_children': False,
         'assigned_children': [],
         'created_by': session['user_id'],
@@ -1431,7 +1440,7 @@ def api_respond_challenge_unlock():
 
 @app.route('/api/complete-challenge', methods=['POST'])
 def api_complete_challenge():
-    """Mark a challenge as completed by a child and credit reward minutes."""
+    """Mark a challenge as completed by a child and credit reward minutes automatically."""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -1444,44 +1453,148 @@ def api_complete_challenge():
     if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
-    unlocks = db['challenge_unlocks']
     challenges = db['challenges']
     user_ch = db['user_challenges']
 
     # 1. Check if already completed
-    existing_completion = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
-    if existing_completion:
-        return jsonify({'error': 'Challenge already completed'}), 400
+    try:
+        existing_completion = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+        if existing_completion:
+            return jsonify({'error': 'Challenge already completed'}), 400
+    except Exception as e:
+        logger.exception('Error checking completion: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-    # Check unlock
-    unlocked = unlocks.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
-    if not unlocked:
-        return jsonify({'error': 'Challenge locked or not approved'}), 403
+    # 2. Get challenge details
+    try:
+        ch = challenges.find_one({'_id': ObjectId(challenge_id)})
+        if not ch:
+            return jsonify({'error': 'Challenge not found'}), 404
+    except Exception as e:
+        logger.exception('Error finding challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-    ch = challenges.find_one({'_id': ObjectId(challenge_id)})
-    if not ch:
-        return jsonify({'error': 'Challenge not found'}), 404
+    # 3. Record completion
+    try:
+        reward = int(ch.get('reward_minutes', 0))
+        user_ch.insert_one({
+            'user_id': session['user_id'],
+            'challenge_id': challenge_id,
+            'completed_at': datetime.utcnow(),
+            'reward_earned': reward
+        })
+    except Exception as e:
+        logger.exception('Error recording completion: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-
-    reward = int(ch.get('reward_minutes', 0))
-    reward_type = ch.get('reward_type', 'fixed')
-    reward_val = int(ch.get('reward_value', 0))
-    
-    # Calculate actual minutes if percentage
-    if reward_type == 'percentage' and reward_val > 0:
-        # e.g. 10% of daily limit
-        user = UserDB.get_user_by_id(session['user_id'])
-        limit = user.get('daily_screen_time_limit', 180)
-        calc_reward = int((reward_val / 100.0) * limit)
-        reward = max(reward, calc_reward) # Use max of fixed base or calculated
-
-    # Record completion
-    user_ch.insert_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'completed_at': datetime.utcnow()})
-
-    # Credit reward minutes
-    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+    # 4. Credit reward minutes automatically
+    try:
+        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+        logger.info(f"Challenge {challenge_id} completed by {session['user_id']}, reward: {reward} min")
+    except Exception as e:
+        logger.exception('Error crediting reward: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
     return jsonify({'success': True, 'reward_minutes': reward}), 200
+
+
+@app.route('/api/parent/assign-template-challenge', methods=['POST'])
+def api_parent_assign_template_challenge():
+    """Parent assigns a template challenge to one or more children with a custom reward."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    template_id = data.get('template_id')
+    child_ids = data.get('child_ids', [])
+    reward_minutes = int(data.get('reward_minutes', 0))
+
+    if not template_id or not child_ids or reward_minutes <= 0:
+        return jsonify({'error': 'template_id, child_ids, and reward_minutes required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    # Get template definition
+    templates = [
+        {
+            'id': 'tpl_monday_momentum',
+            'name': 'Monday Momentum',
+            'description': 'Complete an activity on Monday',
+            'icon': '🚀'
+        },
+        {
+            'id': 'tpl_wild_wednesday',
+            'name': 'Wild Wednesday',
+            'description': 'Complete an activity on Wednesday',
+            'icon': '🐪'
+        },
+        {
+            'id': 'tpl_friday_finisher',
+            'name': 'Friday Finisher',
+            'description': 'Complete an activity on Friday',
+            'icon': '🎉'
+        },
+        {
+            'id': 'tpl_weekend_warrior',
+            'name': 'Weekend Warrior',
+            'description': 'Complete activities on both Saturday and Sunday',
+            'icon': '⛹️'
+        },
+        {
+            'id': 'tpl_early_bird',
+            'name': 'Early Bird',
+            'description': 'Complete an activity before 8 AM',
+            'icon': '🌅'
+        },
+        {
+            'id': 'tpl_marathon_week',
+            'name': 'Marathon Week',
+            'description': 'Complete activities 5 or more days this week',
+            'icon': '🏃'
+        },
+        {
+            'id': 'tpl_two_day_streak',
+            'name': 'Two Day Streak',
+            'description': 'Complete activities on 2 consecutive days',
+            'icon': '🔥'
+        },
+        {
+            'id': 'tpl_three_day_streak',
+            'name': 'Three Day Streak',
+            'description': 'Complete activities on 3 consecutive days',
+            'icon': '🔥🔥'
+        }
+    ]
+    
+    template = next((t for t in templates if t['id'] == template_id), None)
+    if not template:
+        return jsonify({'error': 'Invalid template_id'}), 400
+
+    try:
+        challenges = db['challenges']
+        
+        # Create a challenge from the template for each child
+        for child_id in child_ids:
+            doc = {
+                'template_id': template_id,
+                'name': template['name'],
+                'description': template['description'],
+                'icon': template['icon'],
+                'reward_minutes': reward_minutes,
+                'visible_to_children': True,
+                'assigned_children': [child_id],
+                'created_by': session['user_id'],
+                'created_at': datetime.utcnow()
+            }
+            challenges.insert_one(doc)
+        
+        logger.info(f"Parent {session['user_id']} assigned template {template_id} to {len(child_ids)} children with reward {reward_minutes} min")
+        return jsonify({'success': True, 'message': f'Challenge assigned to {len(child_ids)} child(ren)'}), 201
+    except Exception as e:
+        logger.exception('Error assigning template challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
 
 @app.route('/api/friends')
