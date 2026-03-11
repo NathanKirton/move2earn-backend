@@ -130,12 +130,12 @@ header { display:flex; align-items:center; justify-content:space-between; gap:va
 .ai-collapsible .ai-warning { color: #ffcc00; background: rgba(255,204,0,0.06); padding: 8px; border-radius:6px; margin-top:8px; }
 
 /* Dashboard theme (moved from inline template) */
-/* Theme: dark primary #1A1A2E, blue secondary #3A7DFF */
+/* Theme: purple header, cyan game card, orange streak, green activities */
 * { box-sizing: border-box; }
 body.theme-dashboard {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  background: #1A1A2E;
+  background: linear-gradient(180deg, #4a148c 0%, #2a0f4a 100%);
   color: #fff;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -161,13 +161,12 @@ body.theme-dashboard {
 }
 
 .theme-dashboard .navbar {
-  background: #0F0F1E;
+  background: #4b006e;
   padding: 16px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-radius: 0 0 18px 18px;
-  border-bottom: 2px solid #3A7DFF;
 }
 .theme-dashboard .navbar .logo {
   font-size: 1.5rem;
@@ -179,8 +178,8 @@ body.theme-dashboard {
   font-size: 1rem;
 }
 .theme-dashboard .navbar .logout-btn, .theme-dashboard .navbar .manual-upload-btn {
-  background: #3A7DFF;
-  color: #fff;
+  background: #ffb347;
+  color: #4b006e;
   border: none;
   border-radius: 8px;
   padding: 8px 18px;
@@ -190,29 +189,25 @@ body.theme-dashboard {
   transition: background 0.2s;
 }
 .theme-dashboard .navbar .logout-btn:hover, .theme-dashboard .navbar .manual-upload-btn:hover {
-  background: #2961CC;
+  background: #ff9800;
 }
 .theme-dashboard .card {
-  background: #2A2A3E;
+  background: linear-gradient(90deg, #00c6fb 0%, #005bea 100%);
   border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(58, 125, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
   margin-bottom: 24px;
   padding: 28px 32px;
-  border-left: 4px solid #3A7DFF;
 }
 .theme-dashboard .card.orange {
-  background: #2A2A3E;
-  color: #fff;
-  border-left: 4px solid #3A7DFF;
+  background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
+  color: #4b006e;
 }
 .theme-dashboard .card.purple {
-  background: #2A2A3E;
-  border-left: 4px solid #3A7DFF;
+  background: linear-gradient(90deg, #a4508b 0%, #5f0a87 100%);
 }
 .theme-dashboard .card.green {
-  background: #2A2A3E;
-  color: #fff;
-  border-left: 4px solid #3A7DFF;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #1b2a49;
 }
 .theme-dashboard .section-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 12px; }
 .theme-dashboard .game-time { font-size: 2.5rem; font-weight: bold; margin: 0 0 8px 0; }
@@ -234,36 +229,33 @@ body.theme-dashboard {
 
 /* Map theme styles to actual template class names used in dashboard.html */
 .theme-dashboard .gametime-card {
-  background: #2A2A3E;
+  background: linear-gradient(90deg, #00f0c6 0%, #00b8ff 100%);
   border-radius: 12px;
   padding: 22px;
-  box-shadow: 0 8px 24px rgba(58, 125, 255, 0.15);
-  border-left: 4px solid #3A7DFF;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
-.theme-dashboard .gametime-header { font-weight:700; color: #ccc; }
-.theme-dashboard .gametime-value { font-size: 48px; font-weight:800; color: #3A7DFF; }
-.theme-dashboard .gametime-limit { opacity: 0.9; color: #999; }
+.theme-dashboard .gametime-header { font-weight:700; color: rgba(0,0,0,0.6); }
+.theme-dashboard .gametime-value { font-size: 48px; font-weight:800; color: #001b3a; }
+.theme-dashboard .gametime-limit { opacity: 0.9; color: rgba(0,0,0,0.6); }
 .theme-dashboard .gametime-bar { height: 10px; background: rgba(255,255,255,0.06); border-radius: 8px; margin-top: 12px; overflow: hidden; }
 
 .theme-dashboard .notifications-card {
-  background: #2A2A3E;
+  background: linear-gradient(90deg, #7a1aa8 0%, #4b006e 100%);
   border-radius: 12px;
   padding: 18px;
-  border-left: 4px solid #3A7DFF;
 }
 
 .theme-dashboard .streak-card {
-  background: #2A2A3E;
+  background: linear-gradient(90deg, #ffb347 0%, #ff7a00 100%);
   border-radius: 12px;
   padding: 18px;
-  color: #fff;
-  border-left: 4px solid #3A7DFF;
+  color: #4b006e;
 }
 
 .theme-dashboard .streak-count { font-size: 40px; font-weight:800; }
 
 .theme-dashboard .activity-item {
-  background: #2A2A3E;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
   border-radius: 12px;
   padding: 14px;
   display: grid;
@@ -271,26 +263,20 @@ body.theme-dashboard {
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
-  color: #fff;
-  border-left: 4px solid #3A7DFF;
+  color: #08202a;
 }
 .theme-dashboard .activity-icon { font-size: 28px; }
-.theme-dashboard .activity-title { font-weight:700; color: #fff; }
-.theme-dashboard .earned-value { font-size: 18px; font-weight:800; color: #3A7DFF; }
+.theme-dashboard .activity-title { font-weight:700; color: #08202a; }
+.theme-dashboard .earned-value { font-size: 18px; font-weight:800; color: #08202a; }
 
 /* Navbar tweaks */
 .theme-dashboard .navbar { align-items: center; padding: 12px 20px; border-radius: 8px; }
 .theme-dashboard .logo { font-size: 1.2rem; font-weight:800; color: #fff; }
 .theme-dashboard .user-info .name { color: #fff; font-weight:700; }
-.theme-dashboard .connect-btn, .theme-dashboard .manual-upload-btn {
-  background: #3A7DFF;
-  color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; text-decoration:none; display:inline-block; border: none;
-}
-.theme-dashboard .connect-btn:hover, .theme-dashboard .manual-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(58, 125, 255, 0.4); background: #2961CC; }
-.theme-dashboard .logout-btn { background: #3A7DFF; color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; border: none; }
-.theme-dashboard .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+.theme-dashboard .manual-upload-btn { background: #ffb347; color: #4b006e; padding: 8px 12px; border-radius: 8px; font-weight:700; }
+.theme-dashboard .logout-btn { background: #ff6b6b; color: #fff; padding: 8px 12px; border-radius: 8px; font-weight:700; }
 
 /* Small Strava badge style */
-.theme-dashboard .strava-badge { background: #3A7DFF; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight:700; font-size:12px; margin-left:8px; }
+.theme-dashboard .strava-badge { background: #ff4b00; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight:700; font-size:12px; margin-left:8px; }
 
 

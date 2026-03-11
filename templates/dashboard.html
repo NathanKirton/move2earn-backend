@@ -21,17 +21,19 @@
     .day-box {
         flex: 1;
         height: 35px;
-        background: rgba(255, 255, 255, 0.2);
+        background: #2A2A3E;
         border-radius: 4px;
         font-size: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
+        border: 1px solid rgba(58, 125, 255, 0.2);
     }
     
     .day-box.active {
-        background: rgba(255, 255, 255, 0.4);
+        background: #3A7DFF;
+        color: #fff;
     }
     
     .activities-header {
@@ -45,7 +47,7 @@
     }
     
     .activity-item {
-        background: linear-gradient(135deg, rgba(100, 200, 50, 0.8) 0%, rgba(80, 180, 30, 0.8) 100%);
+        background: #2A2A3E;
         border-radius: 12px;
         padding: 20px;
         display: grid;
@@ -55,12 +57,12 @@
         margin-bottom: 15px;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-left: 4px solid #3A7DFF;
     }
     
     .activity-item:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 20px rgba(58, 125, 255, 0.2);
     }
     
     .activity-icon {
@@ -92,10 +94,11 @@
     }
     
     .stat-box {
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(58, 125, 255, 0.1);
         padding: 8px 12px;
         border-radius: 6px;
         font-size: 11px;
+        border-left: 2px solid #3A7DFF;
     }
     
     .stat-label {
@@ -134,8 +137,9 @@
         text-align: center;
         padding: 40px 20px;
         color: #aaa;
-        background: rgba(255, 255, 255, 0.05);
+        background: #2A2A3E;
         border-radius: 12px;
+        border: 1px solid rgba(58, 125, 255, 0.2);
     }
     
     .intensity-badge {
@@ -150,23 +154,23 @@
     }
     
     .intensity-easy {
-        background: rgba(0, 212, 255, 0.3);
-        color: #00d4ff;
+        background: rgba(58, 125, 255, 0.2);
+        color: #3A7DFF;
     }
     
     .intensity-medium {
-        background: rgba(255, 200, 0, 0.3);
+        background: rgba(255, 200, 0, 0.2);
         color: #ffcc00;
     }
     
     .intensity-hard {
-        background: rgba(255, 100, 100, 0.3);
+        background: rgba(255, 100, 100, 0.2);
         color: #ff6464;
     }
     
     .notification-item {
-        background: rgba(100, 150, 200, 0.2);
-        border-left: 3px solid #00d4ff;
+        background: #2A2A3E;
+        border-left: 3px solid #3A7DFF;
         border-radius: 6px;
         padding: 12px;
         margin-bottom: 10px;
@@ -183,7 +187,7 @@
     
     .notification-from {
         font-weight: 600;
-        color: #00d4ff;
+        color: #3A7DFF;
     }
     
     .notification-time {
@@ -193,8 +197,8 @@
     
     .notification-bonus {
         display: inline-block;
-        background: rgba(0, 255, 136, 0.2);
-        color: #00ff88;
+        background: rgba(58, 125, 255, 0.2);
+        color: #3A7DFF;
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 11px;
@@ -271,10 +275,10 @@
 
     button {
         padding: 12px 20px;
-        background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+        background: #3A7DFF;
         border: none;
         border-radius: 6px;
-        color: #000;
+        color: #fff;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -282,21 +286,22 @@
 
     button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 255, 136, 0.3);
+        box-shadow: 0 8px 20px rgba(58, 125, 255, 0.4);
+        background: #2961CC;
     }
 
     button.secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(58, 125, 255, 0.15);
+        color: #3A7DFF;
+        border: 1px solid rgba(58, 125, 255, 0.4);
     }
 
     button.secondary:hover {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(58, 125, 255, 0.25);
     }
 
     .modal-content {
-        background: #0a0e27;
+        background: #1A1A2E;
         padding: 30px;
         border-radius: 12px;
         max-width: 500px;
@@ -304,6 +309,7 @@
         max-height: 80vh;
         overflow-y: auto;
         color: #fff;
+        border: 1px solid rgba(58, 125, 255, 0.2);
     }
 
     .modal-content h2 {
@@ -314,7 +320,7 @@
     /* Loading spinner */
     .spinner {
         border: 3px solid rgba(255, 255, 255, 0.2);
-        border-top: 3px solid #00ff88;
+        border-top: 3px solid #3A7DFF;
         border-radius: 50%;
         width: 30px;
         height: 30px;
