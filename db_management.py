@@ -226,6 +226,47 @@ def reset_all_user_game_time():
         print(f"ERROR: {e}")
 
 
+def clear_whole_database():
+    """Drop the entire configured database after explicit confirmation.
+
+    This will permanently remove all collections and data in the configured
+    `MONGODB_DB_NAME`. Use with extreme caution.
+    """
+    response = input("WARNING: This will DROP the entire database. Type 'CLEAR WHOLE DB' to confirm: ")
+    if response != 'CLEAR WHOLE DB':
+        print("Operation cancelled.")
+        return
+
+    uri = os.getenv('MONGODB_URI')
+    db_name = os.getenv('MONGODB_DB_NAME', 'move2earn')
+    if not uri:
+        print("ERROR: MONGODB_URI not found in environment/.env")
+        return
+
+    client = get_mongo_connection()
+    if client is None:
+        print("ERROR: Could not connect to MongoDB")
+        return
+
+    try:
+        # Confirm existence
+        dbs = client.list_database_names()
+        if db_name not in dbs:
+            print(f"Database '{db_name}' not found on server. Available: {dbs}")
+            confirm = input("Proceed to DROP database name regardless? (yes/no): ")
+            if confirm.lower() != 'yes':
+                print('Aborted.')
+                return
+
+        # Drop the database
+        client.drop_database(db_name)
+        print(f"✓ Dropped database '{db_name}'")
+    except Exception as e:
+        print(f"ERROR dropping database: {e}")
+    finally:
+        client.close()
+
+
 def list_all_users():
     """List all users in the database"""
     db = get_db()
@@ -286,6 +327,7 @@ def show_menu():
         print("6. Clear all activities")
         print("7. Clear all users")
         print("8. Exit")
+        print("9. Clear entire database (DROP)")
         print("="*50)
         
         choice = input("Enter your choice (1-8): ").strip()
@@ -310,6 +352,8 @@ def show_menu():
             clear_all_activities()
         elif choice == '7':
             clear_all_users()
+        elif choice == '9':
+            clear_whole_database()
         elif choice == '8':
             print("Exiting...")
             break

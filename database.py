@@ -125,10 +125,16 @@ class UserDB:
             user_doc['daily_screen_time_limit'] = 60  # Default 60 minutes
             user_doc['weekly_screen_time_limit'] = 420  # Default 7 hours
             user_doc['earned_game_time'] = 0  # Earned minutes
-            user_doc['used_game_time'] = 0  # Used minutes
+            user_doc['used_game_time'] = 0  # Used minutes (total)
+            user_doc['daily_used_minutes_today'] = 0  # Used minutes today (resets daily)
+            user_doc['daily_earned_minutes_today'] = 0  # Earned minutes awarded today (resets daily)
+            user_doc['last_daily_reset_date'] = datetime.utcnow().date().isoformat()  # Date of last daily reset
             user_doc['parent_messages'] = []  # Messages from parent
             user_doc['streak_count'] = 0  # Streak count
             user_doc['streak_bonus_minutes'] = 0  # Bonus minutes per day from streak
+            user_doc['last_activity_date'] = None  # Date of last activity (for streak)
+            user_doc['timer_running'] = False  # Is timer currently running
+            user_doc['timer_started_at'] = None  # When timer was started
         
         try:
             result = users.insert_one(user_doc)
@@ -414,8 +420,13 @@ class UserDB:
             return False
 
     @staticmethod
-    def add_earned_game_time_and_increase_limit(child_id, minutes):
-        """Add bonus game time to earned_game_time pool (does NOT change daily_screen_time_limit)."""
+    def add_earned_game_time_and_increase_limit(child_id, minutes, persistent=False):
+        """Add bonus game time and increase the daily limit by the same amount.
+
+        By default the granted minutes are treated as daily-earned (they will be
+        tracked in `daily_earned_minutes_today` and removed at the next daily reset).
+        Set `persistent=True` to grant minutes that persist across days (e.g., challenge rewards).
+        """
         database = get_db()
         if database is None:
             return False
@@ -424,12 +435,13 @@ class UserDB:
         users = database['users']
 
         try:
-            # Only increment earned_game_time (bonus pool)
-            # daily_screen_time_limit stays unchanged as it resets daily
-            result = users.update_one(
-                {'_id': ObjectId(child_id)},
-                {'$inc': {'earned_game_time': minutes}}
-            )
+            # Build increment fields. Always increment earned_game_time and daily limit.
+            inc_fields = {'earned_game_time': int(minutes), 'daily_screen_time_limit': int(minutes)}
+            # If not persistent, also record these as today's earned minutes so they can be reverted at midnight
+            if not persistent:
+                inc_fields['daily_earned_minutes_today'] = int(minutes)
+
+            result = users.update_one({'_id': ObjectId(child_id)}, {'$inc': inc_fields})
             return result.modified_count > 0
         except Exception as e:
             logger.exception("Error adding earned game time: %s", e)
@@ -748,6 +760,68 @@ class UserDB:
         except Exception as e:
             logger.exception("Error recording daily activity/streak: %s", e)
             return {'applied': False, 'reason': 'update failed'}
+
+    @staticmethod
+    def reset_daily_used_if_needed(child_id):
+        """Reset daily used game time and timer state if day has changed.
+        
+        Checks if the current date is different from last_daily_reset_date.
+        If so, resets:
+        - daily_used_minutes_today to 0
+        - timer_running to False
+        - timer_started_at to None
+        - last_daily_reset_date to today
+        """
+        database = get_db()
+        if database is None:
+            return
+        
+        from bson import ObjectId
+        users = database['users']
+        
+        try:
+            child = UserDB.get_user_by_id(child_id)
+            if not child:
+                return
+            
+            today_str = datetime.utcnow().date().isoformat()
+            last_reset = child.get('last_daily_reset_date')
+            
+            # If last_reset is not set or is a different day, reset
+            if not last_reset or str(last_reset) != today_str:
+                logger.debug("reset_daily_used_if_needed: child=%s last_reset=%s today=%s - resetting", child_id, last_reset, today_str)
+                
+                # Reset daily usage, timer state, and track reset date
+                # Also revert any earned minutes that were awarded today so they don't carry across days
+                daily_earned = int(child.get('daily_earned_minutes_today', 0) or 0)
+                updates = {
+                    '$set': {
+                        'daily_used_minutes_today': 0,
+                        'timer_running': False,
+                        'timer_started_at': None,
+                        'last_daily_reset_date': today_str,
+                        'daily_earned_minutes_today': 0
+                    }
+                }
+
+                # If there were daily earned minutes, subtract them from persistent earned_game_time and daily limit
+                if daily_earned > 0:
+                    # Ensure we don't underflow earned_game_time or daily_screen_time_limit
+                    try:
+                        # Use $inc with negative values to subtract
+                        users.update_one({'_id': ObjectId(child_id)}, {'$inc': {'earned_game_time': -int(daily_earned), 'daily_screen_time_limit': -int(daily_earned)}})
+                    except Exception:
+                        # If decrement fails, continue to at least reset daily fields
+                        pass
+
+                result = users.update_one(
+                    {'_id': ObjectId(child_id)},
+                    updates
+                )
+                
+                logger.debug("reset_daily_used_if_needed: reset completed, modified=%s", getattr(result, 'modified_count', None))
+        except Exception as e:
+            logger.exception("Error resetting daily used time: %s", e)
 
     @staticmethod
     def delete_child(parent_id, child_id):

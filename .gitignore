@@ -40,6 +40,11 @@ wheels/
 flask_session/
 *.db
 
+# Runtime artifacts
+__pycache__/
+*.py[cod]
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db

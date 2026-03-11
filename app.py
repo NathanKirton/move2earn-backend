@@ -16,6 +16,9 @@ from werkzeug.utils import secure_filename
 import pathlib
 from bson.objectid import ObjectId
 load_dotenv()
+from recommendations import recommend
+from database import get_db
+from analytics import log_event, assign_variant, record_ab_outcome
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -241,6 +244,268 @@ def login():
     return render_template('login.html', error='Invalid email or password')
 
 
+@app.route('/api/recommendations', methods=['POST'])
+def api_recommendations():
+    """Return a recommended training session for a user.
+
+    Body JSON: { "user_id": "...", "constraints": { ... } }
+    """
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+
+    constraints = data.get('constraints')
+    session_rec = recommend(user_id, constraints)
+    # expand with LLM if available
+    try:
+        from rag import expand_session_with_llm
+        db = get_db()
+        profile = db['user_profiles'].find_one({'user_id': user_id}) if db else None
+        expanded = expand_session_with_llm(session_rec, profile)
+        session_rec['description'] = expanded
+    except Exception:
+        pass
+    return jsonify({'recommendation': session_rec}), 200
+
+
+@app.route('/api/user_profiles', methods=['POST'])
+def api_create_user_profile():
+    """Create or update a user profile document.
+
+    Body JSON: { "user_id": "...", "max_minutes_per_session": 90 }
+    """
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'db connection failed'}), 500
+
+    profile = {
+        'user_id': user_id,
+        'max_minutes_per_session': data.get('max_minutes_per_session', 120)
+    }
+
+    db['user_profiles'].update_one({'user_id': user_id}, {'$set': profile}, upsert=True)
+    return jsonify({'ok': True, 'profile': profile}), 200
+
+
+@app.route('/api/user_profiles/<user_id>', methods=['GET'])
+def api_get_user_profile(user_id):
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'db connection failed'}), 500
+    p = db['user_profiles'].find_one({'user_id': user_id})
+    if not p:
+        return jsonify({'error': 'not found'}), 404
+    # convert ObjectIds/datetimes to strings safely
+    p['user_id'] = str(p['user_id']) if p.get('user_id') else user_id
+    return jsonify({'profile': p}), 200
+
+
+@app.route('/api/compute-athlete-type', methods=['POST'])
+def api_compute_athlete_type():
+    """Compute and store an `athlete_type` label for the current user based on recent activities.
+
+    Body JSON (optional): { "user_id": "..." } - if omitted, uses session user
+    """
+    # Require logged-in user
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json(force=True) if request.data else {}
+    except Exception:
+        data = {}
+
+    target_user = data.get('user_id') or session['user_id']
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    # Load user's activities
+    activities = list(db['activities'].find({'user_id': target_user}))
+    if not activities:
+        return jsonify({'error': 'No activities found for user'}), 400
+
+    # Build a lightweight DataFrame compatible with the ETL function
+    try:
+        import pandas as pd
+        rows = []
+        for a in activities:
+            row = {'MemberID': str(target_user)}
+            # Activity type
+            row['Activity Type'] = a.get('type') or a.get('activity_type') or a.get('sport_type') or 'Activity'
+            # Duration: prefer moving_time (seconds) then time_minutes (minutes)
+            if a.get('moving_time') is not None:
+                try:
+                    row['Duration_min'] = float(a.get('moving_time')) / 60.0
+                except Exception:
+                    row['Duration_min'] = None
+            else:
+                row['Duration_min'] = a.get('time_minutes') or a.get('Duration_min') or None
+            # Avg HR
+            row['AvgHR'] = a.get('average_heartrate') or a.get('avg_hr') or a.get('AvgHR')
+            # Distance (normalize to km)
+            dist = a.get('distance') or a.get('distance_km') or a.get('distance_m')
+            try:
+                if dist is None:
+                    row['Distance'] = None
+                else:
+                    d = float(dist)
+                    if d > 1000:
+                        d = d / 1000.0
+                    row['Distance'] = d
+            except Exception:
+                row['Distance'] = None
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+
+        # Try to pull gender from users collection for better features
+        users_col = db.get('users')
+        gender = None
+        try:
+            u = users_col.find_one({'_id': ObjectId(target_user)})
+            if u:
+                gender = u.get('gender') or u.get('sex')
+        except Exception:
+            # target_user may already be string id; try lookup by string
+            try:
+                u = users_col.find_one({'user_id': target_user})
+                if u:
+                    gender = u.get('gender')
+            except Exception:
+                pass
+        if gender is not None:
+            df['Gender'] = gender
+
+        # Import feature aggregator from ml prototype
+        try:
+            from ml.athlete_classifier import aggregate_user_features
+        except Exception as e:
+            logger.error('Failed to import ETL helper: %s', e)
+            return jsonify({'error': 'Server not configured for ML ETL (missing module)'}), 500
+
+        features = aggregate_user_features(df)
+        if features is None or features.shape[0] == 0:
+            return jsonify({'error': 'Failed to compute features'}), 500
+
+        # Load classifier
+        import joblib
+        model_path = os.path.join(pathlib.Path(__file__).parent, 'ml', 'models', 'athlete_classifier.joblib')
+        if not os.path.exists(model_path):
+            return jsonify({'error': 'No classifier model found. Run ml/athlete_classifier.py to train.'}), 400
+
+        model_data = joblib.load(model_path)
+        clf = model_data.get('clf')
+        feature_cols = model_data.get('feature_columns')
+        if clf is None or not feature_cols:
+            return jsonify({'error': 'Invalid classifier model artifact'}), 500
+
+        X = features.reindex(columns=feature_cols, fill_value=0)
+        # Predict label and confidence
+        try:
+            pred = clf.predict(X)[0]
+            prob = None
+            if hasattr(clf, 'predict_proba'):
+                proba = clf.predict_proba(X)[0]
+                prob = float(max(proba))
+            else:
+                prob = 1.0
+        except Exception as e:
+            logger.error('Classifier prediction failed: %s', e)
+            return jsonify({'error': 'Prediction failed'}), 500
+
+        # Map numeric cluster -> human label if mapping available
+        human_label = None
+        try:
+            map_path = os.path.join(pathlib.Path(__file__).parent, 'ml', 'models', 'cluster_label_map.joblib')
+            if os.path.exists(map_path):
+                label_map = joblib.load(map_path)
+                # label_map keys are ints
+                human_label = label_map.get(int(pred)) if isinstance(label_map, dict) else None
+        except Exception:
+            human_label = None
+
+        # Persist to user_profiles (store both numeric cluster and human label when available)
+        profiles = db['user_profiles']
+        store_doc = {
+            'user_id': target_user,
+            'athlete_type': str(human_label) if human_label else str(pred),
+            'athlete_confidence': float(prob),
+            'athlete_cluster': int(pred)
+        }
+        profiles.update_one({'user_id': target_user}, {'$set': store_doc}, upsert=True)
+
+        return jsonify({'ok': True, 'athlete_type': str(pred), 'confidence': float(prob)}), 200
+
+    except Exception as e:
+        logger.exception('Error computing athlete type: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/event', methods=['POST'])
+def api_log_event():
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+    user_id = data.get('user_id')
+    event_type = data.get('event_type')
+    metadata = data.get('metadata', {})
+    if not user_id or not event_type:
+        return jsonify({'error': 'user_id and event_type required'}), 400
+    ok = log_event(user_id, event_type, metadata)
+    return jsonify({'ok': ok}), (200 if ok else 500)
+
+
+@app.route('/api/ab/assign', methods=['GET'])
+def api_ab_assign():
+    """Assign a user to a variant for an experiment.
+
+    Query params: user_id, experiment, variants (comma-separated)
+    """
+    user_id = request.args.get('user_id')
+    experiment = request.args.get('experiment')
+    variants = request.args.get('variants')
+    if not user_id or not experiment or not variants:
+        return jsonify({'error': 'user_id, experiment, variants required'}), 400
+    variant_list = [v.strip() for v in variants.split(',') if v.strip()]
+    selected = assign_variant(user_id, experiment, variant_list)
+    # log exposure event
+    log_event(user_id, 'ab_exposure', {'experiment': experiment, 'variant': selected})
+    return jsonify({'variant': selected}), 200
+
+
+@app.route('/api/ab/outcome', methods=['POST'])
+def api_ab_outcome():
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({'error': 'Invalid JSON'}), 400
+    user_id = data.get('user_id')
+    experiment = data.get('experiment')
+    outcome = data.get('outcome')
+    variant = data.get('variant')
+    if not user_id or not experiment or not outcome:
+        return jsonify({'error': 'user_id, experiment, outcome required'}), 400
+    ok = record_ab_outcome(user_id, experiment, outcome, variant)
+    return jsonify({'ok': ok}), (200 if ok else 500)
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle user registration"""
@@ -411,7 +676,8 @@ def dashboard():
         # Child dashboard
         return render_template('dashboard.html', 
                               athlete_name=session.get('athlete_name', session.get('name')),
-                              strava_connected=session.get('strava_connected', False))
+                              strava_connected=session.get('strava_connected', False),
+                              user_id=session.get('user_id'))
 
 
 
@@ -660,6 +926,7 @@ def parent_dashboard():
     return render_template('parent_dashboard.html', 
                           parent_name=session.get('name'),
                           parent_email=session.get('email'),
+                          parent_id=session.get('user_id'),
                           children=children)
 
 
@@ -993,48 +1260,63 @@ def api_leaderboard():
 # ------------------------
 @app.route('/api/challenge-templates', methods=['GET'])
 def api_get_challenge_templates():
-    """Return a list of wacky template challenges."""
+    """Return a list of simple, achievement-based challenge templates."""
     templates = [
         {
-            'id': 'tpl_weekend_madness',
-            'name': 'Weekend Madness',
-            'description': 'Complete 2 runs (one Sat, one Sun) to boost next week\'s time!',
-            'reward_minutes': 60,
-            'reward_type': 'percentage',
-            'reward_value': 10,  # 10% increase
-            'icon': '🤪'
+            'id': 'tpl_monday_momentum',
+            'name': 'Monday Momentum',
+            'description': 'Complete an activity on Monday',
+            'default_reward': 15,
+            'icon': '🚀'
         },
         {
             'id': 'tpl_wild_wednesday',
             'name': 'Wild Wednesday',
-            'description': 'Log a 5km run on a Wednesday.',
-            'reward_minutes': 45,
-            'reward_type': 'fixed',
+            'description': 'Complete an activity on Wednesday',
+            'default_reward': 15,
             'icon': '🐪'
         },
         {
-            'id': 'tpl_marathon_month',
-            'name': 'Marathon Month',
-            'description': 'Accumulate 42km total distance this month.',
-            'reward_minutes': 120,
-            'reward_type': 'fixed',
-            'icon': '🏃'
+            'id': 'tpl_friday_finisher',
+            'name': 'Friday Finisher',
+            'description': 'Complete an activity on Friday',
+            'default_reward': 20,
+            'icon': '🎉'
+        },
+        {
+            'id': 'tpl_weekend_warrior',
+            'name': 'Weekend Warrior',
+            'description': 'Complete activities on both Saturday and Sunday',
+            'default_reward': 60,
+            'icon': '⛹️'
         },
         {
             'id': 'tpl_early_bird',
             'name': 'Early Bird',
-            'description': 'Complete an activity before 8 AM.',
-            'reward_minutes': 30,
-            'reward_type': 'fixed',
+            'description': 'Complete an activity before 8 AM',
+            'default_reward': 30,
             'icon': '🌅'
         },
         {
-            'id': 'tpl_family_feat',
-            'name': 'Family Feat',
-            'description': 'Go for a walk/run with a parent.',
-            'reward_minutes': 45,
-            'reward_type': 'fixed',
-            'icon': '👨‍👩‍👧‍👦'
+            'id': 'tpl_marathon_week',
+            'name': 'Marathon Week',
+            'description': 'Complete activities 5 or more days this week',
+            'default_reward': 90,
+            'icon': '🏃'
+        },
+        {
+            'id': 'tpl_two_day_streak',
+            'name': 'Two Day Streak',
+            'description': 'Complete activities on 2 consecutive days',
+            'default_reward': 25,
+            'icon': '🔥'
+        },
+        {
+            'id': 'tpl_three_day_streak',
+            'name': 'Three Day Streak',
+            'description': 'Complete activities on 3 consecutive days',
+            'default_reward': 50,
+            'icon': '🔥🔥'
         }
     ]
     return jsonify({'templates': templates}), 200
@@ -1084,7 +1366,8 @@ def api_get_challenges():
             'task': ch.get('task', {}),
             'is_unlocked': unlocked,
             'assigned_children': [str(x) for x in (ch.get('assigned_children') or [])],
-            'visible_to_children': bool(ch.get('visible_to_children', False))
+            'visible_to_children': bool(ch.get('visible_to_children', False)),
+            'requires_parent_approval': bool(ch.get('requires_parent_approval', False))
         })
     return jsonify({'challenges': out}), 200
 
@@ -1145,7 +1428,7 @@ def api_activate_challenge():
 
 @app.route('/api/admin/challenges', methods=['POST'])
 def api_admin_create_challenge():
-    """Parent creates a new challenge template (not visible to children until assigned)."""
+    """Parent creates a new custom challenge with simple fixed reward."""
     if 'user_id' not in session or session.get('account_type') != 'parent':
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -1153,8 +1436,6 @@ def api_admin_create_challenge():
     name = data.get('name')
     description = data.get('description')
     reward = int(data.get('reward_minutes', 0))
-    image_url = data.get('image_url')
-    task = data.get('task') or {}
 
     if not name:
         return jsonify({'error': 'name required'}), 400
@@ -1168,10 +1449,6 @@ def api_admin_create_challenge():
         'name': name,
         'description': description,
         'reward_minutes': reward,
-        'reward_type': data.get('reward_type', 'fixed'),
-        'reward_value': int(data.get('reward_value', 0)),
-        'image_url': image_url,
-        'task': task,
         'visible_to_children': False,
         'assigned_children': [],
         'created_by': session['user_id'],
@@ -1384,6 +1661,155 @@ def api_parent_challenge_approvals():
     return jsonify({'requests': out}), 200
 
 
+@app.route('/api/request-challenge-completion', methods=['POST'])
+def api_request_challenge_completion():
+    """Child requests parent approval to mark a challenge as completed."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    challenge_id = data.get('challenge_id')
+    if not challenge_id:
+        return jsonify({'error': 'challenge_id required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    user_ch = db['user_challenges']
+
+    # Prevent duplicate/duplicate pending requests
+    try:
+        existing = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+        if existing:
+            return jsonify({'error': 'Challenge already completed'}), 400
+    except Exception:
+        pass
+
+    try:
+        pending = reqs.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'status': 'pending'})
+        if pending:
+            return jsonify({'success': True, 'request_id': str(pending['_id']), 'status': 'pending'}), 200
+
+        doc = {
+            'user_id': session['user_id'],
+            'challenge_id': challenge_id,
+            'status': 'pending',
+            'created_at': datetime.utcnow()
+        }
+        res = reqs.insert_one(doc)
+        return jsonify({'success': True, 'request_id': str(res.inserted_id)}), 201
+    except Exception as e:
+        logger.exception('Error creating completion request: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/my-challenge-completion-requests')
+def api_my_challenge_completion_requests():
+    """Return pending completion requests for currently logged-in child."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    try:
+        rows = list(reqs.find({'user_id': session['user_id'], 'status': 'pending'}))
+        out = [{'id': str(r['_id']), 'challenge_id': r['challenge_id'], 'created_at': r.get('created_at').isoformat()} for r in rows]
+        return jsonify({'requests': out}), 200
+    except Exception as e:
+        logger.exception('Error fetching my completion requests: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.route('/api/parent/challenge-completion-requests')
+def api_parent_challenge_completion_requests():
+    """Return pending challenge completion requests for this parent's children"""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    users = db['users']
+    reqs = db['challenge_completion_requests']
+
+    parent = users.find_one({'_id': ObjectId(session['user_id'])})
+    children = [str(c) for c in parent.get('children', [])]
+
+    pending = list(reqs.find({'status': 'pending', 'user_id': {'$in': children}}))
+    out = []
+    for p in pending:
+        child_name = 'Unknown Child'
+        try:
+            c_user = users.find_one({'_id': ObjectId(p['user_id'])})
+            if c_user:
+                child_name = c_user.get('name', 'Unknown')
+        except Exception:
+            pass
+        out.append({'id': str(p['_id']), 'user_id': p['user_id'], 'child_name': child_name, 'challenge_id': p['challenge_id'], 'created_at': p.get('created_at').isoformat()})
+    return jsonify({'requests': out}), 200
+
+
+@app.route('/api/parent/respond-challenge-completion', methods=['POST'])
+def api_parent_respond_challenge_completion():
+    """Parent approves or rejects a child's completion request."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    req_id = data.get('request_id')
+    action = data.get('action')
+    if not req_id or action not in ('approve', 'reject'):
+        return jsonify({'error': 'Invalid parameters'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    reqs = db['challenge_completion_requests']
+    user_ch = db['user_challenges']
+    challenges = db['challenges']
+    users = db['users']
+
+    try:
+        r = reqs.find_one({'_id': ObjectId(req_id)})
+        if not r:
+            return jsonify({'error': 'Request not found'}), 404
+
+        # Verify parent owns child
+        parent = users.find_one({'_id': ObjectId(session['user_id'])})
+        children = [str(c) for c in parent.get('children', [])]
+        if r.get('user_id') not in children:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        if action == 'reject':
+            reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'rejected', 'responded_at': datetime.utcnow()}})
+            return jsonify({'success': True}), 200
+
+        # Approve: mark request approved, record completion and credit reward
+        reqs.update_one({'_id': ObjectId(req_id)}, {'$set': {'status': 'approved', 'responded_at': datetime.utcnow()}})
+        ch = challenges.find_one({'_id': ObjectId(r.get('challenge_id'))})
+        reward = int(ch.get('reward_minutes', 0)) if ch else 0
+
+        # Prevent duplicate completion
+        existing = user_ch.find_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id')})
+        if existing:
+            return jsonify({'success': True, 'message': 'Already completed'}), 200
+
+        user_ch.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'completed_at': datetime.utcnow(), 'reward_earned': reward})
+        # Credit persistent reward
+        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward, persistent=True)
+        return jsonify({'success': True, 'reward_minutes': reward}), 200
+    except Exception as e:
+        logger.exception('Error responding to completion request: %s', e)
+        return jsonify({'error': 'Server error'}), 500
+
+
 @app.route('/api/respond-challenge-unlock', methods=['POST'])
 def api_respond_challenge_unlock():
     """Parent approves or rejects a challenge unlock request."""
@@ -1431,7 +1857,7 @@ def api_respond_challenge_unlock():
 
 @app.route('/api/complete-challenge', methods=['POST'])
 def api_complete_challenge():
-    """Mark a challenge as completed by a child and credit reward minutes."""
+    """Mark a challenge as completed by a child and credit reward minutes automatically."""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -1444,44 +1870,153 @@ def api_complete_challenge():
     if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
-    unlocks = db['challenge_unlocks']
     challenges = db['challenges']
     user_ch = db['user_challenges']
 
     # 1. Check if already completed
-    existing_completion = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
-    if existing_completion:
-        return jsonify({'error': 'Challenge already completed'}), 400
+    try:
+        existing_completion = user_ch.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
+        if existing_completion:
+            return jsonify({'error': 'Challenge already completed'}), 400
+    except Exception as e:
+        logger.exception('Error checking completion: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-    # Check unlock
-    unlocked = unlocks.find_one({'user_id': session['user_id'], 'challenge_id': challenge_id})
-    if not unlocked:
-        return jsonify({'error': 'Challenge locked or not approved'}), 403
+    # 2. Get challenge details
+    try:
+        ch = challenges.find_one({'_id': ObjectId(challenge_id)})
+        if not ch:
+            return jsonify({'error': 'Challenge not found'}), 404
+    except Exception as e:
+        logger.exception('Error finding challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-    ch = challenges.find_one({'_id': ObjectId(challenge_id)})
-    if not ch:
-        return jsonify({'error': 'Challenge not found'}), 404
+    # If this challenge requires parent approval for completion, instruct client to request approval
+    if bool(ch.get('requires_parent_approval', False)):
+        return jsonify({'error': 'This challenge requires parent approval. Please request completion.'}), 403
 
+    # 3. Record completion
+    try:
+        reward = int(ch.get('reward_minutes', 0))
+        user_ch.insert_one({
+            'user_id': session['user_id'],
+            'challenge_id': challenge_id,
+            'completed_at': datetime.utcnow(),
+            'reward_earned': reward
+        })
+    except Exception as e:
+        logger.exception('Error recording completion: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
-    reward = int(ch.get('reward_minutes', 0))
-    reward_type = ch.get('reward_type', 'fixed')
-    reward_val = int(ch.get('reward_value', 0))
-    
-    # Calculate actual minutes if percentage
-    if reward_type == 'percentage' and reward_val > 0:
-        # e.g. 10% of daily limit
-        user = UserDB.get_user_by_id(session['user_id'])
-        limit = user.get('daily_screen_time_limit', 180)
-        calc_reward = int((reward_val / 100.0) * limit)
-        reward = max(reward, calc_reward) # Use max of fixed base or calculated
-
-    # Record completion
-    user_ch.insert_one({'user_id': session['user_id'], 'challenge_id': challenge_id, 'completed_at': datetime.utcnow()})
-
-    # Credit reward minutes
-    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+    # 4. Credit reward minutes automatically
+    try:
+        # Challenge rewards are persistent (do not expire at midnight)
+        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward, persistent=True)
+        logger.info(f"Challenge {challenge_id} completed by {session['user_id']}, reward: {reward} min")
+    except Exception as e:
+        logger.exception('Error crediting reward: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
     return jsonify({'success': True, 'reward_minutes': reward}), 200
+
+
+@app.route('/api/parent/assign-template-challenge', methods=['POST'])
+def api_parent_assign_template_challenge():
+    """Parent assigns a template challenge to one or more children with a custom reward."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    template_id = data.get('template_id')
+    child_ids = data.get('child_ids', [])
+    reward_minutes = int(data.get('reward_minutes', 0))
+
+    if not template_id or not child_ids or reward_minutes <= 0:
+        return jsonify({'error': 'template_id, child_ids, and reward_minutes required'}), 400
+
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database unavailable'}), 500
+
+    # Get template definition
+    templates = [
+        {
+            'id': 'tpl_monday_momentum',
+            'name': 'Monday Momentum',
+            'description': 'Complete an activity on Monday',
+            'icon': '🚀'
+        },
+        {
+            'id': 'tpl_wild_wednesday',
+            'name': 'Wild Wednesday',
+            'description': 'Complete an activity on Wednesday',
+            'icon': '🐪'
+        },
+        {
+            'id': 'tpl_friday_finisher',
+            'name': 'Friday Finisher',
+            'description': 'Complete an activity on Friday',
+            'icon': '🎉'
+        },
+        {
+            'id': 'tpl_weekend_warrior',
+            'name': 'Weekend Warrior',
+            'description': 'Complete activities on both Saturday and Sunday',
+            'icon': '⛹️'
+        },
+        {
+            'id': 'tpl_early_bird',
+            'name': 'Early Bird',
+            'description': 'Complete an activity before 8 AM',
+            'icon': '🌅'
+        },
+        {
+            'id': 'tpl_marathon_week',
+            'name': 'Marathon Week',
+            'description': 'Complete activities 5 or more days this week',
+            'icon': '🏃'
+        },
+        {
+            'id': 'tpl_two_day_streak',
+            'name': 'Two Day Streak',
+            'description': 'Complete activities on 2 consecutive days',
+            'icon': '🔥'
+        },
+        {
+            'id': 'tpl_three_day_streak',
+            'name': 'Three Day Streak',
+            'description': 'Complete activities on 3 consecutive days',
+            'icon': '🔥🔥'
+        }
+    ]
+    
+    template = next((t for t in templates if t['id'] == template_id), None)
+    if not template:
+        return jsonify({'error': 'Invalid template_id'}), 400
+
+    try:
+        challenges = db['challenges']
+        
+        # Create a challenge from the template for each child
+        for child_id in child_ids:
+            doc = {
+                'template_id': template_id,
+                'name': template['name'],
+                'description': template['description'],
+                'icon': template['icon'],
+                'reward_minutes': reward_minutes,
+                'visible_to_children': True,
+                'assigned_children': [child_id],
+                'created_by': session['user_id'],
+                'created_at': datetime.utcnow()
+            }
+            challenges.insert_one(doc)
+        
+        logger.info(f"Parent {session['user_id']} assigned template {template_id} to {len(child_ids)} children with reward {reward_minutes} min")
+        return jsonify({'success': True, 'message': f'Challenge assigned to {len(child_ids)} child(ren)'}), 201
+    except Exception as e:
+        logger.exception('Error assigning template challenge: %s', e)
+        return jsonify({'error': 'Server error'}), 500
 
 
 @app.route('/api/friends')
@@ -1902,10 +2437,30 @@ def api_gametime_balance():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    earned = user.get('earned_game_time', 0)
+    # Calculate TODAY's earned minutes from activities (only today's activities count toward "Game Time Used")
+    # Important: Count ONLY activities where the activity_date is TODAY, not activities created today
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    today_earned = 0
+    try:
+        db = get_db()
+        if db is not None:
+            activities_collection = db['activities']
+            # Sum earned_minutes for all activities where date field = today (not created_at)
+            today_activities = list(activities_collection.find({
+                'user_id': session['user_id'],
+                'date': today_str,  # This is the activity date, not when it was created
+                'source': {'$in': ['manual', 'simulated', 'strava']}  # Include all sources
+            }))
+            for activity in today_activities:
+                today_earned += int(activity.get('earned_minutes', 0))
+            logger.debug(f"Today's earned minutes for {session['user_id']}: {today_earned} from {len(today_activities)} activities")
+    except Exception as e:
+        logger.debug(f"Error calculating today's earned minutes: {e}")
+        today_earned = 0
+    
     # include running timer elapsed minutes in used
     used = UserDB.get_current_used_including_running(session['user_id'])
-    balance = max(0, earned - used)
+    balance = max(0, today_earned - used)
     limit = user.get('daily_screen_time_limit', 180)
     # Include streak info so client can show authoritative streak value
     streak_count = user.get('streak_count', 0)
@@ -1921,7 +2476,7 @@ def api_gametime_balance():
             pass
 
     return jsonify({
-        'earned': earned,
+        'earned': today_earned,
         'used': used,
         'balance': balance,
         'limit': limit,
@@ -2169,9 +2724,24 @@ def api_apply_earned_strava(child_id):
                 'created_at': dt.utcnow()
             })
             # Credit earned minutes to child (and increase daily limit so it's usable)
-            UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
-            total_applied += earned
-            applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+            # Only credit if the activity date is TODAY (so earned time doesn't carry across days)
+            try:
+                activity_day = act.get('start_date')
+                if activity_day and 'T' in activity_day:
+                    activity_day = activity_day.split('T')[0]
+                today_str = datetime.utcnow().strftime('%Y-%m-%d')
+                if activity_day == today_str:
+                    UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+                    total_applied += earned
+                    applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+                else:
+                    # Do not credit earned minutes for past activities
+                    applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
+            except Exception:
+                # Fallback to crediting if date parsing fails
+                UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+                total_applied += earned
+                applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
 
             # Record daily activity for streaks (will only apply once per day)
             try:
@@ -2252,7 +2822,7 @@ def api_upload():
 
 @app.route('/api/manual-activities', methods=['GET'])
 def api_get_manual_activities():
-    """API endpoint to get manual and simulated activities for the current user"""
+    """API endpoint to get manual and simulated activities for the current user with pagination"""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -2260,11 +2830,27 @@ def api_get_manual_activities():
     if db is None:
         return jsonify({'error': 'Database connection failed'}), 500
     
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    if page < 1:
+        page = 1
+    
     activities_collection = db['activities']
-    # Get both manual and simulated activities
+    
+    # Count total activities
+    total_count = activities_collection.count_documents(
+        {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
+    )
+    
+    # Calculate skip for pagination
+    skip = (page - 1) * per_page
+    
+    # Get activities for this page, sorted by their activity date (not creation date)
     activities = list(activities_collection.find(
         {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
-    ).sort('created_at', -1).limit(20))
+    ).sort('date', -1).skip(skip).limit(per_page))
     
     # Convert ObjectId to string
     for activity in activities:
@@ -2283,11 +2869,18 @@ def api_get_manual_activities():
             pass
         del activity['_id']
 
-    # Debug log how many manual activities are returned
-    logger.debug(f"Returning {len(activities)} manual activities for user_id={session.get('user_id')}")
+    # Calculate pagination info
+    total_pages = (total_count + per_page - 1) // per_page
     
-
-    return jsonify({'activities': activities}), 200
+    logger.debug(f"Returning page {page} of {total_pages} ({len(activities)} activities) for user_id={session.get('user_id')}")
+    
+    return jsonify({
+        'activities': activities,
+        'page': page,
+        'per_page': per_page,
+        'total_count': total_count,
+        'total_pages': total_pages
+    }), 200
 
 
 @app.route('/api/skip-strava', methods=['POST'])
@@ -2319,7 +2912,7 @@ def skip_strava():
 
 @app.route('/api/simulate-activities', methods=['POST'])
 def api_simulate_activities():
-    """API endpoint to generate simulated activities for testing"""
+    """API endpoint to generate simulated activities for testing within the last 7 days"""
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -2329,8 +2922,8 @@ def api_simulate_activities():
     # Validate count
     try:
         count = int(count)
-        if count < 1 or count > 100:
-            return jsonify({'error': 'Count must be between 1 and 100'}), 400
+        if count < 1 or count > 10:
+            return jsonify({'error': 'Count must be between 1 and 10'}), 400
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid count value'}), 400
     
@@ -2345,6 +2938,11 @@ def api_simulate_activities():
     activities_collection = db['activities']
     created_count = 0
     credited_today = 0
+    
+    # First pass: create activities for consecutive days (oldest to newest)
+    # This ensures they span from (count-1) days ago through today
+    activities_to_process = []
+    current_date = datetime.utcnow().date()
 
     for i in range(count):
         # Generate random data
@@ -2384,12 +2982,16 @@ def api_simulate_activities():
         intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
         earned_minutes = int(base_earned * intensity_multiplier)
 
-        # Ensure first activity is always today, others random in last 30 days
-        if i == 0:
-            activity_date = datetime.utcnow().strftime('%Y-%m-%d')
-        else:
-            days_ago = random.randint(1, 30)
-            activity_date = (datetime.utcnow() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+        # Create activities for consecutive days: (count-1) days ago through today
+        # day_offset: count-1, count-2, ... 1, 0
+        day_offset = count - 1 - i
+        activity_date = (current_date - timedelta(days=day_offset)).strftime('%Y-%m-%d')
+        
+        # Generate a random time for realistic activity timing (6 AM to 8 PM)
+        random_hour = random.randint(6, 20)
+        random_minute = random.randint(0, 59)
+        random_time = datetime.min.time().replace(hour=random_hour, minute=random_minute)
+        activity_datetime = datetime.combine(current_date - timedelta(days=day_offset), random_time)
 
         activity_doc = {
             'user_id': session['user_id'],
@@ -2401,39 +3003,42 @@ def api_simulate_activities():
             'intensity': intensity,
             'earned_minutes': earned_minutes,
             'date': activity_date,
-            'created_at': datetime.utcnow()
+            'created_at': activity_datetime,
+            'day_offset': day_offset
         }
 
         try:
             activities_collection.insert_one(activity_doc)
             created_count += 1
-
-            # Only credit earned minutes and increase today's daily limit if activity is for today
-            try:
-                today_str = datetime.utcnow().strftime('%Y-%m-%d')
-                if activity_doc.get('date') == today_str:
-                    # Increase earned_game_time and daily_screen_time_limit for today's activity
-                    try:
-                        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
-                        credited_today += int(earned_minutes)
-                    except Exception as e:
-                        logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
-
-                    # Record daily activity for streaks/rewards (will not double-credit earned from activity)
-                    try:
-                        UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
-                    except Exception:
-                        pass
-                else:
-                    # For past activities, just insert the record without crediting earned time
-                    pass
-            except Exception:
-                logger.exception('Error determining activity date for simulated credit')
+            activities_to_process.append(activity_doc)
         except Exception as e:
             logger.error(f"Error creating simulated activity: {e}")
             continue
     
-    logger.info(f"Created {created_count} simulated activities for user {session['user_id']}; credited_today={credited_today}")
+    # Second pass: process activities in date order (oldest to newest) for proper streak calculation
+    # Sort by day_offset (descending): oldest day first
+    activities_to_process.sort(key=lambda x: x['day_offset'], reverse=True)
+    
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    for activity_doc in activities_to_process:
+        try:
+            if activity_doc.get('date') == today_str:
+                # Only credit earned minutes for today's activity
+                try:
+                    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], activity_doc.get('earned_minutes', 0))
+                    credited_today += int(activity_doc.get('earned_minutes', 0))
+                except Exception as e:
+                    logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
+
+            # Record daily activity for ALL dates with proper streak tracking (in date order)
+            try:
+                UserDB.record_daily_activity(session['user_id'], activity_date=activity_doc.get('date'), source='simulated')
+            except Exception as e:
+                logger.debug("Failed to record daily activity for %s: %s", activity_doc.get('date'), e)
+        except Exception:
+            logger.exception('Error processing simulated activity for streak/reward')
+    
+    logger.info(f"Created {created_count} simulated activities for user {session['user_id']} across {count} consecutive days; credited_today={credited_today}")
     return jsonify({'success': True, 'count': created_count, 'credited_minutes': credited_today}), 201
 
 
@@ -2622,7 +3227,18 @@ def upload_activity():
         result = activities_collection.insert_one(activity_doc)
         
         # Add earned game time to user and increase their daily limit
-        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+        # Only credit earned minutes when the activity date is TODAY
+        try:
+            today_str = datetime.utcnow().strftime('%Y-%m-%d')
+            if activity_date and 'T' in activity_date:
+                activity_day = activity_date.split('T')[0]
+            else:
+                activity_day = activity_date
+            if activity_day == today_str:
+                UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+        except Exception:
+            # Fallback to crediting if something unexpected happens
+            UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
 
         # Record daily activity for streaks (manual upload)
         try:
@@ -2661,10 +3277,113 @@ def upload_activity():
         return render_template('upload_activity.html', error=error)
 
 
+@app.route('/api/all-activities-for-streak', methods=['GET'])
+def api_all_activities_for_streak():
+    """API endpoint to get all manual and simulated activities (for streak calculation, no pagination)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    activities_collection = db['activities']
+    
+    # Get ALL activities for this user (no pagination, sorted newest first)
+    activities = list(activities_collection.find(
+        {'user_id': session['user_id'], 'source': {'$in': ['manual', 'simulated']}}
+    ).sort('date', -1))
+    
+    # Convert ObjectId and normalize fields
+    for activity in activities:
+        activity['id'] = str(activity['_id'])
+        try:
+            if 'created_at' in activity:
+                activity['created_at'] = activity['created_at'].isoformat()
+        except Exception:
+            pass
+        try:
+            if 'date' in activity and not isinstance(activity['date'], str):
+                activity['date'] = str(activity['date'])
+        except Exception:
+            pass
+        del activity['_id']
+    
+    return jsonify({'activities': activities}), 200
+
+
+@app.route('/api/clear-manual-activities', methods=['POST'])
+def api_clear_manual_activities():
+    """API endpoint to clear manual and simulated activities for the current user (for testing/debugging)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    activities_collection = db['activities']
+    
+    # Delete all manual and simulated activities for this user
+    result = activities_collection.delete_many({
+        'user_id': session['user_id'],
+        'source': {'$in': ['manual', 'simulated']}
+    })
+    
+    deleted_count = result.deleted_count
+    logger.info(f"Cleared {deleted_count} manual/simulated activities for user {session['user_id']}")
+    
+    # Reset streak, earned game time, and daily limit when clearing activities
+    users_collection = db['users']
+    users_collection.update_one(
+        {'_id': ObjectId(session['user_id'])},
+        {'$set': {
+            'streak_count': 0,
+            'earned_game_time': 0,
+            'daily_screen_time_limit': 180  # Reset to default
+        }}
+    )
+    
+    return jsonify({'success': True, 'deleted_count': deleted_count}), 200
+
+
 # Helper function to get db instance
 def get_db():
     from database import get_db as db_get_db
     return db_get_db()
+
+
+@app.route('/api/admin/delete-all-accounts', methods=['DELETE', 'POST'])
+def api_delete_all_accounts():
+    """Admin endpoint to delete all accounts from database (for testing/debugging only)"""
+    db = get_db()
+    if db is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    try:
+        # Delete all collections
+        users_collection = db['users']
+        activities_collection = db['activities']
+        user_challenges_collection = db['user_challenges']
+        
+        users_deleted = users_collection.delete_many({}).deleted_count
+        activities_deleted = activities_collection.delete_many({}).deleted_count
+        challenges_deleted = user_challenges_collection.delete_many({}).deleted_count
+        
+        logger.warning(f"DELETED ALL: {users_deleted} users, {activities_deleted} activities, {challenges_deleted} user_challenges")
+        
+        return jsonify({
+            'success': True,
+            'message': 'All accounts and data deleted',
+            'deleted': {
+                'users': users_deleted,
+                'activities': activities_deleted,
+                'user_challenges': challenges_deleted
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error deleting all accounts: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
