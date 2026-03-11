@@ -130,8 +130,9 @@ class UserDB:
             user_doc['daily_earned_minutes_today'] = 0  # Earned minutes awarded today (resets daily)
             user_doc['last_daily_reset_date'] = datetime.utcnow().date().isoformat()  # Date of last daily reset
             user_doc['parent_messages'] = []  # Messages from parent
-            user_doc['streak_count'] = 0  # Streak count
-            user_doc['streak_bonus_minutes'] = 0  # Bonus minutes per day from streak
+            user_doc['streak_count'] = 0  # Current streak count (consecutive days)
+            user_doc['streak_bonus_minutes'] = 0  # Bonus minutes for current streak
+            user_doc['streak_bonus_limit_increase'] = 0  # Highest streak bonus already applied to limit
             user_doc['last_activity_date'] = None  # Date of last activity (for streak)
             user_doc['timer_running'] = False  # Is timer currently running
             user_doc['timer_started_at'] = None  # When timer was started
@@ -650,10 +651,13 @@ class UserDB:
 
     @staticmethod
     def record_daily_activity(child_id, activity_date=None, source='activity'):
-        """Record that a child had activity on a given date, update streak and grant rewards.
+        """Record that a child had activity on a given date, update streak tracking.
 
+        This function ONLY tracks the activity date and updates streak_count for display.
+        It does NOT award streak bonuses to daily_screen_time_limit - use apply_highest_streak_bonus() for that.
+        
         activity_date: ISO date string (YYYY-MM-DD) or None => uses UTC today.
-        Returns dict with keys: applied (bool), streak_count, reward_minutes
+        Returns dict with keys: applied (bool), streak_count
         """
         database = get_db()
         if database is None:
@@ -685,7 +689,7 @@ class UserDB:
         # If already recorded for this day, do nothing
         if last_day == activity_day:
             logger.debug("record_daily_activity: child=%s date=%s already recorded (last=%s)", child_id, activity_day, last_day)
-            return {'applied': False, 'reason': 'already recorded', 'streak_count': current_streak, 'reward_minutes': 0}
+            return {'applied': False, 'reason': 'already recorded', 'streak_count': current_streak}
 
         # Compute whether this continues streak. Normalize last_day to a date object when possible.
         last_date = None
@@ -715,48 +719,20 @@ class UserDB:
         else:
             new_streak = 1
 
-        # Determine reward using parent's settings if available
-        parent_id = child.get('parent_id')
-        settings = {'base_minutes': 5, 'increment_minutes': 2, 'cap_minutes': 60}
-        if parent_id:
-            try:
-                settings = UserDB.get_parent_streak_settings(str(parent_id))
-            except Exception:
-                pass
+        logger.debug("record_daily_activity: Streak tracking - child=%s date=%s last_date=%s consecutive=%s new_streak=%s", 
+                    child_id, activity_date_obj, last_date, bool(last_date and activity_date_obj == last_date + timedelta(days=1)), new_streak)
 
-        base = int(settings.get('base_minutes', 5))
-        inc = int(settings.get('increment_minutes', 2))
-        cap = int(settings.get('cap_minutes', 60))
-
-        reward = base + (max(0, new_streak - 1) * inc)
-        if cap and reward > cap:
-            reward = cap
-
-        logger.debug("record_daily_activity: Streak check - last_date=%s, activity_date=%s, consecutive=%s", last_date, activity_date_obj, bool(last_date and activity_date_obj == last_date + timedelta(days=1)))
-        logger.debug("record_daily_activity: Reward calculation - base=%s, inc=%s, cap=%s, streak=%s, reward=%s", base, inc, cap, new_streak, reward)
-
-        # Apply updates: set last_activity_date to activity_day, set streak_count, increment earned_game_time and daily limit
+        # Apply updates: ONLY update last_activity_date and streak_count
+        # Do NOT increment daily_screen_time_limit here - that's done by apply_highest_streak_bonus()
         try:
-            logger.debug("record_daily_activity: applying update child=%s date=%s new_streak=%s reward=%s", child_id, activity_day, new_streak, reward)
+            logger.debug("record_daily_activity: applying update child=%s date=%s new_streak=%s", child_id, activity_day, new_streak)
             res = users.update_one(
                 {'_id': ObjectId(child_id)},
-                {'$set': {'last_activity_date': activity_day, 'streak_count': new_streak, 'streak_bonus_minutes': reward},
-                 '$inc': {'earned_game_time': int(reward), 'daily_screen_time_limit': int(reward)}}
+                {'$set': {'last_activity_date': activity_day, 'streak_count': new_streak}}
             )
             logger.debug("record_daily_activity: update result matched=%s modified=%s", getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
 
-            # Add a parent message noting the streak reward for the child (from system)
-            try:
-                parent = None
-                if parent_id:
-                    parent = users.find_one({'_id': parent_id})
-                parent_name = parent.get('name') if parent else 'Your Parent'
-                msg = f"Earned {reward} min for {new_streak}-day streak ({activity_day})."
-                users.update_one({'_id': ObjectId(child_id)}, {'$push': {'parent_messages': {'from_parent': parent_name, 'message': msg, 'bonus_minutes': reward, 'created_at': datetime.utcnow(), 'read': False}}})
-            except Exception:
-                pass
-
-            return {'applied': True, 'streak_count': new_streak, 'reward_minutes': reward}
+            return {'applied': True, 'streak_count': new_streak}
         except Exception as e:
             logger.exception("Error recording daily activity/streak: %s", e)
             return {'applied': False, 'reason': 'update failed'}
@@ -822,6 +798,203 @@ class UserDB:
                 logger.debug("reset_daily_used_if_needed: reset completed, modified=%s", getattr(result, 'modified_count', None))
         except Exception as e:
             logger.exception("Error resetting daily used time: %s", e)
+
+    @staticmethod
+    def calculate_actual_streak(child_id):
+        """Calculate the actual longest consecutive day streak from all activities (manual + Strava).
+        
+        Returns dict with:
+        - longest_streak: longest consecutive days found
+        - current_streak: consecutive days including today (if activity today)
+        - last_activity_date: most recent activity date
+        """
+        database = get_db()
+        if database is None:
+            return {'longest_streak': 0, 'current_streak': 0, 'last_activity_date': None}
+        
+        from bson import ObjectId
+        from datetime import datetime, timedelta, date
+        
+        try:
+            activities_collection = database['activities']
+            
+            # Fetch all activities for this child, sorted by date
+            activities = list(activities_collection.find(
+                {'user_id': ObjectId(child_id)},
+                {'date': 1, 'created_at': 1}
+            ).sort([('date', -1)]))  # Most recent first
+            
+            if not activities:
+                return {'longest_streak': 0, 'current_streak': 0, 'last_activity_date': None}
+            
+            # Extract unique dates with activities
+            activity_dates = set()
+            for activity in activities:
+                activity_date = activity.get('date')
+                if activity_date:
+                    try:
+                        if isinstance(activity_date, str):
+                            activity_dates.add(activity_date)
+                        elif isinstance(activity_date, datetime):
+                            activity_dates.add(activity_date.date().isoformat())
+                        elif isinstance(activity_date, date):
+                            activity_dates.add(activity_date.isoformat())
+                    except Exception:
+                        pass
+            
+            if not activity_dates:
+                return {'longest_streak': 0, 'current_streak': 0, 'last_activity_date': None}
+            
+            # Sort dates from oldest to newest
+            sorted_dates = sorted(list(activity_dates))
+            
+            # Calculate consecutive streaks
+            longest_streak = 0
+            current_streak = 1
+            previous_date = None
+            last_activity_date = sorted_dates[-1]  # Most recent date
+            
+            for i, activity_date_str in enumerate(sorted_dates):
+                try:
+                    current_date = datetime.fromisoformat(activity_date_str).date()
+                except Exception:
+                    continue
+                
+                if previous_date is None:
+                    # First date
+                    previous_date = current_date
+                    current_streak = 1
+                elif current_date == previous_date + timedelta(days=1):
+                    # Consecutive day
+                    current_streak += 1
+                else:
+                    # Gap in days - reset streak
+                    if current_streak > longest_streak:
+                        longest_streak = current_streak
+                    current_streak = 1
+                
+                previous_date = current_date
+            
+            # Check final streak
+            if current_streak > longest_streak:
+                longest_streak = current_streak
+            
+            # Check if streak includes today (current_streak should continue to today)
+            try:
+                today = datetime.utcnow().date()
+                last_date = datetime.fromisoformat(last_activity_date).date()
+                
+                # Current streak only counts if it includes today or yesterday
+                if last_date == today or last_date == today - timedelta(days=1):
+                    # Streak is still "active"
+                    streak_to_return = current_streak
+                else:
+                    # Streak is broken (no activity recently)
+                    streak_to_return = 0
+            except Exception:
+                streak_to_return = 0
+            
+            logger.debug("calculate_actual_streak: child=%s longest=%d current=%d last_date=%s", 
+                        child_id, longest_streak, streak_to_return, last_activity_date)
+            
+            return {
+                'longest_streak': longest_streak,
+                'current_streak': streak_to_return,
+                'last_activity_date': last_activity_date
+            }
+        except Exception as e:
+            logger.exception("Error calculating actual streak: %s", e)
+            return {'longest_streak': 0, 'current_streak': 0, 'last_activity_date': None}
+
+    @staticmethod
+    def apply_highest_streak_bonus(child_id):
+        """Apply the highest streak bonus as a one-time increase to game_time_limit.
+        
+        This calculates the actual longest streak from activities and applies only
+        the highest streak reward to the game_time_limit (persistent bonus).
+        Returns dict with applied bonus info.
+        """
+        database = get_db()
+        if database is None:
+            return {'applied': False, 'reason': 'db unavailable'}
+        
+        from bson import ObjectId
+        
+        try:
+            users = database['users']
+            child = UserDB.get_user_by_id(child_id)
+            if not child:
+                return {'applied': False, 'reason': 'child not found'}
+            
+            # Calculate actual streak from activity history
+            streak_info = UserDB.calculate_actual_streak(child_id)
+            longest_streak = streak_info.get('longest_streak', 0)
+            
+            if longest_streak == 0:
+                logger.debug("apply_highest_streak_bonus: child=%s has no streak", child_id)
+                return {'applied': False, 'reason': 'no streak', 'bonus': 0}
+            
+            # Get parent's streak reward settings
+            parent_id = child.get('parent_id')
+            settings = {'base_minutes': 5, 'increment_minutes': 2, 'cap_minutes': 60}
+            if parent_id:
+                try:
+                    settings = UserDB.get_parent_streak_settings(str(parent_id))
+                except Exception:
+                    pass
+            
+            base = int(settings.get('base_minutes', 5))
+            inc = int(settings.get('increment_minutes', 2))
+            cap = int(settings.get('cap_minutes', 60))
+            
+            # Calculate bonus for longest streak
+            reward = base + (max(0, longest_streak - 1) * inc)
+            if cap and reward > cap:
+                reward = cap
+            
+            # Check if this bonus has already been applied
+            previously_awarded_bonus = child.get('streak_bonus_limit_increase', 0)
+            if previously_awarded_bonus >= reward:
+                logger.debug("apply_highest_streak_bonus: child=%s bonus already applied (existing=%d, new=%d)", 
+                            child_id, previously_awarded_bonus, reward)
+                return {'applied': False, 'reason': 'already awarded', 'bonus': reward}
+            
+            # Calculate how much NEW bonus to add
+            additional_bonus = reward - previously_awarded_bonus
+            
+            logger.debug("apply_highest_streak_bonus: child=%s longest_streak=%d calculating bonus base=%d inc=%d cap=%d reward=%d additional=%d",
+                        child_id, longest_streak, base, inc, cap, reward, additional_bonus)
+            
+            # Apply the bonus one-time to game_time_limit
+            if additional_bonus > 0:
+                result = users.update_one(
+                    {'_id': ObjectId(child_id)},
+                    {
+                        '$inc': {
+                            'earned_game_time': int(additional_bonus),
+                            'daily_screen_time_limit': int(additional_bonus)
+                        },
+                        '$set': {
+                            'streak_count': longest_streak,
+                            'streak_bonus_minutes': reward,
+                            'streak_bonus_limit_increase': int(reward)
+                        }
+                    }
+                )
+                logger.debug("apply_highest_streak_bonus: child=%s update result matched=%s modified=%s",
+                            child_id, result.matched_count, result.modified_count)
+                
+                return {
+                    'applied': True,
+                    'longest_streak': longest_streak,
+                    'bonus_minutes': reward,
+                    'additional_bonus': additional_bonus
+                }
+            else:
+                return {'applied': False, 'reason': 'no new bonus', 'bonus': reward}
+        except Exception as e:
+            logger.exception("Error applying highest streak bonus: %s", e)
+            return {'applied': False, 'reason': 'error', 'error': str(e)}
 
     @staticmethod
     def delete_child(parent_id, child_id):
