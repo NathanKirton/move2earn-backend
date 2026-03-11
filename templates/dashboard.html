@@ -832,7 +832,7 @@
 {% block content %}
 <!-- Strava Connection Prompt -->
 <div id="strava-prompt" style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-    <div style="font-size: 48px; margin-bottom: 20px;">­ƒöî</div>
+    <div style="font-size: 48px; margin-bottom: 20px;"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="20" stroke="white" stroke-width="2"/><path d="M24 14v10l7 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h2 style="color: #fff; margin-bottom: 10px;">Connect Your Strava Account</h2>
     <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">To view your activities and biometric data, please connect your Strava account.</p>
     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -846,22 +846,22 @@
     <div class="dashboard-layout" style="display:flex; gap:20px; align-items:flex-start; flex-wrap: wrap;">
         <aside class="dashboard-sidebar" style="width:100%; margin-bottom: 20px;">
             <div style="background: rgba(20,20,30,0.6); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="/friends" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(58,125,255,0.3)'; this.style.background='#2961CC'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.background='#3A7DFF'">­ƒæÑ Friends</a>
-                <a href="/challenges" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(58,125,255,0.3)'; this.style.background='#2961CC'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.background='#3A7DFF'">­ƒÄ» Challenges</a>
-                <a href="/leaderboard" style="padding: 10px 20px; background: rgba(58, 125, 255, 0.1); color: #3A7DFF; border-radius: 6px; border: 1px solid rgba(58, 125, 255, 0.3); font-weight: 600; display: inline-block; text-decoration: none;">­ƒÅå Leaderboard</a>
+                <a href="/friends" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(58,125,255,0.3)'; this.style.background='#2961CC'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.background='#3A7DFF'">👥 Friends</a>
+                <a href="/challenges" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(58,125,255,0.3)'; this.style.background='#2961CC'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.background='#3A7DFF'">🏆 Challenges</a>
+                <a href="/leaderboard" style="padding: 10px 20px; background: rgba(58, 125, 255, 0.1); color: #3A7DFF; border-radius: 6px; border: 1px solid rgba(58, 125, 255, 0.3); font-weight: 600; display: inline-block; text-decoration: none;">📊 Leaderboard</a>
             </div>
         </aside>
         <div class="dashboard-main" style="flex:1; width: 100%;">
 
     <!-- Greeting Section -->
     <div class="greeting-section">
-        <h2>Hi {{ athlete_name or 'there' }}! ­ƒæï</h2>
+        <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
         <p>Keep moving to unlock more game time!</p>
     </div>
     
     <!-- Game Time Card -->
     <div class="gametime-card" id="gametimeCard">
-        <div class="gametime-header">ÔÅ▒´©Å Game Time Used</div>
+        <div class="gametime-header">⏱️ Game Time Used</div>
         <div class="gametime-value" id="gametimeValue">--</div>
         <div class="gametime-limit" id="gametimeLimit">of 180 min limit</div>
         <div class="gametime-bar">
@@ -872,8 +872,8 @@
     <!-- Notifications Card -->
     <div class="notifications-card">
         <div class="notifications-header" id="notificationsToggle">
-            <h3>­ƒöö Notifications</h3>
-            <span class="notifications-toggle">Ôû╝</span>
+            <h3>🔔 Notifications</h3>
+            <span class="notifications-toggle">×</span>
         </div>
         <div class="notifications-content" id="notificationsContent">
             <div id="messagesContainer"></div>
@@ -882,7 +882,7 @@
     
     <!-- Streak Card -->
     <div class="streak-card">
-        <div class="streak-icon">­ƒöÑ</div>
+        <div class="streak-icon">🔥</div>
         <div class="streak-label">Streak</div>
         <div class="streak-count" id="streak-count">0</div>
         <div class="streak-sub">Days in a row!</div>
@@ -898,7 +898,7 @@
     <!-- AI Training Partner (child-facing) - auto-refreshes every 3 minutes -->
     <div class="card" id="training-card" style="margin-bottom:20px; background: #2A2A3E; border: 1px solid rgba(58, 125, 255, 0.2); overflow: hidden;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(100, 150, 255, 0.2);">
-            <h2 style="margin: 0; font-size: 20px; color: #3A7DFF;">­ƒñû AI Training Partner</h2>
+            <h2 style="margin: 0; font-size: 20px; color: #3A7DFF;">🤖 AI Training Partner</h2>
             <span style="font-size: 11px; color: #888; background: rgba(100, 150, 255, 0.2); padding: 4px 10px; border-radius: 12px;">Auto-refresh: 3 min</span>
         </div>
         <div id="childRecContent" style="min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
@@ -911,9 +911,9 @@
     
     <!-- Recent Activities Section -->
     <div class="activities-header">
-        Ôÿ░ Recent Activity
+        📋 Recent Activity
         <div style="display: flex; gap: 8px; margin-left: auto;">
-            <button onclick="openSimulateModal()" style="background: #3A7DFF; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">ÔÜí Simulate</button>
+            <button onclick="openSimulateModal()" style="background: #3A7DFF; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">⚡ Simulate</button>
             <button onclick="openUploadModal()" style="background: #3A7DFF; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">+ Manual Upload</button>
         </div>
     </div>
@@ -926,9 +926,9 @@
     
     <!-- Pagination Controls -->
     <div id="pagination-controls" style="display: none; margin-top: 20px; text-align: center; gap: 10px; justify-content: center; align-items: center;">
-        <button id="prev-page-btn" onclick="goToPreviousPage()" style="padding: 8px 16px; background: #3A7DFF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">ÔåÉ Previous</button>
+        <button id="prev-page-btn" onclick="goToPreviousPage()" style="padding: 8px 16px; background: #3A7DFF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">← Previous</button>
         <span id="page-info" style="color: #aaa; font-size: 12px; margin: 0 10px;"></span>
-        <button id="next-page-btn" onclick="goToNextPage()" style="padding: 8px 16px; background: #3A7DFF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">Next ÔåÆ</button>
+        <button id="next-page-btn" onclick="goToNextPage()" style="padding: 8px 16px; background: #3A7DFF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">Next →</button>
     </div>
 </div>
 
@@ -940,7 +940,7 @@
     <div class="modal-content" style="background: white; border-radius: 8px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
             <h2 id="modal-title" style="color: #333;">Activity Details</h2>
-            <button class="close-btn" onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">├ù</button>
+            <button class="close-btn" onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
         </div>
         <div class="modal-body" id="modal-body" style="display: grid; gap: 15px;">
             <div class="loading">
@@ -975,8 +975,8 @@
         </div>
         
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
-            <h2 id="modal-title" style="color: #fff; margin: 0;">­ƒôØ Log Activity</h2>
-            <button class="close-btn" onclick="closeUploadModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">├ù</button>
+            <h2 id="modal-title" style="color: #fff; margin: 0;">📝 Log Activity</h2>
+            <button class="close-btn" onclick="closeUploadModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
         </div>
         <div id="uploadMessage" class="upload-message" style="background: rgba(58, 125, 255, 0.1); border: 1px solid rgba(58, 125, 255, 0.2); color: #3A7DFF; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
         <form id="uploadForm" style="display: grid; gap: 15px;">
@@ -1047,8 +1047,8 @@
         </div>
         
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 15px;">
-            <h2 style="color: #fff; margin: 0;">ÔÜí Simulate Activities</h2>
-            <button class="close-btn" onclick="closeSimulateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">├ù</button>
+            <h2 style="color: #fff; margin: 0;">⚡ Simulate Activities</h2>
+            <button class="close-btn" onclick="closeSimulateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
         </div>
         <div id="simulateMessage" class="simulate-message" style="background: rgba(156, 39, 176, 0.1); border: 1px solid rgba(156, 39, 176, 0.3); color: #9c27b0; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: none;"></div>
         <form id="simulateForm" style="display: grid; gap: 15px;">
@@ -1059,11 +1059,11 @@
             </div>
             <div style="background: rgba(156, 39, 176, 0.05); border: 1px solid rgba(156, 39, 176, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 5px;">
                 <p style="color: #aaa; font-size: 12px; margin: 0; line-height: 1.5;">
-                    <strong style="color: #9c27b0;">Ôä╣´©Å Info:</strong> This will create random activities with varying distances, durations, and intensities for testing purposes.
+                    <strong style="color: #9c27b0;">ℹ️ Info:</strong> This will create random activities with varying distances, durations, and intensities for testing purposes.
                 </p>
             </div>
             <button type="submit" style="padding: 12px; background: #2961CC; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">Generate Activities</button>
-            <button type="button" onclick="clearAllActivities()" style="padding: 12px; background: #d32f2f; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">­ƒùæ´©Å Clear All Activities</button>
+            <button type="button" onclick="clearAllActivities()" style="padding: 12px; background: #d32f2f; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">🗑️ Clear All Activities</button>
         </form>
     </div>
 </div>
@@ -1169,16 +1169,16 @@ function formatTime(seconds) {
 
 function getActivityIcon(type) {
     const icons = {
-        'Run': '­ƒÅâ',
-        'TrailRun': '­ƒÅâ',
-        'Ride': '­ƒÜ┤',
-        'MountainBikeRide': '­ƒÜ┤',
-        'Swim': '­ƒÅè',
-        'Walk': '­ƒÜÂ',
-        'Hiking': 'Ôø░´©Å',
-        'Workout': '­ƒÆ¬'
+        'Run': '🏃',
+        'TrailRun': '🏃',
+        'Ride': '🚴',
+        'MountainBikeRide': '🚴',
+        'Swim': '🏊',
+        'Walk': '🚶',
+        'Hiking': '⛰️',
+        'Workout': '💪'
     };
-    return icons[type] || 'ÔÜí';
+    return icons[type] || '⚡';
 }
 
 async function loadActivities(page = 1) {
@@ -1630,7 +1630,7 @@ async function loadParentMessages() {
         const messages = data.messages || [];
         
         if (messages.length === 0) {
-            container.innerHTML = '<div class="no-messages">No notifications yet. Keep up the good work! ­ƒÄë</div>';
+            container.innerHTML = '<div class="no-messages">No notifications yet. Keep up the good work! 💪</div>';
             return;
         }
         
@@ -1651,7 +1651,7 @@ async function loadParentMessages() {
             return `
                 <div class="notification-item">
                     <div class="notification-header">
-                        <span class="notification-from">­ƒÆ¼ ${msg.from_parent}</span>
+                        <span class="notification-from">👤 ${msg.from_parent}</span>
                         <span class="notification-time">${timeStr}</span>
                     </div>
                     <div class="notification-text">${displayText}</div>
@@ -1866,7 +1866,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     msg.style.background = 'rgba(255, 107, 107, 0.1)';
                     msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
                     msg.style.color = '#ff6b6b';
-                    msg.textContent = 'Ô£ù ' + (data.error || 'Failed to upload activity');
+                    msg.textContent = '❌ ' + (data.error || 'Failed to upload activity');
                 }
             } catch (err) {
                 clearInterval(progressInterval);
@@ -1876,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 msg.style.background = 'rgba(255, 107, 107, 0.1)';
                 msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
                 msg.style.color = '#ff6b6b';
-                msg.textContent = 'Ô£ù Error: ' + err.message;
+                msg.textContent = '❌ Error: ' + err.message;
             }
         });
     }
@@ -1987,7 +1987,7 @@ if (simulateForm) {
                         msg.style.background = 'rgba(56, 142, 60, 0.08)';
                         msg.style.borderColor = 'rgba(56, 142, 60, 0.2)';
                         msg.style.color = '#388e3c';
-                        msg.textContent = 'Ô£ô Credited ' + data.credited_minutes + ' minutes to today\'s balance';
+                        msg.textContent = '✅ Credited ' + data.credited_minutes + ' minutes to today\'s balance';
                         setTimeout(() => { msg.style.display = 'none'; }, 4000);
                     }
                 }, 500);
@@ -1998,7 +1998,7 @@ if (simulateForm) {
                 msg.style.background = 'rgba(255, 107, 107, 0.1)';
                 msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
                 msg.style.color = '#ff6b6b';
-                msg.textContent = 'Ô£ù ' + (data.error || 'Failed to generate activities');
+                msg.textContent = '❌ ' + (data.error || 'Failed to generate activities');
             }
         } catch (err) {
             clearInterval(progressInterval);
@@ -2008,13 +2008,13 @@ if (simulateForm) {
             msg.style.background = 'rgba(255, 107, 107, 0.1)';
             msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
             msg.style.color = '#ff6b6b';
-            msg.textContent = 'Ô£ù Error: ' + err.message;
+            msg.textContent = '❌ Error: ' + err.message;
         }
     });
 }
 
 async function clearAllActivities() {
-    if (!confirm('ÔÜá´©Å Are you sure? This will delete ALL manual and simulated activities and reset your streak to 0.')) {
+    if (!confirm('⚠️ Are you sure? This will delete ALL manual and simulated activities and reset your streak to 0.')) {
         return;
     }
     
@@ -2039,7 +2039,7 @@ async function clearAllActivities() {
             msg.style.background = 'rgba(56, 142, 60, 0.08)';
             msg.style.borderColor = 'rgba(56, 142, 60, 0.2)';
             msg.style.color = '#388e3c';
-            msg.textContent = 'Ô£ô Cleared ' + data.deleted_count + ' activities and reset your streak';
+            msg.textContent = '✅ Cleared ' + data.deleted_count + ' activities and reset your streak';
             setTimeout(() => {
                 msg.style.display = 'none';
                 streakCalculated = false;  // Reset streak calculation flag so next load recalculates
@@ -2052,7 +2052,7 @@ async function clearAllActivities() {
             msg.style.background = 'rgba(255, 107, 107, 0.1)';
             msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
             msg.style.color = '#ff6b6b';
-            msg.textContent = 'Ô£ù Failed to clear activities: ' + (data.error || 'Unknown error');
+            msg.textContent = '❌ Failed to clear activities: ' + (data.error || 'Unknown error');
             setTimeout(() => {
                 currentActivityPage = 1;
                 loadActivities(1);
@@ -2064,7 +2064,7 @@ async function clearAllActivities() {
         msg.style.background = 'rgba(255, 107, 107, 0.1)';
         msg.style.borderColor = 'rgba(255, 107, 107, 0.3)';
         msg.style.color = '#ff6b6b';
-        msg.textContent = 'Ô£ù Error: ' + err.message;
+        msg.textContent = '❌ Error: ' + err.message;
         setTimeout(() => {
             currentActivityPage = 1;
             loadActivities(1);
@@ -2130,11 +2130,11 @@ async function getChildRecommendation(){
         
         // Map session types to emojis
         const typeEmojis = {
-            'Easy Run': '­ƒÅâÔÇìÔÖé´©Å', 'Intervals': 'ÔÜí', 'Tempo': '­ƒöÑ', 
-            'Walk Or Easy': '­ƒÜÂ', 'Walk': '­ƒÜÂ', 'Run': '­ƒÅâÔÇìÔÖé´©Å',
-            'Ride': '­ƒÜ┤', 'Swim': '­ƒÅè', 'Hiking': '­ƒÑ¥'
+            'Easy Run': '🏃💨 Easy', 'Intervals': '⚡', 'Tempo': '🔥', 
+            'Walk Or Easy': '🚶', 'Walk': '🚶', 'Run': '🏃💨 Easy',
+            'Ride': '🚴', 'Swim': '🏊', 'Hiking': '🏔️'
         };
-        const emoji = typeEmojis[sessionType] || 'Ô£¿';
+        const emoji = typeEmojis[sessionType] || '⭐';
         
         content.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -2146,12 +2146,12 @@ async function getChildRecommendation(){
                 <span style="font-size: 32px;">${emoji}</span>
                 <div>
                   <div style="font-size: 18px; font-weight: 700; color: #3A7DFF;">${sessionType}</div>
-                  ${duration ? `<div style="font-size: 12px; color: #aaa; margin-top: 2px;">ÔÅ▒´©Å ${duration} minutes</div>` : ''}
+                  ${duration ? `<div style="font-size: 12px; color: #aaa; margin-top: 2px;">⏱️ ${duration} minutes</div>` : ''}
                 </div>
               </div>
-              ${desc ? `<div style="font-size: 13px; color: #ccc; line-height: 1.5; padding-top: 10px; border-top: 1px solid rgba(0, 212, 255, 0.2); margin-top: 10px;">­ƒÆí <strong>Tips:</strong> ${desc}</div>` : ''}
+              ${desc ? `<div style="font-size: 13px; color: #ccc; line-height: 1.5; padding-top: 10px; border-top: 1px solid rgba(0, 212, 255, 0.2); margin-top: 10px;">💡 <strong>Tips:</strong> ${desc}</div>` : ''}
             </div>
-            <div style="font-size: 11px; color: #666; text-align: center;">Ô£¿ Personalized for you based on your activity</div>
+            <div style="font-size: 11px; color: #666; text-align: center;">✨ Personalized for you based on your activity</div>
           </div>
         `;
         await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`).catch(e => {});
