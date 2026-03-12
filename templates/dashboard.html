@@ -1301,16 +1301,23 @@ async function loadActivities(page = 1) {
                             source: 'manual'
                         }))
                     ];
-                    calculateStreak(allActivitiesForStreak);
+                    // Only calculate streak if we haven't loaded from server yet
+                    if (!window.serverStreakLoaded) {
+                        calculateStreak(allActivitiesForStreak);
+                    }
                     streakCalculated = true;  // Mark as calculated
                 } else {
                     // Fallback to current page activities if endpoint fails
-                    calculateStreak(allActivities);
+                    if (!window.serverStreakLoaded) {
+                        calculateStreak(allActivities);
+                    }
                     streakCalculated = true;
                 }
             } catch (e) {
                 // Fallback to current page activities if fetch fails
-                calculateStreak(allActivities);
+                if (!window.serverStreakLoaded) {
+                    calculateStreak(allActivities);
+                }
                 streakCalculated = true;
             }
         }
@@ -1565,12 +1572,13 @@ async function loadGameTime() {
                     gametimeProgress.style.width = pct + '%';
                 }
 
-                // Update streak display if provided by server
+                // Update streak display if provided by server (server value is authoritative)
                 try {
                     if (typeof fresh.streak_count !== 'undefined') {
                         document.getElementById('streak-count').textContent = fresh.streak_count;
                         const settings = fresh.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
                         renderStreakDays(fresh.streak_count, settings);
+                        window.serverStreakLoaded = true;  // Mark that we got server streak
                     }
                 } catch (e) {
                     // ignore

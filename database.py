@@ -735,14 +735,27 @@ class UserDB:
         logger.debug("record_daily_activity: Streak check - last_date=%s, activity_date=%s, consecutive=%s", last_date, activity_date_obj, bool(last_date and activity_date_obj == last_date + timedelta(days=1)))
         logger.debug("record_daily_activity: Reward calculation - base=%s, inc=%s, cap=%s, streak=%s, reward=%s", base, inc, cap, new_streak, reward)
 
-        # Apply updates: set last_activity_date to activity_day, set streak_count, increment earned_game_time and daily limit
+        # Apply updates: set last_activity_date to activity_day, set streak_count
+        # Only increase daily_screen_time_limit for TODAY's activity (so rewards reset daily)
         try:
+            from datetime import datetime as dt_module
             logger.debug("record_daily_activity: applying update child=%s date=%s new_streak=%s reward=%s", child_id, activity_day, new_streak, reward)
-            res = users.update_one(
-                {'_id': ObjectId(child_id)},
-                {'$set': {'last_activity_date': activity_day, 'streak_count': new_streak, 'streak_bonus_minutes': reward},
-                 '$inc': {'earned_game_time': int(reward), 'daily_screen_time_limit': int(reward)}}
-            )
+            
+            today_str = dt_module.utcnow().date().isoformat()
+            is_today = (activity_day == today_str)
+            
+            update_fields = {
+                '$set': {'last_activity_date': activity_day, 'streak_count': new_streak, 'streak_bonus_minutes': reward}
+            }
+            
+            if is_today:
+                # Today's activity: add reward to both earned_game_time and daily_screen_time_limit
+                update_fields['$inc'] = {'earned_game_time': int(reward), 'daily_screen_time_limit': int(reward)}
+            else:
+                # Historical activity: only add to earned_game_time (don't inflate today's limit)
+                update_fields['$inc'] = {'earned_game_time': int(reward)}
+            
+            res = users.update_one({'_id': ObjectId(child_id)}, update_fields)
             logger.debug("record_daily_activity: update result matched=%s modified=%s", getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
 
             # Add a parent message noting the streak reward for the child (from system)

@@ -2446,9 +2446,13 @@ def api_gametime_balance():
         if db is not None:
             activities_collection = db['activities']
             # Sum earned_minutes for all activities where date field = today (not created_at)
+            # Activities stored with 'date' field (manual/simulated have 'date', Strava has 'start_date')
             today_activities = list(activities_collection.find({
                 'user_id': session['user_id'],
-                'date': today_str,  # This is the activity date, not when it was created
+                '$or': [
+                    {'date': {'$regex': f'^{today_str}'}},  # Match dates starting with today's date (handles timestamps)
+                    {'start_date': {'$regex': f'^{today_str}'}}  # Also check start_date for Strava activities
+                ],
                 'source': {'$in': ['manual', 'simulated', 'strava']}  # Include all sources
             }))
             for activity in today_activities:
@@ -2723,25 +2727,26 @@ def api_apply_earned_strava(child_id):
                 'earned_minutes': earned,
                 'created_at': dt.utcnow()
             })
-            # Credit earned minutes to child (and increase daily limit so it's usable)
-            # Only credit if the activity date is TODAY (so earned time doesn't carry across days)
+            # Credit earned minutes to child (and increase daily limit only for today's activities)
+            # Today's activities increase daily limit, historical activities only add to earned pool
             try:
                 activity_day = act.get('start_date')
                 if activity_day and 'T' in activity_day:
                     activity_day = activity_day.split('T')[0]
                 today_str = datetime.utcnow().strftime('%Y-%m-%d')
+                
                 if activity_day == today_str:
+                    # Today's activity: increase both earned_game_time and daily_screen_time_limit
                     UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
                     total_applied += earned
-                    applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
                 else:
-                    # Do not credit earned minutes for past activities
-                    applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
-            except Exception:
-                # Fallback to crediting if date parsing fails
-                UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
-                total_applied += earned
+                    # Historical activity: only add to earned_game_time (don't inflate today's limit)
+                    UserDB.add_earned_game_time(child_id, earned)
+                
                 applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+            except Exception:
+                logger.exception('Error crediting earned minutes from Strava activity %s', act_id)
+                applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
 
             # Record daily activity for streaks (will only apply once per day)
             try:
@@ -3226,19 +3231,22 @@ def upload_activity():
         
         result = activities_collection.insert_one(activity_doc)
         
-        # Add earned game time to user and increase their daily limit
-        # Only credit earned minutes when the activity date is TODAY
+        # Add earned game time to user and increase their daily limit only for today's activities
         try:
             today_str = datetime.utcnow().strftime('%Y-%m-%d')
             if activity_date and 'T' in activity_date:
                 activity_day = activity_date.split('T')[0]
             else:
                 activity_day = activity_date
+            
             if activity_day == today_str:
+                # Today's activity: increase both earned_game_time and daily_screen_time_limit
                 UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+            else:
+                # Historical activity: only add to earned_game_time, don't inflate today's limit
+                UserDB.add_earned_game_time(session['user_id'], earned_minutes)
         except Exception:
-            # Fallback to crediting if something unexpected happens
-            UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+            logger.exception('Error crediting earned minutes from manual activity')
 
         # Record daily activity for streaks (manual upload)
         try:
@@ -3297,17 +3305,32 @@ def api_all_activities_for_streak():
     # Convert ObjectId and normalize fields
     for activity in activities:
         activity['id'] = str(activity['_id'])
+        del activity['_id']
+        
+        # Normalize datetime fields
         try:
             if 'created_at' in activity:
                 activity['created_at'] = activity['created_at'].isoformat()
         except Exception:
             pass
-        try:
-            if 'date' in activity and not isinstance(activity['date'], str):
-                activity['date'] = str(activity['date'])
-        except Exception:
-            pass
-        del activity['_id']
+        
+        # Normalize activity_date field (required for streak calculation)
+        # Handle both 'date' (from manual/simulated) and 'start_date' (from Strava)
+        activity_date_str = activity.get('date') or activity.get('start_date')
+        if activity_date_str:
+            try:
+                # Convert to YYYY-MM-DD format
+                if isinstance(activity_date_str, str):
+                    date_part = activity_date_str.split('T')[0] if 'T' in activity_date_str else activity_date_str
+                    activity['activity_date'] = date_part
+                elif hasattr(activity_date_str, 'isoformat'):
+                    activity['activity_date'] = activity_date_str.date().isoformat()
+                else:
+                    activity['activity_date'] = str(activity_date_str)
+            except Exception:
+                activity['activity_date'] = None
+        else:
+            activity['activity_date'] = None
     
     return jsonify({'activities': activities}), 200
 
