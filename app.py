@@ -1863,8 +1863,8 @@ def api_parent_respond_challenge_completion():
             return jsonify({'success': True, 'message': 'Already completed'}), 200
 
         user_ch.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'completed_at': datetime.utcnow(), 'reward_earned': reward})
-        # Credit persistent reward
-        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward, persistent=True)
+        # Challenge rewards should increase today's available time immediately.
+        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward)
         return jsonify({'success': True, 'reward_minutes': reward}), 200
     except Exception as e:
         logger.exception('Error responding to completion request: %s', e)
@@ -1971,8 +1971,8 @@ def api_complete_challenge():
 
     # 4. Credit reward minutes automatically
     try:
-        # Challenge rewards are persistent (do not expire at midnight)
-        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward, persistent=True)
+        # Challenge rewards are meant to boost today's available minutes immediately.
+        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
         logger.info(f"Challenge {challenge_id} completed by {session['user_id']}, reward: {reward} min")
     except Exception as e:
         logger.exception('Error crediting reward: %s', e)
