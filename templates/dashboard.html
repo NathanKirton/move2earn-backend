@@ -1413,7 +1413,7 @@ async function loadGameTime() {
         let serverState = await response.json();
         const earned = Number(serverState.earned || 0);
         const used = Number(serverState.used || 0);
-        const limit = Number(serverState.limit || 180);
+        const limit = Number(serverState.earned || serverState.limit || 180);
 
         // We'll display USED time as the main counter and count UP toward the limit.
         // Compute usedSeconds as stored used + elapsed since timer_started_at if running.
@@ -1493,7 +1493,7 @@ async function loadGameTime() {
                 const fresh = await resp.json();
                 
                 const freshUsedSec = computeUsedSeconds(fresh);
-                const freshLimit = Number(fresh.limit || 180);
+                const freshLimit = Number(fresh.earned || fresh.limit || 180);
                 const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
 
                 // Update limit display if it changed

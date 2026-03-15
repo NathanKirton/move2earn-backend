@@ -836,6 +836,11 @@ def get_activities():
 
             return 'Easy'
 
+        # Auto-apply Strava-earned minutes for child users with de-duplication.
+        db = get_db()
+        activities_collection = db['activities'] if db is not None else None
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+
         for activity in activities:
             dist_km = round(activity.get('distance', 0) / 1000, 2)
             moving_time = activity.get('moving_time', 0)
@@ -869,6 +874,54 @@ def get_activities():
                 'intensity': intensity_label,
                 'earned_minutes': earned
             })
+
+            # Apply credits only for children with a working DB connection.
+            if session.get('account_type') != 'child' or activities_collection is None:
+                continue
+
+            activity_id = str(activity.get('id'))
+            existing = activities_collection.find_one({
+                'source': 'strava_applied',
+                'external_id': activity_id,
+                'user_id': session['user_id']
+            })
+            if existing:
+                continue
+
+            activity_day = activity.get('start_date')
+            if isinstance(activity_day, str) and 'T' in activity_day:
+                activity_day = activity_day.split('T')[0]
+
+            applied_doc = {
+                'user_id': session['user_id'],
+                'source': 'strava_applied',
+                'external_id': activity_id,
+                'title': activity.get('name'),
+                'date': activity.get('start_date'),
+                'type': activity.get('type'),
+                'distance': dist_km,
+                'time_minutes': int(math.ceil(duration_minutes)),
+                'intensity': intensity_label,
+                'earned_minutes': earned,
+                'created_at': datetime.utcnow()
+            }
+
+            insert_result = None
+            try:
+                insert_result = activities_collection.insert_one(applied_doc)
+                if activity_day == today_str:
+                    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned)
+                else:
+                    UserDB.add_earned_game_time(session['user_id'], earned)
+
+                UserDB.record_daily_activity(session['user_id'], activity_date=activity_day, source='strava')
+            except Exception:
+                logger.exception('Failed applying Strava activity %s for user %s', activity_id, session.get('user_id'))
+                if insert_result is not None:
+                    try:
+                        activities_collection.delete_one({'_id': insert_result.inserted_id})
+                    except Exception:
+                        logger.exception('Failed rollback for Strava marker %s', activity_id)
 
         return jsonify(formatted_activities)
 
@@ -2409,10 +2462,15 @@ def api_child_time_used(child_id):
 
     # Get time used including any running timer
     time_used = UserDB.get_current_used_including_running(child_id)
+    daily_limit = int(child.get('daily_screen_time_limit', 60) or 0)
+    daily_earned_today = int(child.get('daily_earned_minutes_today', 0) or 0)
+    effective_daily_limit = daily_limit + daily_earned_today
     
     return jsonify({
         'time_used': time_used,
-        'daily_limit': child.get('daily_screen_time_limit', 60)
+        'daily_limit': daily_limit,
+        'daily_earned_today': daily_earned_today,
+        'effective_daily_limit': effective_daily_limit
     }), 200
 
 
@@ -3367,7 +3425,8 @@ def api_clear_manual_activities():
 
 # Helper function to get db instance
 def get_db():
-    from database import get_db as db_get_db
+    # Keep this local helper aligned with the canonical module path.
+    from core.database import get_db as db_get_db
     return db_get_db()
 
 

@@ -506,7 +506,7 @@
                             <div style="font-size:12px; color:#aaa; margin-bottom:5px;">📊 TIME USED TODAY</div>
                             <div style="background:rgba(255,200,0,0.1); padding:10px; border-radius:6px; border:1px solid rgba(255,200,0,0.2); text-align:center;">
                                 <div style="font-size:18px; font-weight:700; color:#ffcc00;" class="time-used-display">0m</div>
-                                <div style="font-size:11px; color:#aaa; margin-top:3px;">of {{ child.daily_screen_time_limit }}m daily limit</div>
+                                <div style="font-size:11px; color:#aaa; margin-top:3px;" class="effective-limit-display">of {{ child.daily_screen_time_limit }}m daily limit</div>
                             </div>
                         </div>
                         
@@ -1058,6 +1058,7 @@
                     this.textContent = '✓ Sent';
                     card.querySelector('.bonus-minutes').value = '';
                     card.querySelector('.bonus-message').value = '';
+                    loadChildTimeUsed(id);
                     setTimeout(() => this.textContent = 'Send', 2000);
                 }
             } catch(e) {}
@@ -1177,10 +1178,16 @@
             if(resp.ok) {
                 const data = await resp.json();
                 const card = document.querySelector(`[data-child-id="${childId}"]`);
-                const timeUsed = data.time_used || 0;
+                if (!card) return;
+                const timeUsed = Number(data.time_used || 0);
+                const effectiveLimit = Number(data.effective_daily_limit || data.daily_limit || 0);
                 // Format to 2 decimal places, but remove trailing zeros for cleaner display
                 const formatted = timeUsed.toFixed(2).replace(/\.?0+$/, '');
                 card.querySelector('.time-used-display').textContent = `${formatted}m`;
+                const limitEl = card.querySelector('.effective-limit-display');
+                if (limitEl) {
+                    limitEl.textContent = `of ${effectiveLimit}m daily limit`;
+                }
             }
         } catch(e) {
             console.error('Failed to load time used:', e);
