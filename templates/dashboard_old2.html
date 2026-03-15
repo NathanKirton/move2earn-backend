@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Move2Earn Dashboard{% endblock %}
 
@@ -22,370 +22,9 @@
         margin-bottom: 20px;
     }
     
-<<<<<<< HEAD
-    .gametime-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #ccc;
-    }
-    
-    .gametime-value {
-        font-size: 42px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        color: #3A7DFF;
-    }
-    
-    .gametime-limit {
-        font-size: 12px;
-        color: #999;
-        margin-bottom: 12px;
-    }
-    
-    .gametime-bar {
-        width: 100%;
-        height: 8px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    
-    .gametime-progress {
-        height: 100%;
-        background: #000;
-        width: 66%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-    
-    .notifications-card {
-        background: #2A2A3E;
-        border: 1px solid rgba(58, 125, 255, 0.2);
-        border-radius: 12px;
-        padding: 20px;
-        backdrop-filter: blur(10px);
-        margin-bottom: 20px;
-    }
-    
-    .notifications-card h3 {
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-bottom: 12px;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .notification-item {
-        font-size: 12px;
-        color: #ccc;
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-    
-    .see-more {
-        color: #3A7DFF;
-        font-weight: 600;
-        margin-top: 8px;
-        cursor: pointer;
-    }
-    
-    .streak-card {
-        background: #2A2A3E;
-        border-radius: 12px;
-        padding: 25px;
-        color: #fff;
-        margin-bottom: 20px;
-        border-left: 4px solid #3A7DFF;
-    }
-    
-    .streak-icon {
-        font-size: 24px;
-        margin-bottom: 12px;
-    }
-    
-    .streak-label {
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        opacity: 0.9;
-        margin-bottom: 8px;
-    }
-    
-    .streak-count {
-        font-size: 36px;
-        font-weight: 700;
-        margin-bottom: 15px;
-    }
-    
-    .streak-sub {
-        font-size: 12px;
-        opacity: 0.85;
-    }
-    
-    .streak-days {
-        display: flex;
-        gap: 8px;
-        margin-top: 15px;
-        justify-content: space-between;
-    }
-    
-    .day-box {
-        flex: 1;
-        height: 35px;
-        background: rgba(58, 125, 255, 0.1);
-        border-radius: 4px;
-        font-size: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        border: 1px solid rgba(58, 125, 255, 0.2);
-    }
-    
-    .day-box.active {
-        background: #3A7DFF;
-        color: #fff;
-    }
-    
-    .activities-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: #fff;
-    }
-    
-    .activity-item {
-        background: #2A2A3E;
-        border-radius: 12px;
-        padding: 20px;
-        display: grid;
-        grid-template-columns: 60px 1fr auto;
-        gap: 15px;
-        align-items: start;
-        margin-bottom: 15px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border-left: 4px solid #3A7DFF;
-    }
-    
-    .activity-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(58, 125, 255, 0.2);
-    }
-
-    .activity-manual {
-        cursor: default;
-    }
-    
-    .activity-icon {
-        font-size: 32px;
-        text-align: center;
-        line-height: 1;
-    }
-    
-    .activity-details {
-        color: #fff;
-    }
-    
-    .activity-title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-    
-    .activity-time {
-        font-size: 12px;
-        opacity: 0.8;
-    }
-    
-    .activity-stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-top: 12px;
-    }
-    
-    .stat-box {
-        background: rgba(58, 125, 255, 0.1);
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 11px;
-        border-left: 2px solid #3A7DFF;
-    }
-    
-    .stat-label {
-        opacity: 0.8;
-        font-size: 10px;
-        text-transform: uppercase;
-        display: block;
-    }
-    
-    .stat-value {
-        font-weight: 700;
-        margin-top: 2px;
-        font-size: 13px;
-    }
-    
-    .activity-earned {
-        text-align: right;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    .earned-label {
-        font-size: 11px;
-        opacity: 0.8;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .earned-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #3A7DFF;
-    }
-    
-    .no-data {
-        text-align: center;
-        padding: 40px 20px;
-        color: #aaa;
-        background: #2A2A3E;
-        border: 1px solid rgba(58, 125, 255, 0.2);
-        border-radius: 12px;
-    }
-    
-    .intensity-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        margin-left: 8px;
-    }
-    
-    .intensity-easy {
-        background: rgba(58, 125, 255, 0.2);
-        color: #3A7DFF;
-    }
-    
-    .intensity-medium {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-    }
-    
-    .intensity-hard {
-        background: rgba(255, 100, 100, 0.2);
-        color: #ff6464;
-    }
-    
-    .notification-item {
-        background: rgba(100, 150, 200, 0.2);
-        border-left: 3px solid #3A7DFF;
-        border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 10px;
-        font-size: 13px;
-        color: #fff;
-    }
-    
-    .notification-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-    }
-    
-    .notification-from {
-        font-weight: 600;
-        color: #3A7DFF;
-    }
-    
-    .notification-time {
-        font-size: 11px;
-        color: #999;
-    }
-    
-    .notification-bonus {
-        display: inline-block;
-        background: rgba(0, 255, 136, 0.2);
-        color: #3A7DFF;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-top: 6px;
-    }
-    
-    .notifications-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-    }
-    
-    .notifications-header:hover {
-        opacity: 0.9;
-    }
-    
-    .notifications-toggle {
-        display: inline-block;
-        width: 20px;
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .notifications-toggle.collapsed {
-        transform: rotate(-90deg);
-    }
-    
-    .notifications-content {
-        max-height: 1000px;
-        overflow: hidden;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
-        opacity: 1;
-    }
-    
-    .notifications-content.collapsed {
-        max-height: 0;
-        opacity: 0;
-    }
-    
-    .message-text {
-        color: #ddd;
-        line-height: 1.4;
-    }
-    
-    .no-messages {
-        text-align: center;
-        padding: 20px 10px;
-        color: #999;
-        font-size: 13px;
-    }
-=======
     .greeting-section { border: 1px solid rgba(58, 125, 255, 0.2); backdrop-filter: blur(10px); }
     .gametime-card, .streak-card { border-left: 4px solid #3A7DFF; }
     .notifications-card { border: 1px solid rgba(58, 125, 255, 0.2); backdrop-filter: blur(10px); padding: 20px; }
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
 
     .greeting-section h2 { font-size: 24px; font-weight: 700; margin-bottom: 5px; color: #fff; }
     .greeting-section p { color: #ccc; font-size: 14px; }
@@ -475,6 +114,8 @@
     #pagination-controls button { padding: 8px 16px; background: #3A7DFF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; width: auto; margin: 0; }
     #page-info { color: #aaa; font-size: 12px; margin: 0 10px; }
 
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
     /* ===== Responsive Design ===== */
     @media (max-width: 768px) {
         .greeting-section { padding: 20px; margin-bottom: 15px; }
@@ -495,11 +136,6 @@
         .activity-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
         .modal-content { padding: 20px; }
     }
-
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
 </style>
 {% endblock %}
 
@@ -517,13 +153,6 @@
 
 <!-- Dashboard Container -->
 <div class="dashboard-container" style="display: none;">
-    <!-- Quick Navigation -->
-    <div style="background: rgba(20,20,30,0.6); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-        <a href="/friends" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">👥 Friends</a>
-        <a href="/challenges" style="padding: 10px 20px; background: #3A7DFF; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">🏆 Challenges</a>
-        <a href="/leaderboard" style="padding: 10px 20px; background: rgba(58, 125, 255, 0.1); color: #3A7DFF; border-radius: 6px; border: 1px solid rgba(58, 125, 255, 0.3); font-weight: 600; display: inline-block; text-decoration: none;">📊 Leaderboard</a>
-    </div>
-
     <!-- Greeting -->
     <div class="greeting-section">
         <h2>Hi {{ athlete_name or 'there' }}! 👋</h2>
@@ -558,25 +187,17 @@
         <div class="streak-count" id="streak-count">0</div>
         <div class="streak-sub">Days in a row!</div>
         <div class="streak-days" id="streak-days">
-            <div class="day-box">+15 Min</div>
-            <div class="day-box">+15 Min</div>
-            <div class="day-box">+15 Min</div>
-            <div class="day-box">+15 Min</div>
-            <div class="day-box">+15 Min</div>
+            <div class="day-box">+5 Min</div>
+            <div class="day-box">+7 Min</div>
+            <div class="day-box">+9 Min</div>
+            <div class="day-box">+11 Min</div>
+            <div class="day-box">+13 Min</div>
         </div>
     </div>
     
-<<<<<<< HEAD
-    <!-- AI Training Partner (child-facing) -->
-    <div class="card" id="training-card" style="margin-bottom:20px; background: #2A2A3E; border: 1px solid rgba(58, 125, 255, 0.2); overflow: hidden;">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(100, 150, 255, 0.2);">
-            <h2 style="margin: 0; font-size: 20px; color: #3A7DFF;">🤖 AI Training Partner</h2>
-        </div>
-=======
     <!-- AI Training Partner -->
     <div class="streak-card" id="training-card">
         <h2 style="margin-top: 0; margin-bottom: 16px; color: #3A7DFF; font-size: 20px;">🤖 AI Training Partner</h2>
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
         <div id="childRecContent" style="min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
             <div style="text-align: center; color: #aaa;">Loading...</div>
         </div>
@@ -591,9 +212,7 @@
         </div>
     </div>
     <div id="activities-list">
-        <div class="no-data">
-            <p>Loading activities...</p>
-        </div>
+        <div class="no-data">Loading activities...</div>
     </div>
     
     <!-- Pagination -->
@@ -717,24 +336,24 @@
 // Initialize dashboard visibility
 (function() {
     const stravaConnected = {{ 'true' if strava_connected else 'false' }};
-    const straPrompt = document.getElementById('strava-prompt');
+    const stravaPrompt = document.getElementById('strava-prompt');
     const dashContainer = document.querySelector('.dashboard-container');
     
     if (stravaConnected) {
-        straPrompt.style.display = 'none';
-        dashContainer.style.display = 'flex';
+        stravaPrompt.classList.add('hidden');
+        dashContainer.classList.add('visible');
     } else {
-        straPrompt.style.display = 'block';
-        dashContainer.style.display = 'none';
+        stravaPrompt.classList.remove('hidden');
+        dashContainer.classList.remove('visible');
     }
 })();
 
-// ===== Global State =====
+// Global State
 let currentActivityPage = 1;
 let totalActivityPages = 1;
 let streakCalculated = false;
 
-// ===== Helper Functions =====
+// Helper Functions
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -751,17 +370,17 @@ function getActivityIcon(type) {
     return icons[type] || '⚡';
 }
 
-// ===== Activity Loading =====
+// Activity Loading
 async function loadActivities(page = 1) {
     try {
         const list = document.getElementById('activities-list');
         
-        let stravasActivities = [];
+        let stravaActivities = [];
         let manualActivities = [];
         
         try {
             const res = await fetch('/api/activities');
-            if (res.ok) stravasActivities = await res.json();
+            if (res.ok) stravaActivities = await res.json();
         } catch (err) { console.error('Error loading Strava:', err); }
         
         try {
@@ -775,7 +394,7 @@ async function loadActivities(page = 1) {
         } catch (err) { console.error('Error loading manual:', err); }
 
         const allActivities = [
-            ...stravasActivities.map(a => ({ ...a, source: 'strava', activity_date: a.start_date })),
+            ...stravaActivities.map(a => ({ ...a, source: 'strava', activity_date: a.start_date })),
             ...manualActivities.map(a => ({ ...a, source: 'manual', activity_date: a.date }))
         ].sort((a, b) => new Date(b.activity_date || b.start_date) - new Date(a.activity_date || a.start_date));
 
@@ -803,64 +422,58 @@ async function loadActivities(page = 1) {
                 if (allRes.ok) {
                     const dataAll = await allRes.json();
                     const allForStreak = [
-                        ...stravasActivities.map(a => ({ ...a, source: 'strava', activity_date: a.start_date })),
+                        ...stravaActivities.map(a => ({ ...a, source: 'strava', activity_date: a.start_date })),
                         ...dataAll.activities.map(a => ({ ...a, source: 'manual', activity_date: a.date }))
                     ];
-<<<<<<< HEAD
-                    // Streak is now calculated server-side only - don't override it here
-                    streakCalculated = true;  // Mark as calculated
-                } else {
-                    // Fallback - streak will come from server
-                    streakCalculated = true;
-                }
-            } catch (e) {
-                // Fallback - streak will come from server
-                streakCalculated = true;
-            }
-=======
                     calculateStreak(allForStreak);
                 } else {
                     calculateStreak(allActivities);
                 }
             } catch (e) { calculateStreak(allActivities); }
             streakCalculated = true;
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
         }
         
         list.innerHTML = allActivities.map(activity => {
             const isStravasActivity = activity.source === 'strava';
-            const paceDisplay = !activity.average_heartrate && activity.distance > 0 
-                ? `${Math.floor((activity.moving_time || 0) / activity.distance) / 60}:${String(Math.round((activity.moving_time || 0) / activity.distance) % 60)).padStart(2, '0')} min/km`
-                : '';
+            let paceDisplay = '';
+            if (!activity.average_heartrate && activity.distance && activity.distance > 0 && activity.moving_time) {
+                const secondsPerKm = (activity.moving_time / activity.distance);
+                const paceMinutes = Math.floor(secondsPerKm / 60);
+                const paceSeconds = Math.round(secondsPerKm % 60);
+                paceDisplay = `${paceMinutes}:${String(paceSeconds).padStart(2, '0')} min/km`;
+            }
             
             const intensityLabel = activity.intensity || (isStravasActivity ? (activity.average_heartrate ? (activity.average_heartrate < 150 ? 'Easy' : (activity.average_heartrate > 170 ? 'Hard' : 'Medium')) : 'Medium') : 'Medium');
             const intensityClass = intensityLabel === 'Easy' ? 'intensity-easy' : intensityLabel === 'Hard' ? 'intensity-hard' : 'intensity-medium';
             
-<<<<<<< HEAD
             const onClickAttr = isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : '';
-            const manualClass = isStravasActivity ? '' : 'activity-manual';
+            const cursorStyle = isStravasActivity ? 'cursor: pointer;' : '';
             
-            // Note: The following uses template literals with embedded HTML - this is valid JavaScript
+            const displayDistance = isStravasActivity && activity.distance 
+                ? (activity.distance / 1000).toFixed(2)
+                : (activity.distance || '--');
+            const displayDuration = activity.moving_time 
+                ? formatTime(activity.moving_time)
+                : (activity.time_minutes ? formatTime(activity.time_minutes * 60) : '--');
+            const displayEarned = activity.earned_minutes || '--';
+            const displayName = activity.name || activity.title || 'Activity';
+            
             return `
-                <div class="activity-item ${manualClass}" ${onClickAttr}>
-=======
-            return `
-                <div class="activity-item" ${isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : ''} style="${isStravasActivity ? 'cursor: pointer;' : ''}">
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
+                <div class="activity-item" ${onClickAttr} style="${cursorStyle}">
                     <div class="activity-icon">${getActivityIcon(activity.type)}</div>
                     <div class="activity-details">
-                        <div class="activity-title">${activity.name || activity.title} <span class="intensity-badge ${intensityClass}">${intensityLabel}</span></div>
+                        <div class="activity-title">${displayName} <span class="intensity-badge ${intensityClass}">${intensityLabel}</span></div>
                         <div class="activity-time">${formatDate(activity.activity_date || activity.start_date)}</div>
                         <div class="activity-stats">
-                            <div class="stat-box"><span class="stat-label">Duration</span><span class="stat-value">${formatTime(activity.moving_time || (activity.time_minutes * 60))}</span></div>
-                            <div class="stat-box"><span class="stat-label">Distance</span><span class="stat-value">${activity.distance} km</span></div>
+                            <div class="stat-box"><span class="stat-label">Duration</span><span class="stat-value">${displayDuration}</span></div>
+                            <div class="stat-box"><span class="stat-label">Distance</span><span class="stat-value">${displayDistance} km</span></div>
                             ${activity.average_heartrate ? `<div class="stat-box"><span class="stat-label">HR</span><span class="stat-value">${Math.round(activity.average_heartrate)} bpm</span></div>` : ''}
                             ${paceDisplay ? `<div class="stat-box"><span class="stat-label">Pace</span><span class="stat-value">${paceDisplay}</span></div>` : ''}
                         </div>
                     </div>
                     <div class="activity-earned">
                         <div class="earned-label">Earned</div>
-                        <div class="earned-value">${activity.earned_minutes || '--'} min</div>
+                        <div class="earned-value">${displayEarned} min</div>
                     </div>
                 </div>
             `;
@@ -880,13 +493,6 @@ function goToNextPage() {
 }
 
 function calculateStreak(activities) {
-<<<<<<< HEAD
-    // **DISABLED**: Streak is now calculated ONLY server-side from activity_dates
-    // The server-side calculation is authoritative and stored in the database
-    // DO NOT recalculate on the frontend as it could use incomplete data
-    // The streak value comes from loadGameTime() -> /api/gametime-balance endpoint
-    return;
-=======
     if (activities.length === 0) {
         document.getElementById('streak-count').textContent = '0';
         return;
@@ -917,7 +523,6 @@ function calculateStreak(activities) {
     
     document.getElementById('streak-count').textContent = streak;
     try { renderStreakDays(streak, { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 }); } catch (e) {}
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
 }
 
 function renderStreakDays(count, settings) {
@@ -939,7 +544,7 @@ function renderStreakDays(count, settings) {
     container.innerHTML = boxes.join('');
 }
 
-// ===== Game Time =====
+// Game Time
 async function loadGameTime() {
     const gametimeValue = document.getElementById('gametimeValue');
     const gametimeLimit = document.getElementById('gametimeLimit');
@@ -978,7 +583,6 @@ async function loadGameTime() {
         gametimeLimit.textContent = `of ${limit} min limit`;
         gametimeProgress.style.width = Math.min(100, (usedSeconds / limitSeconds) * 100) + '%';
         
-        // Update interval
         if (window.gametimeInterval) clearInterval(window.gametimeInterval);
         window.gametimeInterval = setInterval(() => {
             usedSeconds = computeUsedSeconds(serverState);
@@ -986,44 +590,10 @@ async function loadGameTime() {
             gametimeProgress.style.width = Math.min(100, (usedSeconds / limitSeconds) * 100) + '%';
         }, 1000);
         
-        // Refresh from server periodically
         if (window.gametimeRefreshTimer) clearInterval(window.gametimeRefreshTimer);
         window.gametimeRefreshTimer = setInterval(async () => {
             try {
                 const resp = await fetch('/api/gametime-balance');
-<<<<<<< HEAD
-                if (!resp.ok) return;
-                const fresh = await resp.json();
-                
-                const freshUsedSec = computeUsedSeconds(fresh);
-                const freshLimit = Number(fresh.limit || 180);
-                const freshLimitSec = Math.max(1, Math.floor(freshLimit * 60));
-
-                // Update limit display if it changed
-                const newLimitText = `of ${freshLimit} min limit`;
-                if (gametimeLimit.textContent !== newLimitText) {
-                    gametimeLimit.textContent = newLimitText;
-                }
-                
-                // Only update serverState and recalculate if there's a significant difference (> 5 seconds)
-                // This prevents rapid jumping due to network latency
-                const currentUsedSec = computeUsedSeconds(serverState);
-                if (Math.abs(freshUsedSec - currentUsedSec) > 5) {
-                    serverState = fresh;
-                    usedSeconds = freshUsedSec;
-                    gametimeValue.textContent = renderSeconds(usedSeconds);
-                    const pct = Math.min(100, (usedSeconds / Math.max(1, freshLimitSec)) * 100);
-                    gametimeProgress.style.width = pct + '%';
-                }
-
-                // Update streak display if provided by server (server value is authoritative)
-                try {
-                    if (typeof fresh.streak_count !== 'undefined') {
-                        document.getElementById('streak-count').textContent = fresh.streak_count;
-                        const settings = fresh.streak_settings || { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
-                        renderStreakDays(fresh.streak_count, settings);
-                        window.serverStreakLoaded = true;  // Mark that we got server streak
-=======
                 if (resp.ok) {
                     const fresh = await resp.json();
                     const freshUsedSec = computeUsedSeconds(fresh);
@@ -1036,7 +606,6 @@ async function loadGameTime() {
                     }
                     if (typeof fresh.streak_count !== 'undefined') {
                         document.getElementById('streak-count').textContent = fresh.streak_count;
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
                     }
                 }
             } catch (err) { console.error('Gametime refresh failed:', err); }
@@ -1044,7 +613,7 @@ async function loadGameTime() {
     } catch (err) { console.error('Error loading game time:', err); }
 }
 
-// ===== Messages =====
+// Messages
 async function loadParentMessages() {
     const container = document.getElementById('messagesContainer');
     if (!container) return;
@@ -1090,7 +659,7 @@ async function loadParentMessages() {
     }
 }
 
-// ===== Notifications Toggle =====
+// Notifications Toggle
 function setupNotificationsToggle() {
     const toggle = document.getElementById('notificationsToggle');
     const content = document.getElementById('notificationsContent');
@@ -1103,10 +672,11 @@ function setupNotificationsToggle() {
     });
 }
 
-// ===== Modal Functions =====
+// Modal Functions
 async function openActivityModal(activityId) {
     const modal = document.getElementById('activity-modal');
     const modalBody = document.getElementById('modal-body');
+    if (!modal || !modalBody) return;
     modal.classList.add('active');
     
     try {
@@ -1134,43 +704,47 @@ async function openActivityModal(activityId) {
 }
 
 function closeModal() {
-    document.getElementById('activity-modal').classList.remove('active');
+    const modal = document.getElementById('activity-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 function openUploadModal() {
-    document.getElementById('upload-modal').style.display = 'flex';
-    document.getElementById('uploadForm').reset();
-    document.getElementById('uploadMessage').style.display = 'none';
+    const modal = document.getElementById('upload-modal');
+    if (modal) modal.classList.add('active');
 }
 
 function closeUploadModal() {
-    document.getElementById('upload-modal').style.display = 'none';
+    const modal = document.getElementById('upload-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 function openSimulateModal() {
-    document.getElementById('simulate-modal').style.display = 'flex';
-    document.getElementById('simulateForm').reset();
-    document.getElementById('simulateMessage').style.display = 'none';
+    const modal = document.getElementById('simulate-modal');
+    if (modal) modal.classList.add('active');
 }
 
 function closeSimulateModal() {
-    document.getElementById('simulate-modal').style.display = 'none';
+    const modal = document.getElementById('simulate-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 function skipStrava() {
-    fetch('/api/skip-strava', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(res => {
-        if (res.ok) {
-            document.getElementById('strava-prompt').style.display = 'none';
-            document.querySelector('.dashboard-container').style.display = 'flex';
-            loadActivities();
-            loadGameTime();
-        }
-    }).catch(err => console.error('Error:', err));
+    fetch('/api/skip-strava', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(res => {
+            if (res.ok) {
+                const stravaPrompt = document.getElementById('strava-prompt');
+                const dashContainer = document.querySelector('.dashboard-container');
+                if (stravaPrompt) stravaPrompt.classList.add('hidden');
+                if (dashContainer) dashContainer.classList.add('visible');
+                loadActivities();
+                loadGameTime();
+            }
+        })
+        .catch(err => console.error('Error:', err));
 }
 
-// ===== Form Handlers =====
+// Form Handlers
 document.addEventListener('DOMContentLoaded', () => {
-    // Intensity buttons
     document.querySelectorAll('.intensity-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1180,123 +754,126 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Upload form
-    document.getElementById('uploadForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const title = e.target.querySelector('[name="activity_title"]').value;
-        const date = e.target.querySelector('[name="date"]').value;
-        const type = e.target.querySelector('[name="activity_type"]').value;
-        const distance = parseFloat(e.target.querySelector('[name="distance"]').value);
-        const duration = e.target.querySelector('[name="duration"]').value;
-        const intensity = e.target.querySelector('[name="intensity"]').value;
-        
-        if (!intensity) { alert('Select intensity'); return; }
-        
-        const parts = duration.split(':');
-        const hours = parseInt(parts[0]);
-        const minutes = parseInt(parts[1]);
-        const seconds = parseInt(parts[2] || 0);
-        const totalMinutes = hours * 60 + minutes + (seconds > 0 ? 1 : 0);
-        
-        const progressOverlay = document.getElementById('uploadProgressOverlay');
-        progressOverlay.style.display = 'flex';
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 25;
-            if (progress > 85) progress = 85;
-            updateUploadProgress(progress);
-        }, 200);
-        
-        try {
-            const response = await fetch('/upload-activity', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activity_title: title, date, activity_type: type, distance, time_hours: hours, time_minutes: minutes, intensity })
-            });
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            clearInterval(progressInterval);
-            updateUploadProgress(100);
+            const title = e.target.querySelector('[name="activity_title"]').value;
+            const date = e.target.querySelector('[name="date"]').value;
+            const type = e.target.querySelector('[name="activity_type"]').value;
+            const distance = parseFloat(e.target.querySelector('[name="distance"]').value);
+            const duration = e.target.querySelector('[name="duration"]').value;
+            const intensity = e.target.querySelector('[name="intensity"]').value;
             
-            const data = await response.json();
-            if (response.ok) {
-                setTimeout(() => {
+            if (!intensity) { alert('Select intensity'); return; }
+            
+            const parts = duration.split(':');
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            const seconds = parseInt(parts[2]) || 0;
+            const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+            
+            const progressOverlay = document.getElementById('uploadProgressOverlay');
+            progressOverlay.style.display = 'flex';
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 25;
+                if (progress > 85) progress = 85;
+                updateUploadProgress(progress);
+            }, 200);
+            
+            try {
+                const response = await fetch('/upload-activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activity_title: title, date, activity_type: type, distance, time_hours: hours, time_minutes: minutes, time_seconds: seconds, intensity })
+                });
+                
+                clearInterval(progressInterval);
+                updateUploadProgress(100);
+                
+                const data = await response.json();
+                if (response.ok) {
+                    setTimeout(() => {
+                        progressOverlay.style.display = 'none';
+                        closeUploadModal();
+                        streakCalculated = false;
+                        loadActivities();
+                        loadGameTime();
+                    }, 500);
+                } else {
                     progressOverlay.style.display = 'none';
-                    closeUploadModal();
-                    streakCalculated = false;
-                    loadActivities();
-                    loadGameTime();
-                }, 500);
-            } else {
+                    const msg = document.getElementById('uploadMessage');
+                    msg.style.display = 'block';
+                    msg.textContent = '❌ ' + (data.error || 'Failed');
+                }
+            } catch (err) {
+                clearInterval(progressInterval);
                 progressOverlay.style.display = 'none';
-                const msg = document.getElementById('uploadMessage');
-                msg.style.display = 'block';
-                msg.textContent = '❌ ' + (data.error || 'Failed');
+                document.getElementById('uploadMessage').style.display = 'block';
+                document.getElementById('uploadMessage').textContent = '❌ ' + err.message;
             }
-        } catch (err) {
-            clearInterval(progressInterval);
-            progressOverlay.style.display = 'none';
-            document.getElementById('uploadMessage').style.display = 'block';
-            document.getElementById('uploadMessage').textContent = '❌ ' + err.message;
-        }
-    });
+        });
+    }
     
-    // Simulate form
-    document.getElementById('simulateForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const count = parseInt(e.target.querySelector('[name="count"]').value);
-        if (count < 1 || count > 10) { alert('Enter 1-10'); return; }
-        
-        const progressOverlay = document.getElementById('simulateProgressOverlay');
-        progressOverlay.style.display = 'flex';
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 25;
-            if (progress > 85) progress = 85;
-            updateSimulateProgress(progress);
-        }, 200);
-        
-        try {
-            const response = await fetch('/api/simulate-activities', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ count })
-            });
+    const simulateForm = document.getElementById('simulateForm');
+    if (simulateForm) {
+        simulateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            clearInterval(progressInterval);
-            updateSimulateProgress(100);
+            const count = parseInt(e.target.querySelector('[name="count"]').value);
+            if (count < 1 || count > 10) { alert('Enter 1-10'); return; }
             
-            const data = await response.json();
-            if (response.ok) {
-                setTimeout(() => {
+            const progressOverlay = document.getElementById('simulateProgressOverlay');
+            progressOverlay.style.display = 'flex';
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 25;
+                if (progress > 85) progress = 85;
+                updateSimulateProgress(progress);
+            }, 200);
+            
+            try {
+                const response = await fetch('/api/simulate-activities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count })
+                });
+                
+                clearInterval(progressInterval);
+                updateSimulateProgress(100);
+                
+                const data = await response.json();
+                if (response.ok) {
+                    setTimeout(() => {
+                        progressOverlay.style.display = 'none';
+                        closeSimulateModal();
+                        streakCalculated = false;
+                        loadActivities();
+                        loadGameTime();
+                    }, 500);
+                } else {
                     progressOverlay.style.display = 'none';
-                    closeSimulateModal();
-                    streakCalculated = false;
-                    loadActivities();
-                    loadGameTime();
-                }, 500);
-            } else {
+                    const msg = document.getElementById('simulateMessage');
+                    msg.style.display = 'block';
+                    msg.textContent = '❌ ' + (data.error || 'Failed');
+                }
+            } catch (err) {
+                clearInterval(progressInterval);
                 progressOverlay.style.display = 'none';
-                const msg = document.getElementById('simulateMessage');
-                msg.style.display = 'block';
-                msg.textContent = '❌ ' + (data.error || 'Failed');
+                document.getElementById('simulateMessage').style.display = 'block';
+                document.getElementById('simulateMessage').textContent = '❌ ' + err.message;
             }
-        } catch (err) {
-            clearInterval(progressInterval);
-            progressOverlay.style.display = 'none';
-            document.getElementById('simulateMessage').style.display = 'block';
-            document.getElementById('simulateMessage').textContent = '❌ ' + err.message;
-        }
-    });
+        });
+    }
     
-    // Initialize
     loadGameTime();
     loadParentMessages();
     setupNotificationsToggle();
 });
 
-// ===== Modal Close on Outside Click =====
+// Modal Close on Outside Click
 window.addEventListener('click', (e) => {
     ['activity-modal', 'upload-modal', 'simulate-modal'].forEach(id => {
         const modal = document.getElementById(id);
@@ -1308,29 +885,36 @@ window.addEventListener('click', (e) => {
     });
 });
 
-// ===== Progress Updates =====
+// Progress Updates
 function updateUploadProgress(percent) {
-    const offset = (2 * Math.PI * 63) - ((percent / 100) * (2 * Math.PI * 63));
-    const ring = document.querySelector('#uploadProgressOverlay .progress-ring');
+    const percent100 = Math.min(100, Math.max(0, percent));
+    const offset = (2 * Math.PI * 63) * (1 - (percent100 / 100));
+    const overlay = document.getElementById('uploadProgressOverlay');
+    if (!overlay) return;
+    const ring = overlay.querySelector('.progress-ring');
     if (ring) ring.style.strokeDashoffset = offset;
-    const span = document.getElementById('uploadProgressPercent');
-    if (span) span.textContent = Math.round(percent);
+    const span = overlay.querySelector('.progress-percentage span');
+    if (span) span.textContent = Math.round(percent100);
 }
 
 function updateSimulateProgress(percent) {
-    const offset = (2 * Math.PI * 63) - ((percent / 100) * (2 * Math.PI * 63));
-    const ring = document.querySelector('#simulateProgressOverlay .progress-ring');
+    const percent100 = Math.min(100, Math.max(0, percent));
+    const offset = (2 * Math.PI * 63) * (1 - (percent100 / 100));
+    const overlay = document.getElementById('simulateProgressOverlay');
+    if (!overlay) return;
+    const ring = overlay.querySelector('.progress-ring');
     if (ring) ring.style.strokeDashoffset = offset;
-    const span = document.getElementById('simulateProgressPercent');
-    if (span) span.textContent = Math.round(percent);
+    const span = overlay.querySelector('.progress-percentage span');
+    if (span) span.textContent = Math.round(percent100);
 }
 
-// ===== AI Training Partner =====
+// AI Training Partner
 const CHILD_ID = '{{ user_id }}';
 let aiRefreshInterval = null;
 
 async function getChildRecommendation() {
     const content = document.getElementById('childRecContent');
+    if (!content) return;
     try {
         const resp = await fetch('/api/recommendations', {
             method: 'POST',
@@ -1339,7 +923,7 @@ async function getChildRecommendation() {
         });
         const j = await resp.json();
         const r = j.recommendation || {};
-        const intro = r.intro || 'Here\'s your personalized recommendation:';
+        const intro = r.intro || "Here's your personalized recommendation:";
         const desc = r.description || r.notes || '';
         const sessionType = (r.type || 'Training').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const duration = r.duration_min || r.duration || '';
@@ -1366,21 +950,30 @@ async function getChildRecommendation() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    getChildRecommendation();
-    if (aiRefreshInterval) clearInterval(aiRefreshInterval);
-    aiRefreshInterval = setInterval(getChildRecommendation, 180000);
+    if (!window.aiInitialized) {
+        window.aiInitialized = true;
+        getChildRecommendation();
+        if (aiRefreshInterval) clearInterval(aiRefreshInterval);
+        aiRefreshInterval = setInterval(getChildRecommendation, 180000);
+    }
 });
 
 window.addEventListener('beforeunload', () => {
     if (aiRefreshInterval) clearInterval(aiRefreshInterval);
 });
 
-// ===== Clear All Activities =====
+// Clear All Activities
 async function clearAllActivities() {
     if (!confirm('⚠️ Delete ALL activities and reset streak?')) return;
     
+    const list = document.getElementById('activities-list');
+    const msg = document.getElementById('simulateMessage');
+    if (!list || !msg) {
+        alert('Error: UI elements not found');
+        return;
+    }
+    
     try {
-        const list = document.getElementById('activities-list');
         list.innerHTML = '<div class="no-data">Clearing...</div>';
         
         const response = await fetch('/api/clear-manual-activities', {
@@ -1389,12 +982,10 @@ async function clearAllActivities() {
         });
         
         const data = await response.json();
-        const msg = document.getElementById('simulateMessage');
         
         if (response.ok) {
-            msg.style.display = 'block';
-            msg.style.background = 'rgba(56, 142, 60, 0.08)';
-            msg.textContent = '✅ Cleared ' + data.deleted_count + ' activities';
+            msg.classList.add('active');
+            msg.textContent = '✅ Cleared ' + (data.deleted_count || 0) + ' activities';
             setTimeout(() => {
                 msg.style.display = 'none';
                 streakCalculated = false;
@@ -1403,113 +994,23 @@ async function clearAllActivities() {
                 loadGameTime();
             }, 500);
         } else {
-            msg.style.display = 'block';
-            msg.style.background = 'rgba(255, 107, 107, 0.1)';
-            msg.textContent = '❌ Failed: ' + (data.error || 'Unknown');
+            msg.classList.add('active');
+            msg.textContent = '❌ Failed: ' + (data.error || 'Unknown error');
+            list.innerHTML = '<div class="no-data">Data cleared but activity list refresh failed. Please refresh the page.</div>';
         }
     } catch (err) {
-        console.error('Error:', err);
+        console.error('Error clearing activities:', err);
+        msg.classList.add('active');
+        msg.textContent = '❌ Error: ' + (err.message || 'Network error');
+        list.innerHTML = '<div class="no-data">Clearing failed. Please try again.</div>';
     }
 }
 
-// ===== Auto Refresh =====
+// Auto Refresh
 document.addEventListener('DOMContentLoaded', loadActivities);
 setInterval(() => {
     loadActivities();
     loadParentMessages();
 }, 30000);
 
-<<<<<<< HEAD
-// Progress bar functions for upload modal
-function updateUploadProgress(percent) {
-    const circumference = 2 * Math.PI * 63; // radius is 63
-    const offset = circumference - (percent / 100) * circumference;
-    const progressRing = document.querySelector('#uploadProgressOverlay .progress-ring');
-    if (progressRing) {
-        progressRing.style.strokeDashoffset = offset;
-    }
-    const percentSpan = document.getElementById('uploadProgressPercent');
-    if (percentSpan) {
-        percentSpan.textContent = Math.round(percent);
-    }
-}
-
-// Progress bar functions for simulate modal
-function updateSimulateProgress(percent) {
-    const circumference = 2 * Math.PI * 63; // radius is 63
-    const offset = circumference - (percent / 100) * circumference;
-    const progressRing = document.querySelector('#simulateProgressOverlay .progress-ring');
-    if (progressRing) {
-        progressRing.style.strokeDashoffset = offset;
-    }
-    const percentSpan = document.getElementById('simulateProgressPercent');
-    if (percentSpan) {
-        percentSpan.textContent = Math.round(percent);
-    }
-}
-
-// --- Child AI Training Partner logic ---
-const CHILD_ID = '{{ user_id }}';
-let aiRefreshInterval = null;
-
-async function getChildRecommendation(){
-    const content = document.getElementById('childRecContent');
-    try{
-        const resp = await fetch('/api/recommendations', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({user_id: CHILD_ID})
-        });
-        const j = await resp.json();
-        const r = j.recommendation || {};
-        const intro = r.intro || 'Here\'s a recommended session for you:';
-        const desc = r.description || r.notes || '';
-        const sessionType = (r.type || 'Training').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const duration = r.duration_min || r.duration || '';
-        
-        // Map session types to emojis
-        const typeEmojis = {
-            'Easy Run': '🏃💨 Easy', 'Intervals': '⚡', 'Tempo': '🔥', 
-            'Walk Or Easy': '🚶', 'Walk': '🚶', 'Run': '🏃💨 Easy',
-            'Ride': '🚴', 'Swim': '🏊', 'Hiking': '🏔️'
-        };
-        const emoji = typeEmojis[sessionType] || '⭐';
-        
-        content.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div style="font-size: 14px; color: #ccc; line-height: 1.6; font-style: italic; padding: 12px; background: rgba(58, 125, 255, 0.08); border-radius: 6px; border-left: 3px solid rgba(58, 125, 255, 0.5);">
-              "${intro}"
-            </div>
-            <div style="background: rgba(58, 125, 255, 0.1); border: 1px solid rgba(58, 125, 255, 0.2); padding: 16px; border-radius: 8px;">
-              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <span style="font-size: 32px;">${emoji}</span>
-                <div>
-                  <div style="font-size: 18px; font-weight: 700; color: #3A7DFF;">${sessionType}</div>
-                  ${duration ? `<div style="font-size: 12px; color: #aaa; margin-top: 2px;">⏱️ ${duration} minutes</div>` : ''}
-                </div>
-              </div>
-              ${desc ? `<div style="font-size: 13px; color: #ccc; line-height: 1.5; padding-top: 10px; border-top: 1px solid rgba(0, 212, 255, 0.2); margin-top: 10px;">💡 <strong>Tips:</strong> ${desc}</div>` : ''}
-            </div>
-            <div style="font-size: 11px; color: #666; text-align: center;">✨ Personalized for you based on your activity</div>
-          </div>
-        `;
-        await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`).catch(e => {});
-        await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})}).catch(e => {});
-    }catch(e){
-        content.innerHTML = '<div style="text-align:center; color:#aaa; padding: 20px;">Unable to load tip. Will retry in 3 minutes...</div>';
-    }
-}
-
-// Load recommendation immediately on page load
-document.addEventListener('DOMContentLoaded', ()=>{
-    getChildRecommendation();
-    // Auto-refresh removed - updates only on activity upload or page refresh
-});
-
-// Clean up interval if user navigates away
-window.addEventListener('beforeunload', ()=>{
-    if(aiRefreshInterval) clearInterval(aiRefreshInterval);
-});
-
-=======
->>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
 {% endblock %}

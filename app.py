@@ -2717,6 +2717,7 @@ def api_apply_earned_strava(child_id):
                 'intensity': intensity_label,
                 'earned_minutes': earned,
                 'created_at': dt.utcnow()
+<<<<<<< HEAD
             }
             insert_result = activities_collection.insert_one(applied_doc)
 
@@ -2743,6 +2744,17 @@ def api_apply_earned_strava(child_id):
                     logger.exception('Failed to roll back applied Strava activity marker %s', act_id)
                 applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
                 continue
+=======
+            })
+            # Credit earned minutes to child - always credit regardless of activity date
+            try:
+                UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
+                total_applied += earned
+                applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
+            except Exception as e:
+                logger.exception('Failed to credit earned minutes for Strava activity %s: %s', act_id, e)
+                applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
+>>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
 
             # Record daily activity for streaks (will only apply once per day)
             try:
@@ -2750,25 +2762,29 @@ def api_apply_earned_strava(child_id):
                 if activity_day and 'T' in activity_day:
                     activity_day = activity_day.split('T')[0]
                 streak_result = UserDB.record_daily_activity(child_id, activity_date=activity_day, source='strava')
-                if streak_result.get('applied') and isinstance(streak_result.get('reward_minutes', 0), int):
-                    total_streak_rewards += int(streak_result.get('reward_minutes', 0))
             except Exception:
                 logger.exception('Failed to record streak for activity %s', act_id)
         except Exception:
             logger.exception('Failed to apply activity %s for child %s', act_id, child_id)
             continue
 
+    # Apply the highest streak bonus to daily_screen_time_limit
+    try:
+        streak_bonus_res = UserDB.apply_highest_streak_bonus(child_id)
+        if streak_bonus_res.get('applied'):
+            parent = UserDB.get_user_by_id(session['user_id'])
+            parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
+            msg = f"Streak bonus applied: +{streak_bonus_res.get('bonus_minutes', 0)} minutes to daily limit (longest streak: {streak_bonus_res.get('longest_streak', 0)} days)."
+            UserDB.add_parent_message(child_id, parent_name, msg, streak_bonus_res.get('bonus_minutes', 0))
+    except Exception:
+        logger.exception('Failed to apply highest streak bonus for child %s', child_id)
+
     # Add a parent message summarizing the applied minutes
     if total_applied > 0:
         msg = f"Applied {total_applied} minutes from Strava activities by {parent_name}"
         UserDB.add_parent_message(child_id, parent_name, msg, total_applied)
 
-    # If any streak rewards were applied, add a message summarizing them
-    if total_streak_rewards > 0:
-        msg2 = f"Awarded {total_streak_rewards} minutes total from streak rewards."
-        UserDB.add_parent_message(child_id, parent_name, msg2, total_streak_rewards)
-
-    return jsonify({'applied_minutes': total_applied, 'applied_activities': applied_items, 'streak_rewards_applied': total_streak_rewards}), 200
+    return jsonify({'applied_minutes': total_applied, 'applied_activities': applied_items, 'message': 'Strava activities processed and streaks checked'}), 200
 
 
 @app.route('/logout')
@@ -3018,16 +3034,15 @@ def api_simulate_activities():
     # Sort by day_offset (descending): oldest day first
     activities_to_process.sort(key=lambda x: x['day_offset'], reverse=True)
     
-    today_str = datetime.utcnow().strftime('%Y-%m-%d')
     for activity_doc in activities_to_process:
         try:
-            if activity_doc.get('date') == today_str:
-                # Only credit earned minutes for today's activity
-                try:
-                    UserDB.add_earned_game_time_and_increase_limit(session['user_id'], activity_doc.get('earned_minutes', 0))
-                    credited_today += int(activity_doc.get('earned_minutes', 0))
-                except Exception as e:
-                    logger.exception("Failed to credit earned minutes for today's simulated activity: %s", e)
+            # Credit earned minutes for ALL activities regardless of date
+            try:
+                earned = int(activity_doc.get('earned_minutes', 0))
+                UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned)
+                credited_today += earned
+            except Exception as e:
+                logger.exception("Failed to credit earned minutes for simulated activity: %s", e)
 
             # Record daily activity for ALL dates with proper streak tracking (in date order)
             try:
@@ -3037,8 +3052,26 @@ def api_simulate_activities():
         except Exception:
             logger.exception('Error processing simulated activity for streak/reward')
     
+    # Apply the highest streak bonus to daily_screen_time_limit
+    streak_bonus_res = {'applied': False}
+    try:
+        streak_bonus_res = UserDB.apply_highest_streak_bonus(session['user_id'])
+    except Exception as e:
+        logger.exception("Error applying highest streak bonus for simulated activities: %s", e)
+    
     logger.info(f"Created {created_count} simulated activities for user {session['user_id']} across {count} consecutive days; credited_today={credited_today}")
-    return jsonify({'success': True, 'count': created_count, 'credited_minutes': credited_today}), 201
+    
+    resp = {
+        'success': True,
+        'count': created_count,
+        'credited_minutes': credited_today
+    }
+    if streak_bonus_res.get('applied'):
+        resp['streak_bonus_applied'] = True
+        resp['highest_streak'] = streak_bonus_res.get('longest_streak', 0)
+        resp['bonus_minutes'] = streak_bonus_res.get('bonus_minutes', 0)
+    
+    return jsonify(resp), 201
 
 
 @app.route('/api/update-account', methods=['POST'])
@@ -3225,6 +3258,7 @@ def upload_activity():
         
         result = activities_collection.insert_one(activity_doc)
         
+<<<<<<< HEAD
         # Add earned game time to user and increase their daily limit only for today's activities
         try:
             today_str = datetime.utcnow().strftime('%Y-%m-%d')
@@ -3241,12 +3275,28 @@ def upload_activity():
                 UserDB.add_earned_game_time(session['user_id'], earned_minutes)
         except Exception:
             logger.exception('Error crediting earned minutes from manual activity')
+=======
+        # Add earned game time to user and increase their daily limit
+        # Credit earned minutes for ANY activity date - no date restrictions
+        try:
+            UserDB.add_earned_game_time_and_increase_limit(session['user_id'], earned_minutes)
+        except Exception as e:
+            logger.exception("Failed to credit earned game time: %s", e)
+>>>>>>> f1a30a3b134b116cbdac111fa04db0c51fe5183e
 
         # Record daily activity for streaks (manual upload)
         try:
             streak_res = UserDB.record_daily_activity(session['user_id'], activity_date=activity_date, source='manual')
         except Exception:
             streak_res = {'applied': False}
+        
+        # Apply the highest streak bonus to daily_screen_time_limit
+        streak_bonus_res = {'applied': False}
+        if streak_res.get('applied'):
+            try:
+                streak_bonus_res = UserDB.apply_highest_streak_bonus(session['user_id'])
+            except Exception as e:
+                logger.exception("Error applying highest streak bonus: %s", e)
         
         success_msg = f'Activity logged successfully! Earned {earned_minutes} minutes of game time.'
         
@@ -3258,12 +3308,15 @@ def upload_activity():
                 'activity_id': str(result.inserted_id)
             }
             if streak_res.get('applied'):
-                resp['streak_reward_minutes'] = streak_res.get('reward_minutes', 0)
                 resp['streak_count'] = streak_res.get('streak_count')
+            if streak_bonus_res.get('applied'):
+                resp['streak_bonus_applied'] = True
+                resp['highest_streak'] = streak_bonus_res.get('longest_streak', 0)
+                resp['bonus_minutes'] = streak_bonus_res.get('bonus_minutes', 0)
             return jsonify(resp), 201
         # Render page with optional note about streak reward
-        if streak_res.get('applied'):
-            success_msg += f" Also awarded {streak_res.get('reward_minutes', 0)} min for a {streak_res.get('streak_count')} day streak."
+        if streak_bonus_res.get('applied'):
+            success_msg += f" Streak bonus: {streak_bonus_res.get('bonus_minutes', 0)} min added to daily game time limit (longest streak: {streak_bonus_res.get('longest_streak', 0)} days)."
         return render_template('upload_activity.html', success=success_msg)
     
     except ValueError:
