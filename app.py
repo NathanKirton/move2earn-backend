@@ -9,16 +9,14 @@ import json
 import logging
 import math
 import random
-from database import UserDB, hash_password
+from core.database import UserDB, hash_password, get_db
+from core.recommendations import recommend
+from core.analytics import log_event, assign_variant, record_ab_outcome
 from werkzeug.utils import secure_filename
- # AI Trainer removed
 
 import pathlib
 from bson.objectid import ObjectId
 load_dotenv()
-from recommendations import recommend
-from database import get_db
-from analytics import log_event, assign_variant, record_ab_outcome
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -263,7 +261,7 @@ def api_recommendations():
     session_rec = recommend(user_id, constraints)
     # expand with LLM if available
     try:
-        from rag import expand_session_with_llm
+        from core.rag import expand_session_with_llm
         db = get_db()
         profile = db['user_profiles'].find_one({'user_id': user_id}) if db else None
         expanded = expand_session_with_llm(session_rec, profile)
@@ -2281,11 +2279,19 @@ def api_add_earned_time(child_id):
     if success:
         # Return updated values so the client can update UI without a reload
         child = UserDB.get_user_by_id(child_id)
-        earned = child.get('earned_game_time', 0)
-        limit = child.get('daily_screen_time_limit', 0)
+        limit = int(child.get('daily_screen_time_limit', 60))
+        daily_earned_today = int(child.get('daily_earned_minutes_today', 0) or 0)
+        earned = limit + daily_earned_today
         used = UserDB.get_current_used_including_running(child_id)
         balance = max(0, earned - used)
-        return jsonify({'success': True, 'earned': earned, 'limit': limit, 'used': used, 'balance': balance}), 200
+        return jsonify({
+            'success': True,
+            'earned': earned,
+            'limit': limit,
+            'daily_earned_today': daily_earned_today,
+            'used': used,
+            'balance': balance
+        }), 200
     else:
         return jsonify({'error': 'Failed to add time'}), 500
 
@@ -2368,20 +2374,20 @@ def api_get_child_balance(child_id):
     if not child:
         return jsonify({'error': 'Child not found'}), 404
 
-    # compute used including any running timer
+    # Compute available time using base limit plus today's earned time.
     used = UserDB.get_current_used_including_running(child_id)
-    earned = child.get('earned_game_time', 0)
+    limit = int(child.get('daily_screen_time_limit', 60))
+    daily_earned_today = int(child.get('daily_earned_minutes_today', 0) or 0)
+    earned = limit + daily_earned_today
     balance = max(0, earned - used)
-    streak_count = child.get('streak_count', 0)
-    streak_bonus = child.get('streak_bonus_minutes', 0)
-    last_activity = child.get('last_activity_date')
+    streak_count = UserDB.calculate_current_streak(child_id)
     return jsonify({
         'earned': earned,
+        'limit': limit,
+        'daily_earned_today': daily_earned_today,
         'used': used,
         'balance': balance,
-        'streak_count': streak_count,
-        'streak_bonus_minutes': streak_bonus,
-        'last_activity_date': last_activity
+        'streak_count': streak_count
     }), 200
 
 
@@ -2437,38 +2443,18 @@ def api_gametime_balance():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    # Calculate TODAY's earned minutes from activities (only today's activities count toward "Game Time Used")
-    # Important: Count ONLY activities where the activity_date is TODAY, not activities created today
-    today_str = datetime.utcnow().strftime('%Y-%m-%d')
-    today_earned = 0
-    try:
-        db = get_db()
-        if db is not None:
-            activities_collection = db['activities']
-            # Sum earned_minutes for all activities where date field = today (not created_at)
-            # Activities stored with 'date' field (manual/simulated have 'date', Strava has 'start_date')
-            today_activities = list(activities_collection.find({
-                'user_id': session['user_id'],
-                '$or': [
-                    {'date': {'$regex': f'^{today_str}'}},  # Match dates starting with today's date (handles timestamps)
-                    {'start_date': {'$regex': f'^{today_str}'}}  # Also check start_date for Strava activities
-                ],
-                'source': {'$in': ['manual', 'simulated', 'strava']}  # Include all sources
-            }))
-            for activity in today_activities:
-                today_earned += int(activity.get('earned_minutes', 0))
-            logger.debug(f"Today's earned minutes for {session['user_id']}: {today_earned} from {len(today_activities)} activities")
-    except Exception as e:
-        logger.debug(f"Error calculating today's earned minutes: {e}")
-        today_earned = 0
+    # Calculate TODAY's available time
+    # Get base daily limit (fixed) and today's earned minutes (tracked in database)
+    limit = user.get('daily_screen_time_limit', 60)  # Base limit (default 60 min)
+    daily_earned_today = int(user.get('daily_earned_minutes_today', 0))
+    total_available = limit + daily_earned_today  # Total available time for today
     
-    # include running timer elapsed minutes in used
+    # Include running timer elapsed minutes in used
     used = UserDB.get_current_used_including_running(session['user_id'])
-    balance = max(0, today_earned - used)
-    limit = user.get('daily_screen_time_limit', 180)
-    # Include streak info so client can show authoritative streak value
-    streak_count = user.get('streak_count', 0)
-    streak_bonus = user.get('streak_bonus_minutes', 0)
+    balance = max(0, total_available - used)
+    
+    # Calculate current streak from activity_dates
+    streak_count = UserDB.calculate_current_streak(session['user_id'])
     
     # Get parent's streak settings for display calculations
     parent_id = user.get('parent_id')
@@ -2480,58 +2466,60 @@ def api_gametime_balance():
             pass
 
     return jsonify({
-        'earned': today_earned,
+        'earned': total_available,  # Total available for today (base + earned)
         'used': used,
         'balance': balance,
         'limit': limit,
         'timer_running': user.get('timer_running', False),
         'timer_started_at': user.get('timer_started_at'),
         'streak_count': streak_count,
-        'streak_bonus_minutes': streak_bonus,
         'streak_settings': streak_settings
     }), 200
 
 
 @app.route('/api/update-child-streak/<child_id>', methods=['POST'])
 def api_update_child_streak(child_id):
-    """API endpoint to update child's streak count and bonus"""
+    """API endpoint to record an activity date for a child (grants streak reward if applicable)"""
     if 'user_id' not in session or session.get('account_type') != 'parent':
         return jsonify({'error': 'Unauthorized'}), 401
     
     data = request.get_json()
-    streak_count = data.get('streak_count')
-    streak_bonus = data.get('streak_bonus_minutes', 0)
+    activity_date = data.get('activity_date')  # ISO format (YYYY-MM-DD)
     
-    if streak_count is None:
-        return jsonify({'error': 'Missing streak_count'}), 400
+    if not activity_date:
+        return jsonify({'error': 'Missing activity_date'}), 400
     
     try:
-        streak_count = int(streak_count)
-        streak_bonus = int(streak_bonus)
+        # Record the activity date and get the streak reward
+        result = UserDB.record_activity_date(child_id, activity_date)
         
-        if streak_count < 0 or streak_bonus < 0:
-            return jsonify({'error': 'Streak count and bonus must be non-negative'}), 400
-        
-        # Update streak count
-        success1 = UserDB.update_child_streak(child_id, streak_count)
-        # Update streak bonus
-        success2 = UserDB.update_streak_bonus(child_id, streak_bonus)
-        
-        if success1 and success2:
+        if result.get('applied'):
             # Create notification message
             parent = UserDB.get_user_by_id(session['user_id'])
             parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
-            now = datetime.utcnow()
-            msg = f"Streak updated to {streak_count} day(s) with {streak_bonus} min/day bonus by {parent_name} at {now.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-            UserDB.add_parent_message(child_id, parent_name, msg, 0)
+            streak = result.get('streak_count', 0)
+            reward = result.get('reward_minutes', 0)
+            msg = f"Recorded activity for {activity_date}: earned {reward} min for {streak}-day streak (updated by {parent_name})"
+            UserDB.add_parent_message(child_id, parent_name, msg, reward)
             
-            return jsonify({'success': True}), 200
+            return jsonify({
+                'success': True,
+                'applied': True,
+                'streak_count': streak,
+                'reward_minutes': reward
+            }), 200
         else:
-            return jsonify({'error': 'Failed to update streak'}), 500
-    except ValueError:
-        return jsonify({'error': 'Invalid streak count or bonus value'}), 400
+            reason = result.get('reason', 'unknown')
+            streak = result.get('streak_count', 0)
+            return jsonify({
+                'success': True,
+                'applied': False,
+                'reason': reason,
+                'streak_count': streak,
+                'reward_minutes': 0
+            }), 200
     except Exception as e:
-        logger.exception(f"Error updating streak: {str(e)}")
+        logger.exception(f"Error recording activity date: {str(e)}")
         return jsonify({'error': 'Server error'}), 500
 
 
@@ -2598,7 +2586,8 @@ def api_apply_earned_strava(child_id):
         return jsonify({'error': 'Failed to obtain Strava token for child'}), 500
 
     # Fetch recent activities for the child
-    per_page = request.json.get('per_page', 10) if request.is_json else request.form.get('per_page', 10)
+    request_data = request.get_json(silent=True) or {}
+    per_page = request_data.get('per_page', 10) if request.is_json else request.form.get('per_page', 10)
     try:
         params = {'per_page': int(per_page), 'page': 1}
     except Exception:
@@ -2618,6 +2607,8 @@ def api_apply_earned_strava(child_id):
     total_applied = 0
     applied_items = []
     total_streak_rewards = 0
+    parent = UserDB.get_user_by_id(session['user_id'])
+    parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
 
     # Helper copied from earlier algorithm for fairness
     def compute_earned(distance_km, duration_minutes, avg_hr=None, max_hr=None, pace=None, type_label=None):
@@ -2714,7 +2705,7 @@ def api_apply_earned_strava(child_id):
 
         # Insert record to mark applied activity
         try:
-            activities_collection.insert_one({
+            applied_doc = {
                 'user_id': child_id,
                 'source': 'strava_applied',
                 'external_id': act_id,
@@ -2726,9 +2717,11 @@ def api_apply_earned_strava(child_id):
                 'intensity': intensity_label,
                 'earned_minutes': earned,
                 'created_at': dt.utcnow()
-            })
-            # Credit earned minutes to child (and increase daily limit only for today's activities)
-            # Today's activities increase daily limit, historical activities only add to earned pool
+            }
+            insert_result = activities_collection.insert_one(applied_doc)
+
+            # Credit earned minutes to child. Today's activities are tracked as daily-earned;
+            # historical activities go only to the persistent earned pool.
             try:
                 activity_day = act.get('start_date')
                 if activity_day and 'T' in activity_day:
@@ -2736,17 +2729,20 @@ def api_apply_earned_strava(child_id):
                 today_str = datetime.utcnow().strftime('%Y-%m-%d')
                 
                 if activity_day == today_str:
-                    # Today's activity: increase both earned_game_time and daily_screen_time_limit
                     UserDB.add_earned_game_time_and_increase_limit(child_id, earned)
-                    total_applied += earned
                 else:
-                    # Historical activity: only add to earned_game_time (don't inflate today's limit)
                     UserDB.add_earned_game_time(child_id, earned)
-                
+
+                total_applied += earned
                 applied_items.append({'external_id': act_id, 'earned_minutes': earned, 'name': act.get('name')})
             except Exception:
                 logger.exception('Error crediting earned minutes from Strava activity %s', act_id)
+                try:
+                    activities_collection.delete_one({'_id': insert_result.inserted_id})
+                except Exception:
+                    logger.exception('Failed to roll back applied Strava activity marker %s', act_id)
                 applied_items.append({'external_id': act_id, 'earned_minutes': 0, 'name': act.get('name')})
+                continue
 
             # Record daily activity for streaks (will only apply once per day)
             try:
@@ -2764,8 +2760,6 @@ def api_apply_earned_strava(child_id):
 
     # Add a parent message summarizing the applied minutes
     if total_applied > 0:
-        parent = UserDB.get_user_by_id(session['user_id'])
-        parent_name = parent.get('name', 'Your Parent') if parent else 'Your Parent'
         msg = f"Applied {total_applied} minutes from Strava activities by {parent_name}"
         UserDB.add_parent_message(child_id, parent_name, msg, total_applied)
 
@@ -3356,14 +3350,15 @@ def api_clear_manual_activities():
     deleted_count = result.deleted_count
     logger.info(f"Cleared {deleted_count} manual/simulated activities for user {session['user_id']}")
     
-    # Reset streak, earned game time, and daily limit when clearing activities
+    # Reset earned game time and daily limit when clearing activities
+    # DO NOT reset activity_dates - they track actual activities for streak calculation
     users_collection = db['users']
     users_collection.update_one(
         {'_id': ObjectId(session['user_id'])},
         {'$set': {
-            'streak_count': 0,
             'earned_game_time': 0,
-            'daily_screen_time_limit': 180  # Reset to default
+            'daily_screen_time_limit': 60,  # Reset to default
+            'daily_earned_minutes_today': 0
         }}
     )
     

@@ -20,8 +20,8 @@ import logging
 from math import floor
 from typing import List
 
-from ai_helpers import fetch_last_7_days, has_activity_today
-from database import UserDB
+from core.ai_helpers import fetch_last_7_days, has_activity_today
+from core.database import UserDB
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,8 @@ def _aggregate_features(activities: List[dict], child_id: str) -> dict:
         avg_pace = None
 
     child = UserDB.get_user_by_id(child_id)
-    streak_length = int(child.get('streak_count', 0)) if child else 0
+    # Calculate streak from activity_dates
+    streak_length = UserDB.calculate_current_streak(child_id) if child else 0
 
     # day_of_week (0-6) for today
     from datetime import datetime

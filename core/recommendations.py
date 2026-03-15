@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, date
-from database import get_db
-from embeddings import build_user_embeddings, query_similar_users
+from core.database import get_db
+from core.embeddings import build_user_embeddings, query_similar_users
 
 
 def get_today_activity(user_id):

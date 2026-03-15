@@ -29,7 +29,7 @@ def _has_sklearn():
         return False
 
 
-from database import get_db
+from core.database import get_db
 
 
 def build_user_embeddings():

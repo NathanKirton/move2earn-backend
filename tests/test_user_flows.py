@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 import json
+from datetime import datetime
 
 # Add root directory to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -26,12 +27,12 @@ class UserFlowTests(unittest.TestCase):
         self.app.config['DEBUG'] = False
         self.client = self.app.test_client()
 
-    @patch('database.UserDB.get_parent_children')
-    @patch('database.UserDB.get_user_by_email')
-    @patch('database.UserDB.create_user')
-    @patch('database.UserDB.verify_login')
-    @patch('database.UserDB.get_user_by_id')
-    @patch('database.get_db')
+    @patch('app.UserDB.get_parent_children')
+    @patch('app.UserDB.get_user_by_email')
+    @patch('app.UserDB.create_user')
+    @patch('app.UserDB.verify_login')
+    @patch('app.UserDB.get_user_by_id')
+    @patch('app.get_db')
     def test_full_user_journey(self, mock_get_db, mock_get_user, mock_verify, mock_create, mock_get_by_email, mock_get_children):
         """
         Simulate a user: Register -> Login -> View Dashboard -> Upload Activity
@@ -105,10 +106,11 @@ class UserFlowTests(unittest.TestCase):
         # Check for parent dashboard specific text
         self.assertIn(b'Parent Dashboard', resp.data)
 
-    @patch('database.UserDB.record_daily_activity')
-    @patch('database.UserDB.add_earned_game_time_and_increase_limit')
-    @patch('database.get_db')
-    def test_upload_activity(self, mock_get_db, mock_add_time, mock_record_activity):
+    @patch('app.UserDB.record_daily_activity')
+    @patch('app.UserDB.add_earned_game_time')
+    @patch('app.UserDB.add_earned_game_time_and_increase_limit')
+    @patch('app.get_db')
+    def test_upload_activity(self, mock_get_db, mock_add_time, mock_add_time_historical, mock_record_activity):
         """
         Simulate uploading a manual activity
         """
@@ -122,6 +124,7 @@ class UserFlowTests(unittest.TestCase):
 
         # Mock game time logic
         mock_add_time.return_value = True
+        mock_add_time_historical.return_value = True
         mock_record_activity.return_value = {'applied': True, 'reward_minutes': 5, 'streak_count': 1}
 
         # Setup Session
@@ -131,10 +134,11 @@ class UserFlowTests(unittest.TestCase):
             sess['account_type'] = 'child' # Children usually upload activities
 
         print("\n--> Step 4: Uploading Activity...")
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')
         data = {
             'distance': '5.0',
             'time_minutes': '30', # Changed from duration to time_minutes based on form inspection
-            'date': '2023-10-27', # Changed from activity_date
+            'date': today_str,
             'activity_type': 'Run',
             'intensity': 'Medium',
             'activity_title': 'Morning Run'

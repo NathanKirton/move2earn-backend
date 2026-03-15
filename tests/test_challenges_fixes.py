@@ -102,7 +102,7 @@ class TestChallengeFixes(unittest.TestCase):
         # Should be 30 minutes (fixed reward)
         self.assertEqual(data['reward_minutes'], 30)
         # Verify add_earned.. was called with 30
-        mock_user_db.add_earned_game_time_and_increase_limit.assert_called_with('child_123', 30)
+        mock_user_db.add_earned_game_time_and_increase_limit.assert_called_with('child_123', 30, persistent=True)
 
 if __name__ == '__main__':
     unittest.main()

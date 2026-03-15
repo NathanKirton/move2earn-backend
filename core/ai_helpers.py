@@ -10,7 +10,7 @@ These helpers are lightweight and robust to missing fields. They expose:
 They use the existing `get_db` and `UserDB` helpers in `database.py`.
 """
 from datetime import datetime, timedelta
-from database import get_db, UserDB
+from core.database import get_db, UserDB
 import logging
 
 logger = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ def fetch_all_activities(child_id=None, limit=None):
 def has_activity_today(child_id):
     """Return True if the child has an activity recorded today.
 
-    This checks both the `activities` collection and the child's `last_activity_date`.
+    This checks both the child's `activity_dates` list and the `activities` collection.
     """
     db = get_db()
     today = datetime.utcnow().date().isoformat()
@@ -146,13 +146,12 @@ def has_activity_today(child_id):
     try:
         child = UserDB.get_user_by_id(child_id)
         if child:
-            last = child.get('last_activity_date')
-            if last:
-                # Normalize stored last_activity_date
-                if isinstance(last, str) and 'T' in last:
-                    last = last.split('T')[0]
-                if last == today:
-                    return True
+            activity_dates = child.get('activity_dates', []) or []
+            for activity_day in activity_dates:
+                if isinstance(activity_day, str):
+                    normalized = activity_day.split('T')[0] if 'T' in activity_day else activity_day
+                    if normalized == today:
+                        return True
     except Exception:
         logger.debug('has_activity_today: user lookup failed for %s', child_id)
 

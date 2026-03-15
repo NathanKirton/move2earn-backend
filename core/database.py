@@ -130,9 +130,7 @@ class UserDB:
             user_doc['daily_earned_minutes_today'] = 0  # Earned minutes awarded today (resets daily)
             user_doc['last_daily_reset_date'] = datetime.utcnow().date().isoformat()  # Date of last daily reset
             user_doc['parent_messages'] = []  # Messages from parent
-            user_doc['streak_count'] = 0  # Streak count
-            user_doc['streak_bonus_minutes'] = 0  # Bonus minutes per day from streak
-            user_doc['last_activity_date'] = None  # Date of last activity (for streak)
+            user_doc['activity_dates'] = []  # Array of dates with activities (ISO format YYYY-MM-DD)
             user_doc['timer_running'] = False  # Is timer currently running
             user_doc['timer_started_at'] = None  # When timer was started
         
@@ -366,9 +364,7 @@ class UserDB:
                     'weekly_screen_time_limit': child.get('weekly_screen_time_limit', 420),
                     'timer_running': timer_running,
                     'timer_started_at': child.get('timer_started_at'),
-                    'streak_count': child.get('streak_count', 0),
-                    'streak_bonus_minutes': child.get('streak_bonus_minutes', 0),
-                    'last_activity_date': child.get('last_activity_date')
+                    'activity_dates': child.get('activity_dates', [])
                 })
         
         return children
@@ -421,11 +417,14 @@ class UserDB:
 
     @staticmethod
     def add_earned_game_time_and_increase_limit(child_id, minutes, persistent=False):
-        """Add bonus game time and increase the daily limit by the same amount.
+        """Add bonus game time to the child.
 
         By default the granted minutes are treated as daily-earned (they will be
-        tracked in `daily_earned_minutes_today` and removed at the next daily reset).
+        tracked in `daily_earned_minutes_today` and the earned_game_time reverts at daily reset).
         Set `persistent=True` to grant minutes that persist across days (e.g., challenge rewards).
+        
+        NOTE: daily_screen_time_limit is NOT increased - it's the base limit that resets each day.
+        Earned time for today is tracked in daily_earned_minutes_today.
         """
         database = get_db()
         if database is None:
@@ -435,9 +434,9 @@ class UserDB:
         users = database['users']
 
         try:
-            # Build increment fields. Always increment earned_game_time and daily limit.
-            inc_fields = {'earned_game_time': int(minutes), 'daily_screen_time_limit': int(minutes)}
-            # If not persistent, also record these as today's earned minutes so they can be reverted at midnight
+            # Increment earned_game_time (persistent across days)
+            inc_fields = {'earned_game_time': int(minutes)}
+            # If not persistent, also track as today's earned minutes
             if not persistent:
                 inc_fields['daily_earned_minutes_today'] = int(minutes)
 
@@ -567,46 +566,175 @@ class UserDB:
             return False
 
     @staticmethod
-    def update_child_streak(child_id, streak_count):
-        """Update child's streak count"""
-        database = get_db()
-        if database is None:
-            return False
+    def calculate_current_streak(child_id):
+        """Calculate current streak from activity_dates array.
         
-        from bson import ObjectId
-        users = database['users']
+        Returns the length of the most recent consecutive day streak.
+        """
+        child = UserDB.get_user_by_id(child_id)
+        if not child:
+            return 0
         
-        try:
-            result = users.update_one(
-                {'_id': ObjectId(child_id)},
-                {'$set': {'streak_count': max(0, int(streak_count))}}
-            )
-            # Return True if operation executed (even if value was the same and modified_count == 0)
-            return True
-        except Exception as e:
-            logger.exception("Error updating streak count: %s", e)
-            return False
-
+        activity_dates = child.get('activity_dates', [])
+        if not activity_dates:
+            return 0
+        
+        # Filter and deduplicate valid dates, sort descending (newest first)
+        from datetime import datetime, timedelta
+        valid_dates = []
+        for date_str in activity_dates:
+            try:
+                # Parse date, handling various formats
+                if isinstance(date_str, str):
+                    if 'T' in date_str:
+                        date_str = date_str.split('T')[0]
+                    parsed_date = datetime.fromisoformat(date_str).date()
+                    valid_dates.append(parsed_date)
+            except (ValueError, AttributeError):
+                logger.debug("Invalid date format in activity_dates: %s", date_str)
+                continue
+        
+        if not valid_dates:
+            return 0
+        
+        # Remove duplicates and sort (newest first)
+        unique_dates = sorted(set(valid_dates), reverse=True)
+        
+        # Count consecutive days from the most recent date
+        streak = 1
+        most_recent = unique_dates[0]
+        
+        for i in range(1, len(unique_dates)):
+            current_date = unique_dates[i]
+            expected_date = most_recent - timedelta(days=i)
+            
+            if current_date == expected_date:
+                streak += 1
+            else:
+                # Streak broken
+                logger.debug("Streak broken at position %d: current=%s expected=%s", i, current_date, expected_date)
+                break
+        
+        logger.debug("calculate_current_streak: child=%s unique_dates=%d streak=%d", child_id, len(unique_dates), streak)
+        return streak
+    
     @staticmethod
-    def update_streak_bonus(child_id, bonus_minutes_per_day):
-        """Update child's streak bonus (minutes per day)"""
+    def record_activity_date(child_id, activity_date=None):
+        """Record an activity date for a child and return streak reward.
+        
+        activity_date: ISO date string (YYYY-MM-DD) or None => uses UTC today.
+        Returns dict with keys: applied (bool), streak_count (int), reward_minutes (int)
+        """
         database = get_db()
         if database is None:
-            return False
+            return {'applied': False, 'reason': 'db unavailable', 'streak_count': 0, 'reward_minutes': 0}
         
         from bson import ObjectId
-        users = database['users']
+        from datetime import datetime, timedelta
         
+        users = database['users']
+        child = UserDB.get_user_by_id(child_id)
+        if not child:
+            return {'applied': False, 'reason': 'child not found', 'streak_count': 0, 'reward_minutes': 0}
+        
+        # Determine the date string for the activity (YYYY-MM-DD)
+        if activity_date:
+            try:
+                if 'T' in activity_date:
+                    activity_day = activity_date.split('T')[0]
+                else:
+                    activity_day = activity_date
+            except Exception:
+                activity_day = datetime.utcnow().date().isoformat()
+        else:
+            activity_day = datetime.utcnow().date().isoformat()
+        
+        # Check if this date is already recorded
+        existing_dates = child.get('activity_dates', [])
+        if activity_day in existing_dates:
+            logger.debug("record_activity_date: child=%s date=%s already recorded", child_id, activity_day)
+            # Already recorded for this day - no new streak reward
+            streak = UserDB.calculate_current_streak(child_id)
+            return {'applied': False, 'reason': 'already recorded', 'streak_count': streak, 'reward_minutes': 0}
+        
+        # Calculate what the streak will be with this new activity
+        temp_dates = existing_dates + [activity_day]
+        sorted_dates = sorted(set(temp_dates), reverse=True)
+        
+        # Count consecutive days from the most recent date
+        streak = 1
+        if len(sorted_dates) > 1:
+            most_recent = datetime.fromisoformat(sorted_dates[0]).date()
+            for i in range(1, len(sorted_dates)):
+                current_date = datetime.fromisoformat(sorted_dates[i]).date()
+                expected_date = most_recent - timedelta(days=i)
+                if current_date == expected_date:
+                    streak += 1
+                else:
+                    break
+        
+        # Calculate reward based on streak
+        parent_id = child.get('parent_id')
+        settings = {'base_minutes': 5, 'increment_minutes': 2, 'cap_minutes': 60}
+        if parent_id:
+            try:
+                settings = UserDB.get_parent_streak_settings(str(parent_id))
+            except Exception:
+                pass
+        
+        base = int(settings.get('base_minutes', 5))
+        inc = int(settings.get('increment_minutes', 2))
+        cap = int(settings.get('cap_minutes', 60))
+        
+        reward = base + (max(0, streak - 1) * inc)
+        if cap and reward > cap:
+            reward = cap
+        
+        logger.debug("record_activity_date: child=%s date=%s streak=%s reward=%s", child_id, activity_day, streak, reward)
+        
+        # Add activity date and reward time
         try:
-            result = users.update_one(
-                {'_id': ObjectId(child_id)},
-                {'$set': {'streak_bonus_minutes': max(0, int(bonus_minutes_per_day))}}
-            )
-            # Return True on success of the update operation (even if no modification was needed)
-            return True
+            today_str = datetime.utcnow().date().isoformat()
+            is_today = (activity_day == today_str)
+            
+            # Add the activity date to the array and earned time
+            update_fields = {
+                '$push': {'activity_dates': activity_day},
+                '$inc': {'earned_game_time': int(reward)}
+            }
+            
+            # If this is today's activity, track the earned minutes for today
+            if is_today:
+                # Only track in daily_earned_minutes_today, NOT in daily_screen_time_limit
+                # daily_screen_time_limit is the base and never changes
+                update_fields['$inc']['daily_earned_minutes_today'] = int(reward)
+            
+            res = users.update_one({'_id': ObjectId(child_id)}, update_fields)
+            logger.debug("record_activity_date: update result matched=%s modified=%s", 
+                        getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
+            
+            # Add a parent message noting the streak reward
+            try:
+                parent = None
+                if parent_id:
+                    parent = users.find_one({'_id': parent_id})
+                parent_name = parent.get('name') if parent else 'Your Parent'
+                msg = f"Earned {reward} min for {streak}-day streak ({activity_day})."
+                users.update_one({'_id': ObjectId(child_id)}, 
+                    {'$push': {'parent_messages': {
+                        'from_parent': parent_name,
+                        'message': msg,
+                        'bonus_minutes': reward,
+                        'created_at': datetime.utcnow(),
+                        'read': False
+                    }}})
+            except Exception:
+                pass
+            
+            return {'applied': True, 'streak_count': streak, 'reward_minutes': reward}
         except Exception as e:
-            logger.exception("Error updating streak bonus: %s", e)
-            return False
+            logger.exception("Error recording activity date: %s", e)
+            return {'applied': False, 'reason': 'update failed', 'streak_count': 0, 'reward_minutes': 0}
 
     @staticmethod
     def get_parent_streak_settings(parent_id):
@@ -650,129 +778,8 @@ class UserDB:
 
     @staticmethod
     def record_daily_activity(child_id, activity_date=None, source='activity'):
-        """Record that a child had activity on a given date, update streak and grant rewards.
-
-        activity_date: ISO date string (YYYY-MM-DD) or None => uses UTC today.
-        Returns dict with keys: applied (bool), streak_count, reward_minutes
-        """
-        database = get_db()
-        if database is None:
-            return {'applied': False, 'reason': 'db unavailable'}
-
-        from bson import ObjectId
-        from datetime import datetime, timedelta
-
-        users = database['users']
-        child = UserDB.get_user_by_id(child_id)
-        if not child:
-            return {'applied': False, 'reason': 'child not found'}
-
-        # Determine the date string for the activity (YYYY-MM-DD)
-        if activity_date:
-            try:
-                if 'T' in activity_date:
-                    activity_day = activity_date.split('T')[0]
-                else:
-                    activity_day = activity_date
-            except Exception:
-                activity_day = datetime.utcnow().date().isoformat()
-        else:
-            activity_day = datetime.utcnow().date().isoformat()
-
-        last_day = child.get('last_activity_date')
-        current_streak = int(child.get('streak_count', 0))
-
-        # If already recorded for this day, do nothing
-        if last_day == activity_day:
-            logger.debug("record_daily_activity: child=%s date=%s already recorded (last=%s)", child_id, activity_day, last_day)
-            return {'applied': False, 'reason': 'already recorded', 'streak_count': current_streak, 'reward_minutes': 0}
-
-        # Compute whether this continues streak. Normalize last_day to a date object when possible.
-        last_date = None
-        if last_day:
-            try:
-                # If stored as full ISO datetime or date string
-                if isinstance(last_day, str):
-                    if 'T' in last_day:
-                        last_date = datetime.fromisoformat(last_day.split('T')[0]).date()
-                    else:
-                        last_date = datetime.fromisoformat(last_day).date()
-                elif hasattr(last_day, 'date'):
-                    last_date = last_day.date()
-            except Exception:
-                last_date = None
-
-        # Convert activity_day to date object for comparison
-        try:
-            activity_date_obj = datetime.fromisoformat(activity_day).date()
-        except Exception:
-            activity_date_obj = datetime.utcnow().date()
-
-        # Check if this activity is on consecutive day with last activity
-        # Streak continues if activity is EXACTLY one day after last activity
-        if last_date and activity_date_obj == last_date + timedelta(days=1):
-            new_streak = current_streak + 1
-        else:
-            new_streak = 1
-
-        # Determine reward using parent's settings if available
-        parent_id = child.get('parent_id')
-        settings = {'base_minutes': 5, 'increment_minutes': 2, 'cap_minutes': 60}
-        if parent_id:
-            try:
-                settings = UserDB.get_parent_streak_settings(str(parent_id))
-            except Exception:
-                pass
-
-        base = int(settings.get('base_minutes', 5))
-        inc = int(settings.get('increment_minutes', 2))
-        cap = int(settings.get('cap_minutes', 60))
-
-        reward = base + (max(0, new_streak - 1) * inc)
-        if cap and reward > cap:
-            reward = cap
-
-        logger.debug("record_daily_activity: Streak check - last_date=%s, activity_date=%s, consecutive=%s", last_date, activity_date_obj, bool(last_date and activity_date_obj == last_date + timedelta(days=1)))
-        logger.debug("record_daily_activity: Reward calculation - base=%s, inc=%s, cap=%s, streak=%s, reward=%s", base, inc, cap, new_streak, reward)
-
-        # Apply updates: set last_activity_date to activity_day, set streak_count
-        # Only increase daily_screen_time_limit for TODAY's activity (so rewards reset daily)
-        try:
-            from datetime import datetime as dt_module
-            logger.debug("record_daily_activity: applying update child=%s date=%s new_streak=%s reward=%s", child_id, activity_day, new_streak, reward)
-            
-            today_str = dt_module.utcnow().date().isoformat()
-            is_today = (activity_day == today_str)
-            
-            update_fields = {
-                '$set': {'last_activity_date': activity_day, 'streak_count': new_streak, 'streak_bonus_minutes': reward}
-            }
-            
-            if is_today:
-                # Today's activity: add reward to both earned_game_time and daily_screen_time_limit
-                update_fields['$inc'] = {'earned_game_time': int(reward), 'daily_screen_time_limit': int(reward)}
-            else:
-                # Historical activity: only add to earned_game_time (don't inflate today's limit)
-                update_fields['$inc'] = {'earned_game_time': int(reward)}
-            
-            res = users.update_one({'_id': ObjectId(child_id)}, update_fields)
-            logger.debug("record_daily_activity: update result matched=%s modified=%s", getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
-
-            # Add a parent message noting the streak reward for the child (from system)
-            try:
-                parent = None
-                if parent_id:
-                    parent = users.find_one({'_id': parent_id})
-                parent_name = parent.get('name') if parent else 'Your Parent'
-                msg = f"Earned {reward} min for {new_streak}-day streak ({activity_day})."
-                users.update_one({'_id': ObjectId(child_id)}, {'$push': {'parent_messages': {'from_parent': parent_name, 'message': msg, 'bonus_minutes': reward, 'created_at': datetime.utcnow(), 'read': False}}})
-            except Exception:
-                pass
-
-            return {'applied': True, 'streak_count': new_streak, 'reward_minutes': reward}
-        except Exception as e:
-            logger.exception("Error recording daily activity/streak: %s", e)
-            return {'applied': False, 'reason': 'update failed'}
+        """Legacy wrapper - redirects to record_activity_date for backward compatibility."""
+        return UserDB.record_activity_date(child_id, activity_date)
 
     @staticmethod
     def reset_daily_used_if_needed(child_id):
@@ -817,12 +824,13 @@ class UserDB:
                     }
                 }
 
-                # If there were daily earned minutes, subtract them from persistent earned_game_time and daily limit
+                # If there were daily earned minutes, subtract them from persistent earned_game_time
+                # (daily_screen_time_limit never changes - it's the base)
                 if daily_earned > 0:
-                    # Ensure we don't underflow earned_game_time or daily_screen_time_limit
+                    # Ensure we don't underflow earned_game_time
                     try:
-                        # Use $inc with negative values to subtract
-                        users.update_one({'_id': ObjectId(child_id)}, {'$inc': {'earned_game_time': -int(daily_earned), 'daily_screen_time_limit': -int(daily_earned)}})
+                        # Use $inc with negative value to subtract only from earned_game_time
+                        users.update_one({'_id': ObjectId(child_id)}, {'$inc': {'earned_game_time': -int(daily_earned)}})
                     except Exception:
                         # If decrement fails, continue to at least reset daily fields
                         pass

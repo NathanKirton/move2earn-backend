@@ -1,6 +1,6 @@
 import hashlib
 from datetime import datetime
-from database import get_db
+from core.database import get_db
 
 
 def log_event(user_id, event_type, metadata=None):

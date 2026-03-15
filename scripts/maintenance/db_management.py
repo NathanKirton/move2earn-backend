@@ -1,17 +1,22 @@
-"""
-Database Management Script
-Utilities for clearing databases, deleting accounts, and managing data
-
-Run with caution - these operations are destructive!
-"""
+"""Database management utilities for local admin tasks."""
 
 import os
+import sys
+from pathlib import Path
+
 from dotenv import load_dotenv
 from pymongo import MongoClient
-from database import get_db, UserDB
 from bson import ObjectId
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.database import get_db, UserDB
+
 load_dotenv()
+
+DB_NAME = os.getenv('MONGODB_DB_NAME', 'move2earn')
 
 def get_mongo_connection():
     """Get MongoDB connection"""
@@ -40,11 +45,10 @@ def clear_all_users():
         return
     
     try:
-        # Connect to Move2EarnProject database
-        db = client['Move2EarnProject']
+        db = client[DB_NAME]
         users_collection = db['users']
         result = users_collection.delete_many({})
-        print(f"✓ Deleted {result.deleted_count} user accounts from Move2EarnProject")
+        print(f"✓ Deleted {result.deleted_count} user accounts from {DB_NAME}")
     except Exception as e:
         print(f"ERROR: {e}")
     finally:
@@ -216,8 +220,7 @@ def reset_all_user_game_time():
                 'earned_game_time': 0,
                 'current_used_game_time': 0,
                 'daily_screen_time_limit': 60,
-                'streak_count': 0,
-                'last_activity_date': None
+                'activity_dates': []
             }}
         )
         print(f"✓ Reset game time for {result.modified_count} user(s)")
@@ -284,7 +287,7 @@ def list_all_users():
             'earned_game_time': 1,
             'current_used_game_time': 1,
             'daily_screen_time_limit': 1,
-            'streak_count': 1
+            'activity_dates': 1
         }))
         
         if not users:
@@ -302,7 +305,27 @@ def list_all_users():
             earned = str(user.get('earned_game_time', 0))[:9]
             used = str(user.get('current_used_game_time', 0))[:9]
             limit = str(user.get('daily_screen_time_limit', 0))[:9]
-            streak = str(user.get('streak_count', 0))[:7]
+            
+            # Calculate streak from activity_dates
+            from datetime import datetime, timedelta
+            activity_dates = user.get('activity_dates', [])
+            if activity_dates:
+                sorted_dates = sorted(set(activity_dates), reverse=True)
+                streak = 1
+                try:
+                    most_recent = datetime.fromisoformat(sorted_dates[0]).date()
+                    for i in range(1, len(sorted_dates)):
+                        current_date = datetime.fromisoformat(sorted_dates[i]).date()
+                        expected_date = most_recent - timedelta(days=i)
+                        if current_date == expected_date:
+                            streak += 1
+                        else:
+                            break
+                except Exception:
+                    streak = 0
+            else:
+                streak = 0
+            streak = str(streak)[:7]
             
             print(f"{name:<20} {email:<30} {account_type:<15} {earned:<10} {used:<10} {limit:<10} {streak:<8}")
         

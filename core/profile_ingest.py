@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from database import get_db
+from core.database import get_db
 
 
 def compute_weekly_km(db, user_id):

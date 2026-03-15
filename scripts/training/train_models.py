@@ -9,7 +9,7 @@ using `joblib` into `models/`:
 - minutes_model.pkl (regression)
 
 Usage:
-  python tools/train_models.py
+  python scripts/training/train_models.py
 
 Note: This script requires `scikit-learn` and `joblib`. If not installed, it will
 print instructions to run inside a proper environment (local or Docker).
@@ -17,18 +17,19 @@ print instructions to run inside a proper environment (local or Docker).
 import os
 import sys
 import logging
-from pprint import pprint
+from pathlib import Path
 
-ROOT = os.path.dirname(os.path.dirname(__file__))
-sys.path.insert(0, ROOT)
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from ai_helpers import fetch_all_activities
+from core.ai_helpers import fetch_all_activities
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-MODEL_DIR = os.path.join(ROOT, 'models')
-os.makedirs(MODEL_DIR, exist_ok=True)
+MODEL_DIR = ROOT / 'models'
+MODEL_DIR.mkdir(exist_ok=True)
 
 try:
     from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -41,7 +42,7 @@ except Exception as e:
     print('Example (local):')
     print('  python -m pip install scikit-learn joblib numpy')
     print('Then run:')
-    print('  python tools/train_models.py')
+    print('  python scripts/training/train_models.py')
     sys.exit(1)
 
 
@@ -132,21 +133,21 @@ def train_and_save(models_out=('streak_model.pkl','challenge_model.pkl','minutes
     reg = RandomForestRegressor(n_estimators=50, random_state=42)
     reg.fit(X_train, y_train)
     print('Minutes model R2 on test:', reg.score(X_test, y_test))
-    joblib.dump(reg, os.path.join(MODEL_DIR, models_out[2]))
+    joblib.dump(reg, MODEL_DIR / models_out[2])
 
     # Train challenge classifier
     X_train, X_test, y_train, y_test = train_test_split(X, y_challenge, test_size=0.2, random_state=42)
     clf = RandomForestClassifier(n_estimators=50, random_state=42)
     clf.fit(X_train, y_train)
     print('Challenge model acc on test:', clf.score(X_test, y_test))
-    joblib.dump(clf, os.path.join(MODEL_DIR, models_out[1]))
+    joblib.dump(clf, MODEL_DIR / models_out[1])
 
     # Train streak classifier
     X_train, X_test, y_train, y_test = train_test_split(X, y_streak, test_size=0.2, random_state=42)
     clf2 = RandomForestClassifier(n_estimators=50, random_state=42)
     clf2.fit(X_train, y_train)
     print('Streak model acc on test:', clf2.score(X_test, y_test))
-    joblib.dump(clf2, os.path.join(MODEL_DIR, models_out[0]))
+    joblib.dump(clf2, MODEL_DIR / models_out[0])
 
     print('Models trained and saved to', MODEL_DIR)
 

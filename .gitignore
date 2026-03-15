@@ -44,6 +44,7 @@ flask_session/
 __pycache__/
 *.py[cod]
 *.pyc
+uploads/
 
 # OS
 .DS_Store

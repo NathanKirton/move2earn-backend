@@ -29,7 +29,7 @@ class BasicTests(unittest.TestCase):
         # Propagate exceptions to the test client
         self.client.testing = True 
 
-    @patch('database.get_db')
+    @patch('app.get_db')
     def test_landing_page(self, mock_get_db):
         # Mock the database connection
         mock_db = MagicMock()
@@ -38,7 +38,7 @@ class BasicTests(unittest.TestCase):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
 
-    @patch('database.get_db')
+    @patch('app.get_db')
     def test_login_page_loads(self, mock_get_db):
          # Mock the database connection
          mock_db = MagicMock()
@@ -47,7 +47,7 @@ class BasicTests(unittest.TestCase):
          response = self.client.get('/login')
          self.assertEqual(response.status_code, 200)
 
-    @patch('database.get_db')
+    @patch('app.get_db')
     def test_register_page_loads(self, mock_get_db):
          # Mock the database connection
          mock_db = MagicMock()
@@ -56,8 +56,8 @@ class BasicTests(unittest.TestCase):
          response = self.client.get('/register')
          self.assertEqual(response.status_code, 200)
 
-    @patch('database.UserDB.create_user')
-    @patch('database.get_db')
+    @patch('app.UserDB.create_user')
+    @patch('app.get_db')
     def test_registration_flow(self, mock_get_db, mock_create_user):
         # Mock database
         mock_db = MagicMock()
@@ -86,8 +86,8 @@ class BasicTests(unittest.TestCase):
         # Note: The actual implementation might check existing user first.
         # Since we mocked logic, we just check if the call happened.
 
-    @patch('database.UserDB.verify_login')
-    @patch('database.get_db')
+    @patch('app.UserDB.verify_login')
+    @patch('app.get_db')
     def test_login_flow(self, mock_get_db, mock_verify_login):
         # Mock database
         mock_db = MagicMock()

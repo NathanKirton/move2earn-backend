@@ -225,6 +225,10 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(58, 125, 255, 0.2);
     }
+
+    .activity-manual {
+        cursor: default;
+    }
     
     .activity-icon {
         font-size: 32px;
@@ -895,11 +899,10 @@
         </div>
     </div>
     
-    <!-- AI Training Partner (child-facing) - auto-refreshes every 3 minutes -->
+    <!-- AI Training Partner (child-facing) -->
     <div class="card" id="training-card" style="margin-bottom:20px; background: #2A2A3E; border: 1px solid rgba(58, 125, 255, 0.2); overflow: hidden;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(100, 150, 255, 0.2);">
             <h2 style="margin: 0; font-size: 20px; color: #3A7DFF;">🤖 AI Training Partner</h2>
-            <span style="font-size: 11px; color: #888; background: rgba(100, 150, 255, 0.2); padding: 4px 10px; border-radius: 12px;">Auto-refresh: 3 min</span>
         </div>
         <div id="childRecContent" style="min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
             <div style="text-align: center; color: #aaa;">
@@ -1301,23 +1304,14 @@ async function loadActivities(page = 1) {
                             source: 'manual'
                         }))
                     ];
-                    // Only calculate streak if we haven't loaded from server yet
-                    if (!window.serverStreakLoaded) {
-                        calculateStreak(allActivitiesForStreak);
-                    }
+                    // Streak is now calculated server-side only - don't override it here
                     streakCalculated = true;  // Mark as calculated
                 } else {
-                    // Fallback to current page activities if endpoint fails
-                    if (!window.serverStreakLoaded) {
-                        calculateStreak(allActivities);
-                    }
+                    // Fallback - streak will come from server
                     streakCalculated = true;
                 }
             } catch (e) {
-                // Fallback to current page activities if fetch fails
-                if (!window.serverStreakLoaded) {
-                    calculateStreak(allActivities);
-                }
+                // Fallback - streak will come from server
                 streakCalculated = true;
             }
         }
@@ -1334,11 +1328,11 @@ async function loadActivities(page = 1) {
             const intensityBadge = `<span class="intensity-badge ${intensityLabel === 'Easy' ? 'intensity-easy' : intensityLabel === 'Hard' ? 'intensity-hard' : 'intensity-medium'}">${intensityLabel}</span>`;
             
             const onClickAttr = isStravasActivity ? `onclick="openActivityModal(${activity.id})"` : '';
-            const cursorStyle = isStravasActivity ? 'cursor: pointer;' : 'cursor: default;';
+            const manualClass = isStravasActivity ? '' : 'activity-manual';
             
             // Note: The following uses template literals with embedded HTML - this is valid JavaScript
             return `
-                <div class="activity-item" ${onClickAttr} style="${cursorStyle}">
+                <div class="activity-item ${manualClass}" ${onClickAttr}>
                     <div class="activity-icon">${getActivityIcon(activity.type)}</div>
                     <div class="activity-details">
                         <div class="activity-title">
@@ -1396,64 +1390,11 @@ function goToNextPage() {
 }
 
 function calculateStreak(activities) {
-    if (activities.length === 0) {
-        document.getElementById('streak-count').textContent = '0';
-        return;
-    }
-    
-    // Get unique dates from activities using activity_date field (the actual activity date, not when it was created)
-    const dates = new Set();
-    activities.forEach(activity => {
-        // Use activity_date which is the actual date of the activity (e.g., '2026-02-16')
-        const dateStr = activity.activity_date || activity.start_date;
-        if (dateStr) {
-            // Extract just the date part (YYYY-MM-DD)
-            const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-            dates.add(datePart);
-        }
-    });
-    
-    if (dates.size === 0) {
-        document.getElementById('streak-count').textContent = '0';
-        return;
-    }
-    
-    // Sort dates newest to oldest
-    const sortedDates = Array.from(dates).sort().reverse();
-    let streak = 0;
-    
-    // Start from the most recent activity date (not today)
-    const mostRecentDateStr = sortedDates[0];
-    const mostRecentDate = new Date(mostRecentDateStr + 'T00:00:00Z');
-    
-    // Count consecutive days backwards from the most recent activity date
-    for (let i = 0; i < sortedDates.length; i++) {
-        // Calculate what date should be at position i (going backwards from most recent)
-        const expectedDate = new Date(mostRecentDate);
-        expectedDate.setUTCDate(expectedDate.getUTCDate() - i);
-        
-        const expectedDateStr = expectedDate.getUTCFullYear() + '-' + 
-                                String(expectedDate.getUTCMonth() + 1).padStart(2, '0') + '-' + 
-                                String(expectedDate.getUTCDate()).padStart(2, '0');
-        
-        // Check if this date matches the expected consecutive date
-        if (sortedDates[i] === expectedDateStr) {
-            streak++;
-        } else {
-            // Streak broken - stop counting
-            break;
-        }
-    }
-    
-    document.getElementById('streak-count').textContent = streak;
-    
-    // Also update renderStreakDays if we have it
-    try {
-        const settings = { base_minutes: 5, increment_minutes: 2, cap_minutes: 60 };
-        renderStreakDays(streak, settings);
-    } catch (e) {
-        // ignore
-    }
+    // **DISABLED**: Streak is now calculated ONLY server-side from activity_dates
+    // The server-side calculation is authoritative and stored in the database
+    // DO NOT recalculate on the frontend as it could use incomplete data
+    // The streak value comes from loadGameTime() -> /api/gametime-balance endpoint
+    return;
 }
 
 async function loadGameTime() {
@@ -2118,7 +2059,7 @@ function updateSimulateProgress(percent) {
     }
 }
 
-// --- Child AI Training Partner logic - auto-refreshing tips ---
+// --- Child AI Training Partner logic ---
 const CHILD_ID = '{{ user_id }}';
 let aiRefreshInterval = null;
 
@@ -2172,10 +2113,7 @@ async function getChildRecommendation(){
 // Load recommendation immediately on page load
 document.addEventListener('DOMContentLoaded', ()=>{
     getChildRecommendation();
-    // Auto-refresh every 3 minutes (180000 ms) - ensure no existing interval first
-    if(aiRefreshInterval) clearInterval(aiRefreshInterval);
-    aiRefreshInterval = setInterval(getChildRecommendation, 180000);
-    console.log('AI auto-refresh started: every 3 minutes');
+    // Auto-refresh removed - updates only on activity upload or page refresh
 });
 
 // Clean up interval if user navigates away
