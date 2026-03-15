@@ -914,7 +914,17 @@ def get_activities():
                 else:
                     UserDB.add_earned_game_time(session['user_id'], earned)
 
-                UserDB.record_daily_activity(session['user_id'], activity_date=activity_day, source='strava')
+                # Only grant streak reward + notification for today's activity.
+                # Historical activities are recorded in activity_dates for streak tracking
+                # but must not flood the notifications panel with duplicate rewards.
+                is_today_act = (activity_day == today_str)
+                UserDB.record_daily_activity(
+                    session['user_id'],
+                    activity_date=activity_day,
+                    source='strava',
+                    grant_reward=is_today_act,
+                    notify=is_today_act
+                )
             except Exception:
                 logger.exception('Failed applying Strava activity %s for user %s', activity_id, session.get('user_id'))
                 if insert_result is not None:

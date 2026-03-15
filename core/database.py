@@ -619,10 +619,12 @@ class UserDB:
         return streak
     
     @staticmethod
-    def record_activity_date(child_id, activity_date=None):
+    def record_activity_date(child_id, activity_date=None, grant_reward=True, notify=True):
         """Record an activity date for a child and return streak reward.
         
         activity_date: ISO date string (YYYY-MM-DD) or None => uses UTC today.
+        grant_reward: if False, records the date in activity_dates but skips crediting earned minutes.
+        notify: if False, suppresses the parent notification message.
         Returns dict with keys: applied (bool), streak_count (int), reward_minutes (int)
         """
         database = get_db()
@@ -700,36 +702,35 @@ class UserDB:
             # Add the activity date to the array and earned time
             update_fields = {
                 '$push': {'activity_dates': activity_day},
-                '$inc': {'earned_game_time': int(reward)}
             }
             
-            # If this is today's activity, track the earned minutes for today
-            if is_today:
-                # Only track in daily_earned_minutes_today, NOT in daily_screen_time_limit
-                # daily_screen_time_limit is the base and never changes
-                update_fields['$inc']['daily_earned_minutes_today'] = int(reward)
+            if grant_reward:
+                update_fields['$inc'] = {'earned_game_time': int(reward)}
+                # If today's activity, also track in daily_earned_minutes_today
+                if is_today:
+                    update_fields['$inc']['daily_earned_minutes_today'] = int(reward)
             
             res = users.update_one({'_id': ObjectId(child_id)}, update_fields)
             logger.debug("record_activity_date: update result matched=%s modified=%s", 
                         getattr(res, 'matched_count', None), getattr(res, 'modified_count', None))
             
-            # Add a parent message noting the streak reward
-            try:
-                parent = None
-                if parent_id:
-                    parent = users.find_one({'_id': parent_id})
-                parent_name = parent.get('name') if parent else 'Your Parent'
-                msg = f"Earned {reward} min for {streak}-day streak ({activity_day})."
-                users.update_one({'_id': ObjectId(child_id)}, 
-                    {'$push': {'parent_messages': {
-                        'from_parent': parent_name,
-                        'message': msg,
-                        'bonus_minutes': reward,
-                        'created_at': datetime.utcnow(),
-                        'read': False
-                    }}})
-            except Exception:
-                pass
+            if notify and grant_reward:
+                try:
+                    parent = None
+                    if parent_id:
+                        parent = users.find_one({'_id': parent_id})
+                    parent_name = parent.get('name') if parent else 'Your Parent'
+                    msg = f"Earned {reward} min for {streak}-day streak ({activity_day})."
+                    users.update_one({'_id': ObjectId(child_id)},
+                        {'$push': {'parent_messages': {
+                            'from_parent': parent_name,
+                            'message': msg,
+                            'bonus_minutes': reward,
+                            'created_at': datetime.utcnow(),
+                            'read': False
+                        }}})
+                except Exception:
+                    pass
             
             return {'applied': True, 'streak_count': streak, 'reward_minutes': reward}
         except Exception as e:
@@ -777,9 +778,9 @@ class UserDB:
             return False
 
     @staticmethod
-    def record_daily_activity(child_id, activity_date=None, source='activity'):
+    def record_daily_activity(child_id, activity_date=None, source='activity', grant_reward=True, notify=True):
         """Legacy wrapper - redirects to record_activity_date for backward compatibility."""
-        return UserDB.record_activity_date(child_id, activity_date)
+        return UserDB.record_activity_date(child_id, activity_date, grant_reward=grant_reward, notify=notify)
 
     @staticmethod
     def reset_daily_used_if_needed(child_id):
