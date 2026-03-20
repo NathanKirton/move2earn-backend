@@ -379,6 +379,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script>
 </head>
 <body>
 
@@ -389,6 +391,14 @@
             <p>Welcome back, {{ parent_name }}!</p>
         </div>
         <div class="header-right">
+            <div class="theme-toggle-wrap">
+                <span class="theme-icon">🌙</span>
+                <label class="toggle-switch" title="Toggle dark/light mode">
+                    <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+                <span class="theme-icon">☀️</span>
+            </div>
             <button class="btn btn-primary" onclick="openAccountModal()">Account</button>
             <a href="/logout" class="btn btn-logout">Logout</a>
         </div>

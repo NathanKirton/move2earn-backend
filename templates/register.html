@@ -289,8 +289,18 @@
             transition: width 0.3s ease;
         }
     </style>
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script>
 </head>
 <body>
+    <div class="theme-toggle-wrap theme-toggle-float">
+        <span class="theme-icon">🌙</span>
+        <label class="toggle-switch" title="Toggle dark/light mode">
+            <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <span class="theme-icon">☀️</span>
+    </div>
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-with-progress">
             <div class="circular-progress">
@@ -312,7 +322,7 @@
 
     <div class="auth-container">
         <div class="auth-header">
-            <h1><img src="/static/logo.png" alt="Move2Earn" class="logo-img"> Move2Earn</h1>
+            <h1><img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128"> Move2Earn</h1>
             <p style="color: #ddd;">Create your account</p>
         </div>
         

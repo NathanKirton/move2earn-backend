@@ -131,18 +131,28 @@
 
         /* Crown for #1 */
         .rank-1::before { content: '👑 '; }
-    </style>
-</head>
+    </style>    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script></head>
 <body>
     <div class="container">
         <a class="back" href="/dashboard">← Back to Dashboard</a>
         
         <div class="header">
             <h1>🏆 Leaderboard</h1>
+            <div style="display:flex;align-items:center;gap:16px;">
             <div class="toggle-container">
                 <div class="slider" id="slider" style="width: 80px; transform: translateX(0);"></div>
                 <button class="toggle-btn active" onclick="setScope('global')" id="btn-global">Global</button>
                 <button class="toggle-btn" onclick="setScope('friends')" id="btn-friends">Friends</button>
+            </div>
+            <div class="theme-toggle-wrap">
+                <span class="theme-icon">🌙</span>
+                <label class="toggle-switch" title="Toggle dark/light mode">
+                    <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+                <span class="theme-icon">☀️</span>
+            </div>
             </div>
         </div>
 

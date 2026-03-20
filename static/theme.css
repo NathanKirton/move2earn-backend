@@ -1,0 +1,354 @@
+/* ===================================================
+   Move2Earn – Dark / Light Mode Theme
+   =================================================== */
+
+/* ---------- Toggle widget ---------- */
+.theme-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.theme-icon { font-size: 15px; line-height: 1; user-select: none; }
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: #3A7DFF;
+  border-radius: 26px;
+  transition: background 0.3s;
+}
+
+.toggle-thumb {
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.toggle-switch input:checked + .toggle-track { background: #f0aa00; }
+.toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+/* Floating toggle (login / register / upload pages) */
+.theme-toggle-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  background: rgba(42,42,62,0.92);
+  backdrop-filter: blur(8px);
+  border-radius: 30px;
+  padding: 6px 12px;
+  border: 1px solid rgba(58,125,255,0.3);
+}
+
+[data-theme="light"] .theme-toggle-float {
+  background: rgba(255,255,255,0.97);
+  border-color: rgba(58,125,255,0.2);
+  box-shadow: 0 2px 12px rgba(58,125,255,0.12);
+}
+
+/* ===================================================
+   Light Mode Overrides
+   (activated by data-theme="light" on <html>)
+   =================================================== */
+
+/* Body */
+[data-theme="light"] body {
+  background: #f0f4ff !important;
+  color: #1A1A2E !important;
+}
+
+/* ---- Page-level containers ---- */
+[data-theme="light"] header,
+[data-theme="light"] .header,
+[data-theme="light"] .navbar {
+  background: #ffffff !important;
+  border-color: rgba(58,125,255,0.18) !important;
+  color: #1A1A2E !important;
+}
+
+[data-theme="light"] header h1,
+[data-theme="light"] header h2,
+[data-theme="light"] header h3,
+[data-theme="light"] .header h1,
+[data-theme="light"] .header h2,
+[data-theme="light"] .navbar .logo {
+  color: #1A1A2E !important;
+}
+
+/* ---- Cards ---- */
+[data-theme="light"] .card,
+[data-theme="light"] .gametime-card,
+[data-theme="light"] .notifications-card,
+[data-theme="light"] .streak-card,
+[data-theme="light"] .challenge-card,
+[data-theme="light"] .activity-card,
+[data-theme="light"] .activity-item,
+[data-theme="light"] .leaderboard-card,
+[data-theme="light"] .friend-item,
+[data-theme="light"] .request-item,
+[data-theme="light"] .auth-container {
+  background: #ffffff !important;
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.15) !important;
+  box-shadow: 0 4px 20px rgba(58,125,255,0.08) !important;
+}
+
+/* upload_activity uses .container as the card */
+[data-theme="light"] .upload-card {
+  background: #ffffff !important;
+  border-color: rgba(58,125,255,0.18) !important;
+  color: #1A1A2E !important;
+}
+
+/* ---- Card text ---- */
+[data-theme="light"] .card h2,
+[data-theme="light"] .card h3,
+[data-theme="light"] .card h4,
+[data-theme="light"] .card p,
+[data-theme="light"] .card span,
+[data-theme="light"] .card label,
+[data-theme="light"] .card div {
+  color: #1A1A2E;
+}
+
+/* ---- Headings ---- */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6 {
+  color: #1A1A2E !important;
+}
+
+/* ---- Form elements ---- */
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="range"]),
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #f8f9ff !important;
+  color: #1A1A2E !important;
+  border-color: #c8d0ec !important;
+}
+
+/* Catch any inline-style overrides on inputs that might make text invisible */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea { color: #1A1A2E !important; }
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder { color: #8899aa !important; }
+
+[data-theme="light"] .form-group label,
+[data-theme="light"] label {
+  color: #2a2a4a !important;
+}
+
+/* ---- Auth pages specifics ---- */
+[data-theme="light"] .auth-header h1,
+[data-theme="light"] .auth-header p { color: #1A1A2E !important; }
+
+[data-theme="light"] .form-footer p { color: #4a4a6a !important; }
+[data-theme="light"] .form-footer a { color: #3A7DFF !important; }
+
+/* ---- General body text (overrides color: #aaa set in page stylesheets) ---- */
+[data-theme="light"] p { color: #3a3a5a; }
+
+/* ---- Muted / secondary text ---- */
+[data-theme="light"] .muted,
+[data-theme="light"] .athlete-info .status,
+[data-theme="light"] .subtitle,
+[data-theme="light"] .auth-header p,
+[data-theme="light"] .form-footer p,
+[data-theme="light"] .empty {
+  color: #5a5a7a !important;
+}
+
+[data-theme="light"] .athlete-info .name { color: #1A1A2E !important; }
+
+/* ---- Leaderboard specifics ---- */
+[data-theme="light"] .row {
+  background: #f0f4ff !important;
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.1) !important;
+}
+
+[data-theme="light"] .row .name { color: #1A1A2E !important; }
+[data-theme="light"] .row .time { color: #3A7DFF !important; }
+[data-theme="light"] .list-header { color: #5a5a7a !important; }
+[data-theme="light"] a.back { color: #3A7DFF !important; }
+[data-theme="light"] a.back:hover { color: #2961CC !important; }
+
+/* ---- Tabs ---- */
+[data-theme="light"] .tabs {
+  background: rgba(58,125,255,0.06) !important;
+  border-color: rgba(58,125,255,0.15) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  color: #5a5a7a !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  background: #3A7DFF !important;
+  color: #fff !important;
+}
+
+/* ---- Back buttons / nav links ---- */
+[data-theme="light"] .btn-back {
+  background: rgba(58,125,255,0.08) !important;
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.2) !important;
+}
+
+/* ---- Secondary buttons ---- */
+[data-theme="light"] .btn-secondary {
+  background: #e8eeff !important;
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.2) !important;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: #d4ddff !important;
+}
+
+/* ---- Landing page specific ---- */
+[data-theme="light"] .hero-content h1 { color: #1A1A2E !important; }
+[data-theme="light"] .hero-content p { color: #3a3a5a !important; }
+[data-theme="light"] .hero-content span { color: #3A7DFF !important; }
+[data-theme="light"] .logo span { color: #1A1A2E !important; }
+
+/* Feature cards */
+[data-theme="light"] .feature-card {
+  background: #ffffff !important;
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.15) !important;
+  box-shadow: 0 4px 16px rgba(58,125,255,0.08) !important;
+}
+[data-theme="light"] .feature-card h3 { color: #1A1A2E !important; }
+[data-theme="light"] .feature-card p  { color: #4a4a6a !important; }
+
+/* Healthy section (was dark bg panel) */
+[data-theme="light"] .healthy-section {
+  background: #eef2ff !important;
+  border-color: rgba(58,125,255,0.15) !important;
+}
+[data-theme="light"] .healthy-content h2     { color: #1A1A2E !important; }
+[data-theme="light"] .healthy-item-content h4 { color: #1A1A2E !important; }
+[data-theme="light"] .healthy-item-content p  { color: #4a4a6a !important; }
+
+/* CTA section (was dark bg panel) */
+[data-theme="light"] .cta-section {
+  background: #eef2ff !important;
+  border-color: rgba(58,125,255,0.15) !important;
+}
+[data-theme="light"] .cta-section h2 { color: #1A1A2E !important; }
+
+/* Features section title */
+[data-theme="light"] .features-title h2 { color: #1A1A2E !important; }
+
+/* Placeholder image boxes */
+[data-theme="light"] .placeholder-box {
+  background: rgba(58,125,255,0.05) !important;
+  border-color: rgba(58,125,255,0.18) !important;
+}
+
+[data-theme="light"] .btn-secondary[href="/login"],
+[data-theme="light"] .btn-secondary[href="/register"] {
+  color: #1A1A2E !important;
+  border-color: rgba(58,125,255,0.3) !important;
+}
+
+/* ---- Dashboard theme overrides ---- */
+[data-theme="light"] .theme-dashboard .gametime-card,
+[data-theme="light"] .theme-dashboard .notifications-card,
+[data-theme="light"] .theme-dashboard .streak-card,
+[data-theme="light"] .theme-dashboard .activity-item,
+[data-theme="light"] .theme-dashboard .card {
+  background: #ffffff !important;
+  color: #1A1A2E !important;
+}
+
+[data-theme="light"] .theme-dashboard .gametime-header { color: #4a4a6a !important; }
+[data-theme="light"] .theme-dashboard .gametime-limit  { color: #6a6a8a !important; }
+[data-theme="light"] .theme-dashboard .gametime-bar    { background: rgba(0,0,0,0.07) !important; }
+[data-theme="light"] .theme-dashboard .activity-title  { color: #1A1A2E !important; }
+[data-theme="light"] .theme-dashboard .navbar {
+  background: #ffffff !important;
+  border-color: rgba(58,125,255,0.2) !important;
+}
+
+/* ---- AI collapsible ---- */
+[data-theme="light"] .ai-collapsible {
+  background: #ffffff !important;
+  border-color: rgba(58,125,255,0.12) !important;
+}
+[data-theme="light"] .ai-collapsible .ai-header {
+  background: linear-gradient(90deg, rgba(58,125,255,0.04), rgba(58,125,255,0.02)) !important;
+  color: #1A1A2E !important;
+}
+[data-theme="light"] .ai-collapsible .ai-row { color: #1A1A2E !important; }
+
+/* ---- Friends page ---- */
+[data-theme="light"] .friend-card,
+[data-theme="light"] .friend-row {
+  background: #f4f7ff !important;
+  border-color: rgba(58,125,255,0.1) !important;
+  color: #1A1A2E !important;
+}
+[data-theme="light"] .send-btn {
+  background: #3A7DFF !important;
+  color: #fff !important;
+}
+
+/* ---- Challenges page ---- */
+[data-theme="light"] .challenge-info { color: #1A1A2E !important; }
+[data-theme="light"] .challenge-badge { background: rgba(58,125,255,0.1) !important; color: #3A7DFF !important; }
+[data-theme="light"] input#chName,
+[data-theme="light"] input#chReward,
+[data-theme="light"] input#chImageUrl,
+[data-theme="light"] textarea#chDesc,
+[data-theme="light"] select#chTaskType {
+  background: #f8f9ff !important;
+  color: #1A1A2E !important;
+  border-color: #c8d0ec !important;
+}
+
+/* ---- Parent dashboard form inputs ---- */
+[data-theme="light"] .add-child-form {
+  background: rgba(58,125,255,0.04) !important;
+}
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group select,
+[data-theme="light"] .form-group textarea {
+  background: #f8f9ff !important;
+  color: #1A1A2E !important;
+  border-color: #c8d0ec !important;
+}
+
+/* ---- Upload activity specifics ---- */
+[data-theme="light"] .upload-card .title { color: #3A7DFF !important; }
+[data-theme="light"] .upload-card .subtitle { color: #5a5a7a !important; }
+[data-theme="light"] .upload-card .logo { color: #1A1A2E !important; }

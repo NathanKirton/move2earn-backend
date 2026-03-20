@@ -221,6 +221,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script>
 </head>
 <body>
     <div class="container">
@@ -229,6 +231,14 @@
                 <h1>👥 Friends</h1>
             </div>
             <div class="header-right">
+                <div class="theme-toggle-wrap">
+                    <span class="theme-icon">🌙</span>
+                    <label class="toggle-switch" title="Toggle dark/light mode">
+                        <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                    <span class="theme-icon">☀️</span>
+                </div>
                 <a href="/dashboard" class="btn btn-back">← Back to Dashboard</a>
                 <a href="/logout" class="btn btn-logout">Logout</a>
             </div>

@@ -160,14 +160,25 @@
         }
     </style>
     {% block extra_css %}{% endblock %}
+    <!-- Theme toggle -->
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script>
     <!-- Site-wide responsive stylesheet (overrides page CSS where needed) -->
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><img src="/static/logo.png" alt="Move2Earn" class="logo-img"> Move2Earn</h1>
+            <h1><img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128"> Move2Earn</h1>
             <div class="header-right">
+                <div class="theme-toggle-wrap">
+                    <span class="theme-icon">🌙</span>
+                    <label class="toggle-switch" title="Toggle dark/light mode">
+                        <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                    <span class="theme-icon">☀️</span>
+                </div>
                 {% block header_right %}
                 <div class="athlete-info">
                     <div class="name">{{ athlete_name or 'Guest' }}</div>
