@@ -51,3 +51,15 @@ Move2Earn is a monolithic Flask application with MongoDB persistence. The app se
 - Production entrypoint: `wsgi.py`
 - Container: `Dockerfile`
 - Hosted configuration: `render.yaml`
+
+## Runtime characteristics
+
+- First MongoDB use can be slower due to lazy client initialization in `core/database.py`.
+- After the first connection, query latency is typically stable because the process reuses the active client and connection pool.
+- Endpoints that return static template data are usually faster than DB-backed endpoints such as leaderboard/challenges.
+
+## Recent maintainability cleanup
+
+- Removed a no-op Flask `before_request` hook from `app.py` that did not alter behavior.
+- Consolidated theme and responsive styling in `static/theme.css` and `static/styles.css`.
+- Added accessibility labeling on theme toggles and semantic `main` landmarks in templates.

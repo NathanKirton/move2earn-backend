@@ -81,6 +81,39 @@ Train local models:
 python scripts/training/train_models.py
 ```
 
+## Quick health and performance checks
+
+API latency smoke test (PowerShell):
+```powershell
+$urls = @(
+   "http://127.0.0.1:5000/landing",
+   "http://127.0.0.1:5000/login",
+   "http://127.0.0.1:5000/api/challenge-templates",
+   "http://127.0.0.1:5000/api/leaderboard"
+)
+foreach ($u in $urls) {
+   $times = @()
+   1..10 | ForEach-Object {
+      $sw = [System.Diagnostics.Stopwatch]::StartNew()
+      try { Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 10 > $null } catch {}
+      $sw.Stop()
+      $times += $sw.Elapsed.TotalMilliseconds
+   }
+   $avg = [math]::Round((($times | Measure-Object -Average).Average), 2)
+   Write-Output "$u avg_ms=$avg"
+}
+```
+
+MongoDB latency smoke test:
+```bash
+python -c "from core.database import get_db; import time; t=time.perf_counter(); db=get_db(); print(f'connect_ms={(time.perf_counter()-t)*1000:.2f}');"
+```
+
+60-second local uptime probe:
+```powershell
+$ok=0; 1..60 | ForEach-Object { try { $r=Invoke-WebRequest http://127.0.0.1:5000/landing -UseBasicParsing -TimeoutSec 3; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 400){$ok++} } catch {}; Start-Sleep -Seconds 1 }; "uptime_pct=$([math]::Round(($ok/60)*100,2))"
+```
+
 ## Deployment
 
 - `wsgi.py` provides the WSGI entrypoint.

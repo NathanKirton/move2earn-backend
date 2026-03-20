@@ -30,6 +30,22 @@ Run the full unittest suite:
 python -m unittest discover -s tests -p "test*.py"
 ```
 
+## Quick non-functional checks
+
+Use these checks during local validation before pushing:
+
+- API timing smoke check against `/landing`, `/login`, and key `/api/*` routes
+- Database timing smoke check (`get_db()` connect and a few representative queries)
+- 60-second uptime probe for a basic local availability snapshot
+
+These commands are documented in the root `README.md` under `Quick health and performance checks`.
+
+## Troubleshooting notes
+
+- If template changes are not visible, restart the Flask process and hard refresh the browser.
+- If the first database call is slow, repeat the request once to measure warm-query behavior.
+- If local API checks fail with auth errors, use public routes for baseline latency and test authenticated flows separately.
+
 ## Cleanup choices made in this repository
 
 The following items were intentionally removed during cleanup because they were not part of the Flask runtime and had no code references:

@@ -66,15 +66,6 @@ def not_found_error(e):
     return render_template('register.html', error=f'404 Not Found: {req_path}'), 404
 
 
-# Before request hook to ensure proper content types
-@app.before_request
-def set_content_type():
-    """Ensure proper content types for HTML responses"""
-    if request.path.startswith('/register') or request.path.startswith('/login') or request.path.startswith('/dashboard'):
-        # These routes should always return HTML
-        pass
-
-
 STRAVA_CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 STRAVA_CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 STRAVA_REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
