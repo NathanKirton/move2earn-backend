@@ -73,12 +73,12 @@
         }
         
         .btn-primary {
-            background: #3A7DFF;
+            background: #2961CC;
             color: #fff;
         }
         
         .btn-primary:hover {
-            background: #2961CC;
+            background: #1f4ea8;
         }
         
         .hero {
@@ -167,7 +167,7 @@
             justify-content: center;
             width: 60px;
             height: 60px;
-            background: #3A7DFF;
+            background: #2961CC;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 28px;
@@ -228,7 +228,7 @@
         .healthy-item-icon {
             width: 24px;
             height: 24px;
-            background: #3A7DFF;
+            background: #2961CC;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -237,7 +237,7 @@
             margin-top: 2px;
         }
         
-        .healthy-item-content h4 {
+        .healthy-item-content h3 {
             font-size: 16px;
             margin-bottom: 5px;
             font-weight: 600;
@@ -306,7 +306,7 @@
                 <div class="theme-toggle-wrap">
                     <span class="theme-icon">🌙</span>
                     <label class="toggle-switch" title="Toggle dark/light mode">
-                        <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                        <input type="checkbox" id="themeToggle" aria-label="Toggle between dark and light mode" onchange="applyTheme(this.checked ? 'light' : 'dark')">
                         <span class="toggle-track"><span class="toggle-thumb"></span></span>
                     </label>
                     <span class="theme-icon">☀️</span>
@@ -315,7 +315,7 @@
                 <a href="/register" class="btn btn-primary">Get Started</a>
             </div>
         </header>
-        
+        <main role="main">
         <section class="hero">
             <div class="hero-content">
                 <h1>Earn Your Game<br>Time Through<br><span>Movement</span></h1>
@@ -364,21 +364,21 @@
                     <div class="healthy-item">
                         <div class="healthy-item-icon">📊</div>
                         <div class="healthy-item-content">
-                            <h4>Track Progress</h4>
+                            <h3>Track Progress</h3>
                             <p>Monitor your child's activity and earned game time in real-time.</p>
                         </div>
                     </div>
                     <div class="healthy-item">
                         <div class="healthy-item-icon">🎯</div>
                         <div class="healthy-item-content">
-                            <h4>Set Limits</h4>
+                            <h3>Set Limits</h3>
                             <p>Control daily and weekly screen time limits with flexible parental controls.</p>
                         </div>
                     </div>
                     <div class="healthy-item">
                         <div class="healthy-item-icon">❤️</div>
                         <div class="healthy-item-content">
-                            <h4>Encourage Healthy Habits</h4>
+                            <h3>Encourage Healthy Habits</h3>
                             <p>Foster a balanced lifestyle with positive reinforcement and rewards.</p>
                         </div>
                     </div>
@@ -390,6 +390,7 @@
             <h2>Ready To Start?</h2>
             <a href="/register" class="btn btn-primary">Get Started</a>
         </section>
+        </main>
     </div>
 </body>
 </html>

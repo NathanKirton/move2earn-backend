@@ -83,14 +83,14 @@
         }
         
         .btn-primary {
-            background: #3A7DFF;
+            background: #2961CC;
             color: #fff;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(58, 125, 255, 0.4);
-            background: #2961CC;
+            background: #1f4ea8;
         }
         
         .btn-secondary {
@@ -174,7 +174,7 @@
                 <div class="theme-toggle-wrap">
                     <span class="theme-icon">🌙</span>
                     <label class="toggle-switch" title="Toggle dark/light mode">
-                        <input type="checkbox" id="themeToggle" onchange="applyTheme(this.checked ? 'light' : 'dark')">
+                        <input type="checkbox" id="themeToggle" aria-label="Toggle between dark and light mode" onchange="applyTheme(this.checked ? 'light' : 'dark')">
                         <span class="toggle-track"><span class="toggle-thumb"></span></span>
                     </label>
                     <span class="theme-icon">☀️</span>
@@ -200,9 +200,9 @@
             </div>
         </header>
         
-        <div class="content">
+        <main class="content" role="main">
             {% block content %}{% endblock %}
-        </div>
+        </main>
     </div>
     
     <script type="text/javascript">
