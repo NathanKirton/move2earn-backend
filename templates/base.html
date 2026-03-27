@@ -192,6 +192,7 @@
                 </div>
                 {% if strava_connected %}
                 <button class="btn btn-secondary" onclick="openUploadModal()">Manual Upload</button>
+                <button class="btn" onclick="disconnectStrava(this)" style="background:#4a4f66; color:#fff;">Disconnect Strava</button>
                 {% else %}
                 <a href="/strava-auth" class="btn btn-primary">Connect Strava</a>
                 {% endif %}
@@ -206,6 +207,31 @@
     </div>
     
     <script type="text/javascript">
+    async function disconnectStrava(btn) {
+        if (!confirm('Disconnect Strava from your account?')) return;
+
+        const original = btn ? btn.textContent : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Disconnecting...';
+        }
+
+        try {
+            const resp = await fetch('/api/strava/disconnect', { method: 'POST' });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                throw new Error(data.error || 'Failed to disconnect Strava');
+            }
+            window.location.reload();
+        } catch (err) {
+            alert(err.message || 'Failed to disconnect Strava');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = original || 'Disconnect Strava';
+            }
+        }
+    }
+
     {% block extra_js %}{% endblock %}
     </script>
 </body>

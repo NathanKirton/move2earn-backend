@@ -30,6 +30,9 @@
             align-items: center;
             padding: 18px 24px;
             margin-bottom: 40px;
+            position: sticky;
+            top: 0;
+            z-index: 1200;
             background: rgba(42, 42, 62, 0.85);
             border-radius: 12px;
             border: 1px solid rgba(58, 125, 255, 0.25);
@@ -311,10 +314,11 @@
     <script src="/static/theme.js"></script>
 </head>
 <body>
+    <div id="top-anchor"></div>
     <div class="container">
         <!-- AI Trainer badge removed -->
         <header id="top">
-            <a href="#top" class="logo" aria-label="Move2Earn — scroll to top">
+            <a href="#top-anchor" class="logo" aria-label="Move2Earn — scroll to top">
                 <img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128">
                 <span>Move2Earn</span>
             </a>

@@ -497,3 +497,43 @@
   color: #1A1A2E !important;
 }
 
+/* ---- Dashboard: recent activity text contrast ---- */
+[data-theme="light"] .theme-dashboard .activities-header {
+  color: #1A1A2E !important;
+}
+
+[data-theme="light"] .theme-dashboard .activity-time {
+  color: #4f5675 !important;
+  opacity: 1 !important;
+}
+
+/* ---- Dashboard: AI recommendation quote/tips readability ---- */
+[data-theme="light"] .theme-dashboard .ai-rec-intro {
+  color: #000 !important;
+  background: rgba(58, 125, 255, 0.1) !important;
+  border-left-color: rgba(58, 125, 255, 0.55) !important;
+}
+
+[data-theme="light"] .theme-dashboard .ai-rec-card {
+  background: rgba(58, 125, 255, 0.08) !important;
+  border-color: rgba(58, 125, 255, 0.22) !important;
+}
+
+[data-theme="light"] .theme-dashboard .ai-rec-duration {
+  color: #000 !important;
+}
+
+[data-theme="light"] .theme-dashboard .ai-rec-tips {
+  color: #000 !important;
+  border-top-color: rgba(58, 125, 255, 0.28) !important;
+}
+
+[data-theme="light"] .theme-dashboard .ai-rec-footnote {
+  color: #000 !important;
+}
+
+[data-theme="light"] .theme-dashboard .ai-rec-loading,
+[data-theme="light"] .theme-dashboard .ai-rec-error {
+  color: #000 !important;
+}
+

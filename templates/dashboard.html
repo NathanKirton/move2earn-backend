@@ -248,7 +248,8 @@
     
     .activity-time {
         font-size: 12px;
-        opacity: 0.8;
+        color: #fff !important;
+        opacity: 1;
     }
     
     .activity-stats {
@@ -277,6 +278,58 @@
         font-weight: 700;
         margin-top: 2px;
         font-size: 13px;
+    }
+
+    .ai-rec-intro {
+        font-size: 14px;
+        color: #cfd5ea;
+        line-height: 1.6;
+        font-style: italic;
+        padding: 12px;
+        background: rgba(58, 125, 255, 0.08);
+        border-radius: 6px;
+        border-left: 3px solid rgba(58, 125, 255, 0.5);
+    }
+
+    .ai-rec-card {
+        background: rgba(58, 125, 255, 0.1);
+        border: 1px solid rgba(58, 125, 255, 0.2);
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .ai-rec-type {
+        font-size: 18px;
+        font-weight: 700;
+        color: #3A7DFF;
+    }
+
+    .ai-rec-duration {
+        font-size: 12px;
+        color: #aab2d2;
+        margin-top: 2px;
+    }
+
+    .ai-rec-tips {
+        font-size: 13px;
+        color: #cfd5ea;
+        line-height: 1.5;
+        padding-top: 10px;
+        border-top: 1px solid rgba(58, 125, 255, 0.25);
+        margin-top: 10px;
+    }
+
+    .ai-rec-footnote {
+        font-size: 11px;
+        color: #8d93b0;
+        text-align: center;
+    }
+
+    .ai-rec-loading,
+    .ai-rec-error {
+        text-align: center;
+        color: #aab2d2;
+        padding: 20px;
     }
     
     .activity-earned {
@@ -564,6 +617,7 @@
 
         .activity-time {
             font-size: 11px;
+            color: #fff !important;
         }
 
         .activity-stats {
@@ -748,6 +802,7 @@
 
         .activity-time {
             font-size: 10px;
+            color: #fff !important;
         }
 
         .activity-stats {
@@ -905,7 +960,7 @@
             <h2 style="margin: 0; font-size: 20px; color: #3A7DFF;">🤖 AI Training Partner</h2>
         </div>
         <div id="childRecContent" style="min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
-            <div style="text-align: center; color: #aaa;">
+            <div class="ai-rec-loading">
                 <div class="spinner" style="width: 30px; height: 30px; border: 3px solid rgba(100, 150, 255, 0.3); display: inline-block; margin-bottom: 10px;"></div>
                 <div>Loading your daily tip...</div>
             </div>
@@ -2087,26 +2142,26 @@ async function getChildRecommendation(){
         
         content.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div style="font-size: 14px; color: #ccc; line-height: 1.6; font-style: italic; padding: 12px; background: rgba(58, 125, 255, 0.08); border-radius: 6px; border-left: 3px solid rgba(58, 125, 255, 0.5);">
+                        <div class="ai-rec-intro">
               "${intro}"
             </div>
-            <div style="background: rgba(58, 125, 255, 0.1); border: 1px solid rgba(58, 125, 255, 0.2); padding: 16px; border-radius: 8px;">
+                        <div class="ai-rec-card">
               <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 32px;">${emoji}</span>
                 <div>
-                  <div style="font-size: 18px; font-weight: 700; color: #3A7DFF;">${sessionType}</div>
-                  ${duration ? `<div style="font-size: 12px; color: #aaa; margin-top: 2px;">⏱️ ${duration} minutes</div>` : ''}
+                                    <div class="ai-rec-type">${sessionType}</div>
+                                    ${duration ? `<div class="ai-rec-duration">⏱️ ${duration} minutes</div>` : ''}
                 </div>
               </div>
-              ${desc ? `<div style="font-size: 13px; color: #ccc; line-height: 1.5; padding-top: 10px; border-top: 1px solid rgba(0, 212, 255, 0.2); margin-top: 10px;">💡 <strong>Tips:</strong> ${desc}</div>` : ''}
+                            ${desc ? `<div class="ai-rec-tips">💡 <strong>Tips:</strong> ${desc}</div>` : ''}
             </div>
-            <div style="font-size: 11px; color: #666; text-align: center;">✨ Personalized for you based on your activity</div>
+                        <div class="ai-rec-footnote">✨ Personalized for you based on your activity</div>
           </div>
         `;
         await fetch(`/api/ab/assign?user_id=${encodeURIComponent(CHILD_ID)}&experiment=rec_v1&variants=control,treatment`).catch(e => {});
         await fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:CHILD_ID,event_type:'recommendation_exposed',metadata:{type:r.type}})}).catch(e => {});
     }catch(e){
-        content.innerHTML = '<div style="text-align:center; color:#aaa; padding: 20px;">Unable to load tip. Will retry in 3 minutes...</div>';
+        content.innerHTML = '<div class="ai-rec-error">Unable to load tip. Will retry in 3 minutes...</div>';
     }
 }
 

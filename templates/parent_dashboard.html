@@ -499,7 +499,10 @@
                                 <div class="child-name">{{ child.name }}</div>
                                 <div class="child-email">{{ child.email }}</div>
                             </div>
-                            <button class="bonus-btn" style="background:#ff6b6b; padding:4px 8px; font-size:11px;" onclick="deleteChild('{{child.id}}', '{{child.name}}')">Delete Account</button>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                  <button class="bonus-btn btn-remove-child" data-child-id="{{child.id}}" data-child-name="{{child.name|e}}" style="background:#4a7dff; padding:4px 8px; font-size:11px;">Remove</button>
+                                  <button class="bonus-btn btn-delete-child" data-child-id="{{child.id}}" data-child-name="{{child.name|e}}" style="background:#ff6b6b; padding:4px 8px; font-size:11px;">Delete Account</button>
+                            </div>
                         </div>
                         
                         <!-- Timer Section -->
@@ -561,9 +564,13 @@
                 {% endif %}
             </div>
 
-            <!-- Add Child -->
+            <!-- Create / Link Child (side by side) -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+
+            <!-- Create New Child -->
             <div class="card">
-                <h2>➕ Add a Child Account</h2>
+                <h2>➕ Create New Child Account</h2>
+                <p style="color:#aaa; margin-bottom:15px; font-size:13px;">Creates a brand-new login for your child. They will sign in with the email and password you set here.</p>
                 <div id="addChildMsg" style="margin-bottom:10px;"></div>
                 <form class="add-child-form" id="addChildForm">
                     <div class="form-group">
@@ -585,6 +592,22 @@
                     <button type="submit" class="add-child-submit">Create Account</button>
                 </form>
             </div>
+
+            <!-- Link Existing Child -->
+            <div class="card">
+                <h2>🔗 Link Existing Child Account</h2>
+                <p style="color:#aaa; margin-bottom:15px; font-size:13px;">Your child already has a Move2Earn account? Enter their email address to link it to your parent account.</p>
+                <div id="linkChildMsg" style="margin-bottom:10px;"></div>
+                <form class="add-child-form" id="linkChildForm">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Child's Email Address</label>
+                        <input type="email" id="lc_email" placeholder="child@example.com" required>
+                    </div>
+                    <button type="submit" class="add-child-submit" style="background:#00d4ff; color:#111;">Link Account</button>
+                </form>
+            </div>
+
+            </div><!-- end create/link grid -->
         </div>
     </div>
 
@@ -719,6 +742,20 @@
         <div style="display:flex; gap:10px;">
             <button onclick="confirmDeleteChild()" style="flex:1; background:#ff6b6b; border:none; border-radius:6px; color:white; padding:10px; font-weight:600; cursor:pointer; font-size:14px;">Yes, Delete Permanently</button>
             <button onclick="document.getElementById('deleteChildModal').style.display='none'" style="flex:1; background:rgba(255,255,255,0.1); border:none; border-radius:6px; color:#fff; padding:10px; font-weight:600; cursor:pointer; font-size:14px;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Child Confirmation Modal -->
+<div id="removeChildModal" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('removeChildModal').style.display='none'">&#215;</button>
+        <h2 style="color:#4a7dff; margin-bottom:12px;">Remove Child From Dashboard</h2>
+        <p id="removeModalText" style="color:#ccc; margin-bottom:12px;"></p>
+        <p style="color:#9cc0ff; font-size:13px; margin-bottom:20px;">This only unlinks the child from your parent account. The child account and data are kept.</p>
+        <div style="display:flex; gap:10px;">
+            <button onclick="confirmRemoveChild()" style="flex:1; background:#4a7dff; border:none; border-radius:6px; color:white; padding:10px; font-weight:600; cursor:pointer; font-size:14px;">Yes, Remove</button>
+            <button onclick="document.getElementById('removeChildModal').style.display='none'" style="flex:1; background:rgba(255,255,255,0.1); border:none; border-radius:6px; color:#fff; padding:10px; font-weight:600; cursor:pointer; font-size:14px;">Cancel</button>
         </div>
     </div>
 </div>
@@ -945,6 +982,45 @@
         btn.innerHTML = isHidden ? 'Hide &#9650;' : 'What is this? &#9660;';
     }
 
+    // --- Remove / Delete child ---
+    let pendingRemoveId = null;
+
+    function removeChild(id, name) {
+        pendingRemoveId = id;
+        document.getElementById('removeModalText').textContent = 'Remove ' + name + ' from your dashboard?';
+        document.getElementById('removeChildModal').style.display = 'flex';
+    }
+
+    function confirmRemoveChild() {
+        if (!pendingRemoveId) return;
+        document.getElementById('removeChildModal').style.display = 'none';
+        fetch('/api/unlink-child/' + pendingRemoveId, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    showNotification('Child Removed', 'The child was removed from your dashboard.');
+                    setTimeout(() => location.reload(), 700);
+                } else {
+                    showNotification('Remove Failed', d.error || 'Failed to remove child.');
+                }
+            })
+            .catch(() => showNotification('Remove Failed', 'Error removing child. Please try again.'));
+        pendingRemoveId = null;
+    }
+
+    document.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('.btn-remove-child');
+        if (removeBtn) {
+            const id = removeBtn.dataset.childId;
+            const name = removeBtn.dataset.childName;
+            removeChild(id, name);
+        }
+        const deleteBtn = e.target.closest('.btn-delete-child');
+        if (deleteBtn) {
+            deleteChild(deleteBtn.dataset.childId, deleteBtn.dataset.childName);
+        }
+    });
+
     // --- Delete child with custom modal ---
     let pendingDeleteId = null;
 
@@ -1095,6 +1171,41 @@
             submitBtn.disabled = false;
             msg.style.color = '#ff6b6b';
             msg.textContent = 'Error creating account. Please try again.';
+        }
+    });
+
+    // 2. Link Existing Child
+    document.getElementById('linkChildForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const msg = document.getElementById('linkChildMsg');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const email = document.getElementById('lc_email').value.trim();
+
+        submitBtn.textContent = 'Linking...';
+        submitBtn.disabled = true;
+        msg.textContent = '';
+
+        try {
+            const resp = await fetch('/api/link-child', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ child_email: email })
+            });
+            const d = await resp.json();
+            if (resp.ok) {
+                msg.style.color = '#00ff88';
+                msg.textContent = 'Account linked! Reloading...';
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                submitBtn.textContent = 'Link Account';
+                submitBtn.disabled = false;
+                msg.style.color = '#ff6b6b';
+                msg.textContent = d.error || 'Failed to link account';
+            }
+        } catch (err) {
+            submitBtn.textContent = 'Link Account';
+            submitBtn.disabled = false;
+            msg.style.color = '#ff6b6b';
+            msg.textContent = 'Error linking account. Please try again.';
         }
     });
 

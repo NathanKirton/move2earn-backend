@@ -223,7 +223,7 @@ body.theme-dashboard {
 .theme-dashboard .activity-details { display: flex; flex-direction: column; }
 .theme-dashboard .activity-title { font-weight: bold; font-size: 1.1rem; }
 .theme-dashboard .activity-meta { font-size: 0.95rem; color: #1b2a49; }
-.theme-dashboard .activity-time { font-size: 1.2rem; font-weight: bold; color: #4b006e; }
+.theme-dashboard .activity-time { font-size: 1.2rem; font-weight: bold; color: #fff; }
 
 @media (max-width: 600px) {
   .theme-dashboard .container, .theme-dashboard .card, .theme-dashboard .activity-card { padding: 12px; }

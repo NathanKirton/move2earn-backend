@@ -785,20 +785,20 @@ def get_activities():
                 if avg_hr is not None:
                     avg_hr_f = float(avg_hr)
                     if avg_hr_f < 150:
-                        hr_mul = 1.0
+                        hr_mul = 1.4
                     elif avg_hr_f > 170:
-                        hr_mul = 2.0
+                        hr_mul = 2.6
                     else:
-                        hr_mul = 1.5
+                        hr_mul = 2.0
             except Exception:
                 hr_mul = None
 
             # Pace bonus: faster pace gives small bonus
             pace_bonus = 0.0
             if pace < 5:
-                pace_bonus = 0.5
+                pace_bonus = 1.0
             elif pace < 6.5:
-                pace_bonus = 0.2
+                pace_bonus = 0.5
 
             # Intensity multiplier fallback
             intensity_mul = 1.0
@@ -806,17 +806,23 @@ def get_activities():
             if type_label:
                 tlabel = type_label.lower()
                 if 'run' in tlabel:
-                    intensity_mul = 1.0
+                    intensity_mul = 1.3
                 elif 'ride' in tlabel:
-                    intensity_mul = 0.8
+                    intensity_mul = 1.1
+                elif 'swim' in tlabel:
+                    intensity_mul = 1.4
+                elif 'hike' in tlabel:
+                    intensity_mul = 1.0
+                elif 'walk' in tlabel:
+                    intensity_mul = 0.9
 
             # Combine factors
             if hr_mul is not None:
-                earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+                earned = (d * (hr_mul * 1.35)) + (t * 0.08) + (d * pace_bonus)
             else:
-                earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+                earned = (d * (intensity_mul * 1.25)) + (t * 0.06) + (d * pace_bonus)
 
-            earned_minutes = max(1, int(math.floor(earned)))
+            earned_minutes = max(3, int(math.floor(earned)))
             return earned_minutes
 
         def compute_intensity_label(avg_hr=None, pace_min_per_km=None):
@@ -1041,6 +1047,43 @@ def api_add_child():
         return jsonify({'success': True, 'child_id': result}), 201
     else:
         return jsonify({'error': result}), 400
+
+
+@app.route('/api/link-child', methods=['POST'])
+def api_link_child():
+    """Link an existing child account to the logged-in parent."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized - not parent'}), 401
+
+    data = request.get_json() or {}
+    child_email = data.get('child_email', '').strip()
+    if not child_email:
+        return jsonify({'error': 'Child email is required'}), 400
+
+    success, result = UserDB.link_child(session['user_id'], child_email)
+    if success:
+        return jsonify({'success': True, 'child_id': result}), 200
+    else:
+        return jsonify({'error': result}), 400
+
+
+@app.route('/api/unlink-child/<child_id>', methods=['POST'])
+def api_unlink_child(child_id):
+    """Remove a child from the parent's dashboard without deleting the child account."""
+    if 'user_id' not in session or session.get('account_type') != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    children = UserDB.get_parent_children(session['user_id'])
+    if child_id not in [str(c['id']) for c in children]:
+        return jsonify({'error': 'Child not found or not your child'}), 404
+
+    success, result = UserDB.unlink_child(session['user_id'], child_id)
+    if success:
+        return jsonify({'success': True}), 200
+    else:
+        return jsonify({'error': result}), 500
 
 
 # ------------------------
@@ -2712,34 +2755,40 @@ def api_apply_earned_strava(child_id):
             if avg_hr is not None:
                 avg_hr_f = float(avg_hr)
                 if avg_hr_f < 150:
-                    hr_mul = 1.0
+                    hr_mul = 1.4
                 elif avg_hr_f > 170:
-                    hr_mul = 2.0
+                    hr_mul = 2.6
                 else:
-                    hr_mul = 1.5
+                    hr_mul = 2.0
         except Exception:
             hr_mul = None
 
         pace_bonus = 0.0
         if pace_calc < 5:
-            pace_bonus = 0.5
+            pace_bonus = 1.0
         elif pace_calc < 6.5:
-            pace_bonus = 0.2
+            pace_bonus = 0.5
 
         intensity_mul = 1.0
         if type_label:
             tl = type_label.lower()
             if 'run' in tl:
-                intensity_mul = 1.0
+                intensity_mul = 1.3
             elif 'ride' in tl:
-                intensity_mul = 0.8
+                intensity_mul = 1.1
+            elif 'swim' in tl:
+                intensity_mul = 1.4
+            elif 'hike' in tl:
+                intensity_mul = 1.0
+            elif 'walk' in tl:
+                intensity_mul = 0.9
 
         if hr_mul is not None:
-            earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+            earned = (d * (hr_mul * 1.35)) + (t * 0.08) + (d * pace_bonus)
         else:
-            earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+            earned = (d * (intensity_mul * 1.25)) + (t * 0.06) + (d * pace_bonus)
 
-        return max(1, int(math.floor(earned)))
+        return max(3, int(math.floor(earned)))
 
     from datetime import datetime as dt
 
@@ -2987,6 +3036,41 @@ def skip_strava():
         logger.error(f"Error in skip_strava: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/strava/disconnect', methods=['POST'])
+def api_disconnect_strava():
+    """Disconnect Strava for the logged-in user and clear stored credentials."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_id = session['user_id']
+    user = UserDB.get_user_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Best-effort call to Strava deauthorize endpoint.
+    try:
+        access_token = user.get('strava_access_token') or session.get('access_token')
+        if access_token:
+            requests.post(
+                'https://www.strava.com/oauth/deauthorize',
+                data={'access_token': access_token},
+                timeout=10,
+            )
+    except Exception:
+        logger.exception('Failed to deauthorize Strava for user %s', user_id)
+
+    if not UserDB.clear_strava_credentials(user_id):
+        return jsonify({'error': 'Failed to disconnect Strava'}), 500
+
+    session['strava_connected'] = False
+    session['skip_strava'] = True
+    session.pop('access_token', None)
+    session.pop('refresh_token', None)
+    session.pop('athlete_id', None)
+
+    return jsonify({'success': True, 'message': 'Strava disconnected'})
+
 @app.route('/api/simulate-activities', methods=['POST'])
 def api_simulate_activities():
     """API endpoint to generate simulated activities for testing within the last 7 days"""
@@ -3053,11 +3137,11 @@ def api_simulate_activities():
             duration_minutes = random.randint(15, 120)
 
         # Calculate earned minutes based on distance and duration
-        base_earned = distance * 2  # 2 minutes per km
+        base_earned = distance * 3  # 3 minutes per km
 
         # Intensity multiplier
-        intensity_multiplier = {'Easy': 1.0, 'Medium': 1.5, 'Hard': 2.0}[intensity]
-        earned_minutes = int(base_earned * intensity_multiplier)
+        intensity_multiplier = {'Easy': 1.2, 'Medium': 1.8, 'Hard': 2.4}[intensity]
+        earned_minutes = max(3, int(base_earned * intensity_multiplier))
 
         # Create activities for consecutive days: (count-1) days ago through today
         # day_offset: count-1, count-2, ... 1, 0
@@ -3240,39 +3324,39 @@ def upload_activity():
                 if avg_hr and max_hr:
                     hr_pct = float(avg_hr) / float(max_hr)
                     if hr_pct < 0.6:
-                        hr_mul = 1.0
+                        hr_mul = 1.4
                     elif hr_pct < 0.75:
-                        hr_mul = 1.5
-                    else:
                         hr_mul = 2.0
+                    else:
+                        hr_mul = 2.6
             except Exception:
                 hr_mul = None
 
             # Pace bonus: faster pace gives small bonus
             pace_bonus = 0.0
             if pace < 5:
-                pace_bonus = 0.5
+                pace_bonus = 1.0
             elif pace < 6.5:
-                pace_bonus = 0.2
+                pace_bonus = 0.5
 
             # Intensity multiplier fallback
             intensity_mul = 1.0
             if intensity_label:
                 label = intensity_label.lower()
                 if label == 'easy':
-                    intensity_mul = 1.0
+                    intensity_mul = 1.3
                 elif label == 'medium':
-                    intensity_mul = 1.5
-                elif label == 'hard':
                     intensity_mul = 2.0
+                elif label == 'hard':
+                    intensity_mul = 2.6
 
             # Combine factors. Base on distance with multipliers, plus small contribution from duration
             if hr_mul is not None:
-                earned = (d * hr_mul) + (t * 0.05) + (d * pace_bonus)
+                earned = (d * (hr_mul * 1.35)) + (t * 0.08) + (d * pace_bonus)
             else:
-                earned = (d * intensity_mul) + (t * 0.03) + (d * pace_bonus)
+                earned = (d * (intensity_mul * 1.25)) + (t * 0.06) + (d * pace_bonus)
 
-            earned_minutes = max(1, int(math.floor(earned)))
+            earned_minutes = max(3, int(math.floor(earned)))
             return earned_minutes
 
         earned_minutes = compute_earned_minutes(distance, time_minutes_total, intensity_label=intensity)

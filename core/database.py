@@ -245,6 +245,34 @@ class UserDB:
             return False
 
     @staticmethod
+    def clear_strava_credentials(user_id):
+        """Disconnect Strava for a user by clearing stored tokens/metadata."""
+        database = get_db()
+        if database is None:
+            return False
+
+        from bson import ObjectId
+        users = database['users']
+
+        try:
+            result = users.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$set': {
+                    'strava_connected': False,
+                    'strava_id': None,
+                    'strava_athlete_name': None,
+                    'strava_access_token': None,
+                    'strava_refresh_token': None,
+                    'strava_token_expiry': None,
+                    'skip_strava': True
+                }}
+            )
+            return result.matched_count > 0
+        except Exception as e:
+            logger.exception("Error clearing Strava credentials: %s", e)
+            return False
+
+    @staticmethod
     def set_timer_state(child_id, running, started_at=None):
         """Set the child's timer running state and optionally the start timestamp."""
         database = get_db()
@@ -313,6 +341,65 @@ class UserDB:
             return True, str(child_id)
         except Exception as e:
             logger.exception("Error adding child: %s", e)
+            return False, str(e)
+
+    @staticmethod
+    def link_child(parent_id, child_email):
+        """Link an existing child account to a parent by email."""
+        database = get_db()
+        if database is None:
+            return False, "Database connection failed"
+
+        from bson import ObjectId
+        users = database['users']
+
+        child = users.find_one({'email': child_email})
+        if not child:
+            return False, "No account found with that email address"
+        if child.get('account_type') != 'child':
+            return False, "That account is not a child account"
+        existing_parent = child.get('parent_id')
+        if existing_parent and str(existing_parent) != str(parent_id):
+            return False, "That child account is already linked to a different parent"
+        if str(child.get('parent_id', '')) == str(parent_id):
+            return False, "That child account is already linked to your account"
+
+        child_id = child['_id']
+        try:
+            users.update_one(
+                {'_id': ObjectId(parent_id)},
+                {'$addToSet': {'children': child_id}}
+            )
+            users.update_one(
+                {'_id': child_id},
+                {'$set': {'parent_id': ObjectId(parent_id)}}
+            )
+            return True, str(child_id)
+        except Exception as e:
+            logger.exception("Error linking child: %s", e)
+            return False, str(e)
+
+    @staticmethod
+    def unlink_child(parent_id, child_id):
+        """Remove a child from parent's list without deleting the child account."""
+        database = get_db()
+        if database is None:
+            return False, "Database connection failed"
+
+        from bson import ObjectId
+        users = database['users']
+        try:
+            users.update_one(
+                {'_id': ObjectId(parent_id)},
+                {'$pull': {'children': ObjectId(child_id)}}
+            )
+            users.update_one(
+                {'_id': ObjectId(child_id)},
+                {'$unset': {'parent_id': ''}}
+            )
+            return True, str(child_id)
+        except Exception as e:
+            logger.exception("Error unlinking child: %s", e)
             return False, str(e)
 
     @staticmethod
@@ -569,7 +656,9 @@ class UserDB:
     def calculate_current_streak(child_id):
         """Calculate current streak from activity_dates array.
         
-        Returns the length of the most recent consecutive day streak.
+        Returns the length of the current consecutive day streak.
+        A streak is considered current only if the most recent activity date is
+        today or yesterday (so the streak can still be continued today).
         """
         child = UserDB.get_user_by_id(child_id)
         if not child:
@@ -599,10 +688,22 @@ class UserDB:
         
         # Remove duplicates and sort (newest first)
         unique_dates = sorted(set(valid_dates), reverse=True)
+
+        today = datetime.utcnow().date()
+        most_recent = unique_dates[0]
+
+        # If the latest activity is older than yesterday, the current streak is broken.
+        if (today - most_recent).days > 1:
+            logger.debug(
+                "calculate_current_streak: child=%s stale streak most_recent=%s today=%s",
+                child_id,
+                most_recent,
+                today,
+            )
+            return 0
         
         # Count consecutive days from the most recent date
         streak = 1
-        most_recent = unique_dates[0]
         
         for i in range(1, len(unique_dates)):
             current_date = unique_dates[i]
