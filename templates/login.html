@@ -122,7 +122,7 @@
         }
         
         .form-footer p {
-            color: #666;
+            color: #999;
             font-size: 14px;
         }
         
@@ -155,6 +155,9 @@
             margin-bottom: 20px;
             font-size: 14px;
         }
+        input[type="password"]:focus::placeholder {
+            color: transparent;
+        }
     </style>
     <link rel="stylesheet" href="/static/theme.css">
     <script src="/static/theme.js"></script>
@@ -169,6 +172,9 @@
         <span class="theme-icon">☀️</span>
     </div>
     <div class="auth-container">
+        <div style="margin-bottom:15px;">
+            <a href="/" style="color:#3A7DFF; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px;">&#8592; Back to home</a>
+        </div>
         <div class="auth-header">
             <h1><img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128"> Move2Earn</h1>
             <p style="color: #ddd;">Login to your account</p>

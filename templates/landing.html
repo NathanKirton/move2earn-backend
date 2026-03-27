@@ -28,8 +28,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 30px 0;
-            margin-bottom: 60px;
+            padding: 18px 24px;
+            margin-bottom: 40px;
+            background: rgba(42, 42, 62, 0.85);
+            border-radius: 12px;
+            border: 1px solid rgba(58, 125, 255, 0.25);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
         
         .logo {
@@ -38,6 +43,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo:hover {
+            opacity: 0.85;
         }
 
         .logo-img {
@@ -271,6 +282,10 @@
             .hero, .healthy-section {
                 grid-template-columns: 1fr;
             }
+
+            .hero .hero-image {
+                display: none;
+            }
             
             .features-grid {
                 grid-template-columns: 1fr;
@@ -286,7 +301,8 @@
             
             header {
                 flex-direction: column;
-                gap: 20px;
+                gap: 15px;
+                padding: 15px 16px;
             }
         }
     </style>
@@ -297,11 +313,11 @@
 <body>
     <div class="container">
         <!-- AI Trainer badge removed -->
-        <header>
-            <div class="logo">
+        <header id="top">
+            <a href="#top" class="logo" aria-label="Move2Earn — scroll to top">
                 <img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128">
                 <span>Move2Earn</span>
-            </div>
+            </a>
             <div class="header-buttons">
                 <div class="theme-toggle-wrap">
                     <span class="theme-icon">🌙</span>

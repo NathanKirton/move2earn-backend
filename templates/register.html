@@ -288,6 +288,57 @@
             width: 0%;
             transition: width 0.3s ease;
         }
+
+        /* Circular progress */
+        .loading-with-progress {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .progress-circle {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 8;
+        }
+
+        .progress-ring {
+            fill: none;
+            stroke: url(#progressGradient);
+            stroke-linecap: round;
+            transform-origin: 60px 60px;
+            transform: rotate(-90deg);
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .progress-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+        }
+
+        .progress-text {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        input[type="password"]:focus::placeholder {
+            color: transparent;
+        }
     </style>
     <link rel="stylesheet" href="/static/theme.css">
     <script src="/static/theme.js"></script>
@@ -321,6 +372,9 @@
     </div>
 
     <div class="auth-container">
+        <div style="margin-bottom:15px;">
+            <a href="/" style="color:#667eea; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px;">&#8592; Back to home</a>
+        </div>
         <div class="auth-header">
             <h1><img src="/static/logo-128.png" alt="Move2Earn" class="logo-img" width="128" height="128"> Move2Earn</h1>
             <p style="color: #ddd;">Create your account</p>
@@ -363,6 +417,7 @@
             </div>
             
             <button type="submit" id="submitBtn" class="btn btn-primary">Create Account</button>
+            <div id="formErrors" style="display:none; background:#fee; border:1px solid #fcc; color:#c33; padding:10px 12px; border-radius:6px; font-size:13px; margin-top:10px;"></div>
         </form>
         
         <div class="form-footer">
@@ -429,22 +484,32 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
+
+            // Clear previous inline error
+            const errEl = document.getElementById('formErrors');
+            errEl.style.display = 'none';
+
+            function showFormError(msg) {
+                errEl.textContent = msg;
+                errEl.style.display = 'block';
+                errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
             
             if (!name || !email || !password || !confirmPassword) {
                 e.preventDefault();
-                alert('Please fill in all fields');
+                showFormError('Please fill in all fields');
                 return false;
             }
             
             if (password !== confirmPassword) {
                 e.preventDefault();
-                alert('Passwords do not match!');
+                showFormError('Passwords do not match');
                 return false;
             }
             
             if (password.length < 8) {
                 e.preventDefault();
-                alert('Password must be at least 8 characters long!');
+                showFormError('Password must be at least 8 characters long');
                 return false;
             }
 
@@ -452,7 +517,7 @@
             loadingOverlay.classList.add('show');
             submitBtn.disabled = true;
             const progressControl = startProgress();
-            
+
             // Complete progress when response comes back
             setTimeout(() => {
                 progressControl.setFinal();

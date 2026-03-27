@@ -8,12 +8,6 @@ This folder holds the project documentation that is useful after setup.
 - `ARCHITECTURE.md`: high-level application structure and behavior
 - `OPERATIONS.md`: local admin, debug, and training scripts
 
-## Observability map
-
-- API latency and availability checks: root `README.md` -> `Quick health and performance checks`
-- MongoDB connectivity and baseline timings: root `README.md` -> `Quick health and performance checks`
-- Operational scripts and destructive utilities: `OPERATIONS.md`
-
 ## Key runtime facts
 
 - The app is a single Flask service centered on `app.py` and `database.py`.

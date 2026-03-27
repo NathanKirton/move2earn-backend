@@ -66,6 +66,15 @@ def not_found_error(e):
     return render_template('register.html', error=f'404 Not Found: {req_path}'), 404
 
 
+# Before request hook to ensure proper content types
+@app.before_request
+def set_content_type():
+    """Ensure proper content types for HTML responses"""
+    if request.path.startswith('/register') or request.path.startswith('/login') or request.path.startswith('/dashboard'):
+        # These routes should always return HTML
+        pass
+
+
 STRAVA_CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 STRAVA_CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 STRAVA_REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
@@ -540,6 +549,16 @@ def register():
         success, result = UserDB.create_user(email, password, name, is_parent=is_parent)
         if success:
             logger.info(f"User created successfully: {email}")
+            # Auto-login the newly created user
+            new_user = UserDB.get_user_by_email(email)
+            if new_user:
+                session['user_id'] = str(new_user['_id'])
+                session['email'] = new_user['email']
+                session['name'] = new_user.get('name', '')
+                session['account_type'] = new_user.get('account_type', 'parent')
+                session['strava_connected'] = new_user.get('strava_connected', False)
+                logger.info(f"Auto-logged in new user: {email}")
+                return redirect('/parent-dashboard')
             return render_template('register.html', success='Account created successfully! You can now login.')
         
         logger.error(f"User creation failed for {email}: {result}")
@@ -1854,8 +1873,8 @@ def api_parent_respond_challenge_completion():
             return jsonify({'success': True, 'message': 'Already completed'}), 200
 
         user_ch.insert_one({'user_id': r.get('user_id'), 'challenge_id': r.get('challenge_id'), 'completed_at': datetime.utcnow(), 'reward_earned': reward})
-        # Challenge rewards should increase today's available time immediately.
-        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward)
+        # Credit persistent reward
+        UserDB.add_earned_game_time_and_increase_limit(r.get('user_id'), reward, persistent=True)
         return jsonify({'success': True, 'reward_minutes': reward}), 200
     except Exception as e:
         logger.exception('Error responding to completion request: %s', e)
@@ -1962,8 +1981,8 @@ def api_complete_challenge():
 
     # 4. Credit reward minutes automatically
     try:
-        # Challenge rewards are meant to boost today's available minutes immediately.
-        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward)
+        # Challenge rewards are persistent (do not expire at midnight)
+        UserDB.add_earned_game_time_and_increase_limit(session['user_id'], reward, persistent=True)
         logger.info(f"Challenge {challenge_id} completed by {session['user_id']}, reward: {reward} min")
     except Exception as e:
         logger.exception('Error crediting reward: %s', e)
