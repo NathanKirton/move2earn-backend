@@ -16,12 +16,14 @@
             background: #1A1A2E;
             min-height: 100vh;
             color: #fff;
+            overflow-x: hidden;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            width: 100%;
         }
         
         header {
@@ -93,7 +95,9 @@
             background: rgba(58, 125, 255, 0.08);
             padding: 10px;
             border-radius: 12px;
-            overflow-x: auto;
+            overflow: hidden;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .tab-btn {
@@ -106,7 +110,12 @@
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s;
-            white-space: nowrap;
+            white-space: normal;
+            text-align: center;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .tab-btn:hover {
@@ -215,7 +224,13 @@
         /* Child Cards */
         .children-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+            gap: 20px;
+        }
+
+        .create-link-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
         
@@ -376,6 +391,45 @@
                 width: 100%;
                 justify-content: center;
                 flex-wrap: wrap;
+            }
+            .tabs {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .tab-btn {
+                width: 100%;
+            }
+            .create-link-grid {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                padding: 18px;
+            }
+            .card h2[style*="justify-content:space-between"] {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .notification-popup {
+                right: 12px;
+                left: 12px;
+                width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+            .header-right .btn {
+                width: 100%;
+                max-width: 220px;
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .children-grid {
+                gap: 14px;
             }
         }
     </style>
@@ -565,7 +619,7 @@
             </div>
 
             <!-- Create / Link Child (side by side) -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="create-link-grid">
 
             <!-- Create New Child -->
             <div class="card">
