@@ -466,3 +466,34 @@
 /* --- Wacky Templates heading in light mode --- */
 [data-theme="light"] .wacky-heading { color: #2961CC !important; }
 
+/* ---- Dashboard: greeting section ---- */
+[data-theme="light"] .theme-dashboard .greeting-section {
+  background: #ffffff !important;
+  border-color: rgba(58, 125, 255, 0.15) !important;
+}
+[data-theme="light"] .theme-dashboard .greeting-section h2 { color: #1A1A2E !important; }
+[data-theme="light"] .theme-dashboard .greeting-section p  { color: #4a4a6a !important; }
+
+/* ---- Dashboard: stat boxes (DURATION / DISTANCE / AVG HR) ---- */
+[data-theme="light"] .theme-dashboard .stat-box {
+  background: rgba(58, 125, 255, 0.08) !important;
+  border-color: rgba(58, 125, 255, 0.3) !important;
+}
+[data-theme="light"] .theme-dashboard .stat-value { color: #1A1A2E !important; }
+[data-theme="light"] .theme-dashboard .stat-label {
+  color: #5a5a7a !important;
+  opacity: 1 !important;
+}
+
+/* ---- Dashboard: sidebar nav wrapper ---- */
+[data-theme="light"] .theme-dashboard .dashboard-sidebar > div {
+  background: rgba(58, 125, 255, 0.06) !important;
+  border-color: rgba(58, 125, 255, 0.12) !important;
+}
+
+/* ---- Dashboard: notification items ---- */
+[data-theme="light"] .theme-dashboard .notification-item {
+  background: rgba(58, 125, 255, 0.06) !important;
+  color: #1A1A2E !important;
+}
+

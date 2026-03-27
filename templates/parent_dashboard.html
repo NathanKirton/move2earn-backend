@@ -115,9 +115,9 @@
         }
 
         .tab-btn.active {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            color: #00d4ff;
+            background: rgba(58, 125, 255, 0.2);
+            border: 1px solid rgba(58, 125, 255, 0.4);
+            color: #3A7DFF;
         }
 
         .tab-content {
@@ -203,10 +203,10 @@
         .add-child-submit {
             grid-column: 1 / -1;
             padding: 12px;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
             border: none;
             border-radius: 6px;
-            color: #000;
+            background: #3A7DFF;
+            color: #fff;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -295,10 +295,10 @@
 
         .bonus-btn {
             padding: 8px 12px;
-            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
             border: none;
             border-radius: 4px;
-            color: #000;
+            background: #3A7DFF;
+            color: #fff;
             font-weight: 600;
             font-size: 12px;
             cursor: pointer;
@@ -349,8 +349,8 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            color: #000;
+            background: #3A7DFF;
+            color: #fff;
             padding: 20px;
             border-radius: 12px;
             z-index: 2000;
@@ -514,7 +514,7 @@
                             <div style="background:rgba(0,212,255,0.1); padding:12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(0,212,255,0.2);">
                                 <div style="font-size:24px; font-weight:700; color:#00d4ff; text-align:center; margin-bottom:10px; font-family:monospace;" class="timer-display">00:00</div>
                                 <div style="display:flex; gap:8px;">
-                                    <button class="bonus-btn timer-start-btn" style="flex:1; background:linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); padding:6px;" onclick="startTimer('{{child.id}}')">START</button>
+                                    <button class="bonus-btn timer-start-btn" style="flex:1; background:#3A7DFF; color:#fff; padding:6px;" onclick="startTimer('{{child.id}}')">START</button>
                                     <button class="bonus-btn timer-stop-btn" style="flex:1; background:#ff6b6b; padding:6px; display:none;" onclick="stopTimer('{{child.id}}')">STOP</button>
                                 </div>
                             </div>
@@ -912,11 +912,11 @@
     function showNotification(title, body) {
         const c = document.getElementById('notification-container');
         const n = document.createElement('div');
-        n.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
         n.style.padding = '15px';
         n.style.borderRadius = '8px';
         n.style.marginBottom = '10px';
-        n.style.color = '#000';
+        n.style.background = '#3A7DFF';
+        n.style.color = '#fff';
         n.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
         n.innerHTML = `<strong>${title}</strong><br>${body}`;
         c.appendChild(n);
