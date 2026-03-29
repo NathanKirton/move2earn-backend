@@ -1038,9 +1038,12 @@ def api_add_child():
     child_name = data.get('child_name')
     child_email = data.get('child_email')
     child_password = data.get('child_password')
+    logger.warning(f"[DEBUG] Received child_password: '{child_password}' (length: {len(child_password) if child_password else 0})")
     
     if not all([child_name, child_email, child_password]):
         return jsonify({'error': 'Missing required fields'}), 400
+    if len(child_password) <= 8:
+        return jsonify({'error': 'Password must be longer than 8 characters'}), 400
     
     success, result = UserDB.add_child(session['user_id'], child_email, child_password, child_name)
     if success:

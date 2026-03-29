@@ -637,7 +637,7 @@
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="c_pass" required>
+                        <input type="password" id="c_pass" required minlength="9" pattern=".{9,}" title="Password must be at least 9 characters long">
                     </div>
                     <div class="form-group">
                         <label>Confirm Password</label>
@@ -1189,43 +1189,57 @@
     // --- Restored Logic for Core Actions ---
 
     // 1. Add Child
-    document.getElementById('addChildForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const msg = document.getElementById('addChildMsg');
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const name = document.getElementById('c_name').value;
-        const email = document.getElementById('c_email').value;
-        const p1 = document.getElementById('c_pass').value;
-        const p2 = document.getElementById('c_pass2').value;
+    document.addEventListener('DOMContentLoaded', function() {
+        const addChildForm = document.getElementById('addChildForm');
+        if (!addChildForm) return;
+        addChildForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const msg = document.getElementById('addChildMsg');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const name = document.getElementById('c_name').value;
+            const email = document.getElementById('c_email').value;
+            const p1 = document.getElementById('c_pass').value;
+            const p2 = document.getElementById('c_pass2').value;
 
-        if(p1 !== p2) { msg.style.color = '#ff6b6b'; msg.textContent = 'Passwords do not match'; return; }
+            if(p1 !== p2) {
+                msg.style.color = '#ff6b6b';
+                msg.textContent = 'Passwords do not match';
+                return;
+            }
+            if(p1.length < 8) {
+                msg.style.color = '#ff6b6b';
+                msg.textContent = 'Password must be at least 8 characters long';
+                document.getElementById('c_pass').focus();
+                return;
+            }
 
-        submitBtn.textContent = 'Creating...';
-        submitBtn.disabled = true;
-        msg.textContent = '';
+            submitBtn.textContent = 'Creating...';
+            submitBtn.disabled = true;
+            msg.textContent = '';
 
-        try {
-            const resp = await fetch('/api/add-child', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ child_name: name, child_email: email, child_password: p1 })
-            });
-            const d = await resp.json();
-            if(resp.ok) {
-                msg.style.color = '#00ff88';
-                msg.textContent = 'Account created! Reloading...';
-                setTimeout(() => location.reload(), 1500);
-            } else {
+            try {
+                const resp = await fetch('/api/add-child', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ child_name: name, child_email: email, child_password: p1 })
+                });
+                const d = await resp.json();
+                if(resp.ok) {
+                    msg.style.color = '#00ff88';
+                    msg.textContent = 'Account created! Reloading...';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    submitBtn.textContent = 'Create Account';
+                    submitBtn.disabled = false;
+                    msg.style.color = '#ff6b6b';
+                    msg.textContent = d.error || 'Failed to create account';
+                }
+            } catch(err) {
                 submitBtn.textContent = 'Create Account';
                 submitBtn.disabled = false;
                 msg.style.color = '#ff6b6b';
-                msg.textContent = d.error || 'Failed to create account';
+                msg.textContent = 'Error creating account. Please try again.';
             }
-        } catch(err) {
-            submitBtn.textContent = 'Create Account';
-            submitBtn.disabled = false;
-            msg.style.color = '#ff6b6b';
-            msg.textContent = 'Error creating account. Please try again.';
-        }
+        });
     });
 
     // 2. Link Existing Child
